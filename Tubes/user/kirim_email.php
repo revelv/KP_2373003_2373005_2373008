@@ -29,12 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'jeremiadylan15@gmail.com'; // Ganti
-        $mail->Password   = 'wkcg yxwe mxdj pgmy';    // Ganti
+        $mail->Username   = 'styrk.industries@gmail.com'; // Ganti
+        $mail->Password   = 'cudw nbsm vxwo wfnm';    // Ganti
         $mail->SMTPSecure = 'tls';
         $mail->Port       = 587;
 
-        $mail->setFrom('jeremiadylan15@gmail.com', 'Reset Password OTP');
+        $mail->setFrom('styrk.industries@gmail.com', 'Reset Password OTP');
         $mail->addAddress($email);
 
         $mail->isHTML(true);
