@@ -1,13 +1,13 @@
 <?php
 include '../koneksi.php';
+include '../../voucher.php';
+
 session_start();
 
-// Cek koneksi
 if ($conn->connect_error) {
     die("Koneksi gagal: " . $conn->connect_error);
 }
 
-// Ambil data dari form
 $nama = $_POST['nama'];
 $email = $_POST['email'];
 $alamat = $_POST['alamat'];
@@ -15,15 +15,12 @@ $no_telepon = $_POST['telp'];
 $password = $_POST['password'];
 $konfirmasi = $_POST['konfirmasi'];
 
-// Validasi input
 $errors = [];
 
-// Cek apakah password dan konfirmasi password sama
 if ($password !== $konfirmasi) {
     $errors[] = "Password dan konfirmasi password tidak sama";
 }
 
-// Cek apakah email sudah terdaftar
 $check_email = $conn->prepare("SELECT email FROM customer WHERE email = ?");
 $check_email->bind_param("s", $email);
 $check_email->execute();
@@ -35,22 +32,40 @@ if ($check_email->num_rows > 0) {
 
 $check_email->close();
 
-// Jika ada error, simpan ke session lalu redirect balik ke form
 if (!empty($errors)) {
-    $_SESSION['register_error'] = implode('<br>', $errors);         
-    $_SESSION['form_data'] = $_POST;                                
-    header("Location: registrasi.php");                             
+    $_SESSION['register_error'] = implode('<br>', $errors);
+    $_SESSION['form_data'] = $_POST;
+    header("Location: registrasi.php");
     exit;
 }
 
-// Hash password sebelum disimpan ke database
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-// Simpan data ke database
 $stmt = $conn->prepare("INSERT INTO customer (nama, password, email, no_telepon, alamat) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("sssss", $nama, $hashed_password, $email, $no_telepon, $alamat);
 
 if ($stmt->execute()) {
+    $newUserId = $conn->insert_id;
+
+    $pilihanNominal = [5000, 7500, 10000, 12500, 15000, 20000];
+    $nilaiVoucher = $pilihanNominal[array_rand($pilihanNominal)];
+    $voucher = buatVoucherDb($newUserId, $nilaiVoucher, 14, "Voucher Selamat Datang");
+
+    if ($voucher) {
+        $subjek = "Selamat Datang di Styrk Industries! Ini Hadiah Untukmu";
+        $pesan = "Terima kasih telah bergabung dengan kami. Kami senang Anda ada di sini!";
+        kirimVoucherEmail($email, $nama, $subjek, $pesan, $voucher);
+    }
+
+    echo "
+        <div style='font-family: Arial, sans-serif; text-align: center; padding: 50px;'>
+            <h2>Registrasi Berhasil!</h2>
+            <p>Selamat datang, " . htmlspecialchars($nama) . ".</p>
+            <p>Sebuah voucher selamat datang telah kami kirimkan ke email Anda.</p>
+            <p>Anda akan diarahkan ke halaman produk dalam 3 detik...</p>
+        </div>
+    ";
+
     header("Refresh: 3; url=../produk.php");
 } else {
     echo "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
@@ -59,4 +74,3 @@ if ($stmt->execute()) {
 
 $stmt->close();
 $conn->close();
-?>

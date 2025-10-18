@@ -84,7 +84,7 @@ include 'header.php';
 
 						<div class="caption">
 							<h3><?= $rec_row['nama_produk']; ?></h3>
-							<h4>$<?= $rec_row['harga']; ?></h4>
+							<h4>Rp <?= number_format($rec_row['harga'], 0, ',', '.'); ?></h4>
 						</div>
 
 						<div class="button">
@@ -168,7 +168,7 @@ include 'header.php';
 
 						<div class="caption">
 							<h3><?= $row['nama_produk']; ?></h3>
-							<h4>$<?= $row['harga']; ?></h4>
+							<h4>Rp <?= number_format($row['harga'], 0, ',', '.'); ?></h4>
 						</div>
 
 						<div class="button">
@@ -218,7 +218,7 @@ include 'header.php';
 					</div>
 					<div>
 						<h4 id="modal-nama"></h4>
-						<p><strong>Harga:</strong> $<span id="modal-harga"></span></p>
+						<p><strong>Harga:</strong> Rp<span id="modal-harga"></span></p>
 						<p><strong>Stok:</strong> <span id="modal-stok"></span></p>
 						<p id="modal-deskripsi"></p>
 						<div id="modal-button-container" class="mt-3"></div>
@@ -249,7 +249,7 @@ include 'header.php';
 
 				// Isi modal konten
 				document.getElementById('modal-nama').textContent = nama;
-				document.getElementById('modal-harga').textContent = harga;
+				document.getElementById('modal-harga').textContent = Number(harga).toLocaleString('id-ID');
 				document.getElementById('modal-stok').textContent = stok;
 				document.getElementById('modal-deskripsi').textContent = deskripsi;
 				document.getElementById('modal-gambar').src = gambar;

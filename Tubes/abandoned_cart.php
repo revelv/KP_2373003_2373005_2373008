@@ -81,12 +81,12 @@ function kirimEmailNotifikasi($email_penerima, $nama_penerima, $daftar_item_html
     $mail = new PHPMailer(true);
 
     try {
-        // Konfigurasi Server SMTP (GANTI DENGAN DETAIL ANDA)
+
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';       // mis: smtp.gmail.com
+        $mail->Host       = 'smtp.gmail.com';      
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'styrk.industries@gmail.com';       // Email Anda
-        $mail->Password   = 'cudw nbsm vxwo wfnm';    // Password Anda atau App Password
+        $mail->Username   = 'styrk.industries@gmail.com';   
+        $mail->Password   = 'cudw nbsm vxwo wfnm';    
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = 465;
 
