@@ -35,7 +35,7 @@ $resultPasif = $conn->query($sqlPasif);
 
 if ($resultPasif->num_rows > 0) {
     while ($user = $resultPasif->fetch_assoc()) {
-        $pilihanNominal = [10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000];
+        $pilihanNominal = [10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000, 100000];
         $nilaiVoucher = $pilihanNominal[array_rand($pilihanNominal)];
         $voucher = buatVoucherDb($user['customer_id'], $nilaiVoucher, 7, "Voucher Comeback!");
 

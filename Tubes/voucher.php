@@ -1,7 +1,7 @@
 <?php
 
 require 'vendor/autoload.php';
-require 'koneksi.php'; // Hubungkan ke database Anda
+require 'koneksi.php'; 
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

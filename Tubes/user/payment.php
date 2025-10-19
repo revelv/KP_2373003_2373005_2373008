@@ -2,7 +2,9 @@
 session_start();
 include '../koneksi.php';
 
-// Handle payment proof upload if form submitted
+
+$voucher_discount = $_SESSION['voucher_discount'] ?? 0;
+$voucher_code = $_SESSION['voucher_code'] ?? null;
 
 
 // Normal page display
@@ -50,37 +52,94 @@ $total = 0;
                 </tr>
             </thead>
             <tbody>
+
                 <?php
-                // Reset pointer result karena result sudah dipakai sebelumnya
+
                 mysqli_data_seek($result, 0);
-                $total = 0; // Reset total
+
+                $subtotal = 0;
+
+
 
                 while ($row = mysqli_fetch_assoc($result)) :
-                    // PERBAIKAN: Cek harga_diskon > 0, bukan harga > 0
-                    $harga = $row['harga']; // Ambil harga normal, abaikan diskon
-                    $subtotal = $harga * $row['jumlah_barang'];
-                    $total += $subtotal;
+
+                    $harga = $row['harga'];
+
+                    $item_subtotal = $harga * $row['jumlah_barang'];
+
+                    $subtotal += $item_subtotal;
+
                 ?>
+
                     <tr>
+
                         <td><img src="<?= $row['link_gambar']; ?>" width="80"></td>
+
                         <td><?= $row['nama_produk']; ?></td>
+
                         <td><?= $row['jumlah_barang']; ?></td>
-                        <td>$ <?= number_format($harga, 0, ',', '.'); ?></td>
-                        <td>$ <?= number_format($subtotal, 0, ',', '.'); ?></td>
+
+                        <td>Rp <?= number_format($harga, 0, ',', '.'); ?></td>
+
+                        <td>Rp <?= number_format($item_subtotal, 0, ',', '.'); ?></td>
+
                     </tr>
+
                 <?php endwhile; ?>
+
+
+
                 <?php
-                $ongkir = $total * 0.01;
-                $grand_total = $total + $ongkir;
+
+                // Kalkulasi total akhir dengan memperhitungkan voucher
+
+                $ongkir = $subtotal * 0.01;
+
+                $grand_total = ($subtotal - $voucher_discount) + $ongkir;
+
+                if ($grand_total < 0) {
+
+                    $grand_total = 0;
+                }
+
                 ?>
+
+
+
+
+
+
+
+                <?php if ($voucher_discount > 0): ?>
+
+                    <tr>
+
+                        <td colspan="4" class="text-end text-success"><strong>Diskon (<?= htmlspecialchars($voucher_code); ?>)</strong></td>
+
+                        <td class="text-success"><strong>- Rp <?= number_format($voucher_discount, 0, ',', '.'); ?></strong></td>
+
+                    </tr>
+
+                <?php endif; ?>
+
+
+
                 <tr>
+
                     <td colspan="4" class="text-end"><strong>Ongkir (1%)</strong></td>
-                    <td>$ <?= number_format($ongkir, 0, ',', '.'); ?></td>
+
+                    <td>Rp <?= number_format($ongkir, 0, ',', '.'); ?></td>
+
                 </tr>
-                <tr>
+
+                <tr class="fw-bold table-group-divider">
+
                     <td colspan="4" class="text-end"><strong>Total</strong></td>
-                    <td><strong>$ <?= number_format($grand_total, 0, ',', '.'); ?></strong></td>
+
+                    <td><strong>Rp <?= number_format($grand_total, 0, ',', '.'); ?></strong></td>
+
                 </tr>
+
             </tbody>
         </table>
     </div>
@@ -160,9 +219,9 @@ $total = 0;
                     <h5>Transfer Bank</h5>
                     <p>Silakan transfer ke rekening:</p>
                     <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
-                    <form action="checkout.php" method="post" value = "Transfer" enctype="multipart/form-data">
-                    <input type="hidden" name="metode" value="Transfer">    
-                    <div class="mb-3">
+                    <form action="checkout.php" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="metode" value="Transfer">
+                        <div class="mb-3">
                             <label for="bukti" class="form-label">Upload Bukti Transfer</label>
                             <input type="file" name="bukti" class="form-control" required accept="image/*">
                             <div class="form-text">Format: JPG, PNG (max 2MB)</div>
@@ -177,12 +236,12 @@ $total = 0;
         }
 
         <?php
+        // KODE PHP YANG HILANG, SEKARANG DIKEMBALIKAN
         $order_query = mysqli_query($conn, "SELECT MAX(order_id) AS last_id FROM orders");
         $order_data = mysqli_fetch_assoc($order_query);
-        $next_order_id = $order_data['last_id'] + 1;
-
+        // Tambahan pengaman jika tabel orders masih kosong
+        $next_order_id = ($order_data['last_id'] ?? 0) + 1;
         ?>
-
 
         const fixedOrderID = "STYRK_ORDER<?= $next_order_id ?>_";
 
@@ -190,7 +249,6 @@ $total = 0;
             const randomCode = Math.floor(Math.random() * 900) + 100;
             return encodeURIComponent(fixedOrderID + randomCode);
         }
-
 
         function startQRISTimer() {
             clearInterval(qrTimer);
@@ -212,7 +270,6 @@ $total = 0;
                     document.getElementById("qrImage").src =
                         "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
 
-                    // Update input hidden biar ngikut QR barunya
                     const kodeTransaksiInput = document.querySelector("input[name='kode_transaksi']");
                     if (kodeTransaksiInput) {
                         kodeTransaksiInput.value = qrContent;
