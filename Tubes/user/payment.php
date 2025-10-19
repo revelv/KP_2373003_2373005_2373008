@@ -2,17 +2,31 @@
 session_start();
 include '../koneksi.php';
 
+// TAMBAHAN: Validasi & Ambil data item yang dipilih dari cart.php
+// Cek apakah ada data 'selected_items' yang dikirim dari form sebelumnya
+if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
+    // Jika tidak ada, kembalikan user ke keranjang dengan pesan error
+    $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
+    header('Location: cart.php');
+    exit();
+}
+
+// Ambil array cart_id yang dipilih
+$selected_cart_ids = $_POST['selected_items'];
+// Ubah array menjadi string yang aman untuk query SQL, contoh: '1,5,7'
+$in_clause = implode(',', array_map('intval', $selected_cart_ids));
+
 
 $voucher_discount = $_SESSION['voucher_discount'] ?? 0;
 $voucher_code = $_SESSION['voucher_code'] ?? null;
 
-
 // Normal page display
 $customer_id = $_SESSION['kd_cs'];
+// MODIFIKASI: Query sekarang difilter berdasarkan item yang dipilih
 $query = "SELECT carts.*, products.nama_produk, products.harga, products.link_gambar 
           FROM carts 
           JOIN products ON carts.product_id = products.product_id 
-          WHERE carts.customer_id = '$customer_id'";
+          WHERE carts.customer_id = '$customer_id' AND carts.cart_id IN ($in_clause)"; // <-- Perubahan di sini
 $result = mysqli_query($conn, $query);
 
 $total = 0;
@@ -32,16 +46,13 @@ $total = 0;
 
 <body class="container mt-4">
 
-    <!-- Back to Cart Button -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="m-0">Checkout - Payment</h2>
         <a href="cart.php" class="btn btn-secondary">← Back to Cart</a>
     </div>
 
-    <!-- Daftar Produk -->
     <div class="mb-4">
-        <h4>Barang dalam Keranjang</h4>
-        <table class="table table-bordered">
+        <h4>Barang yang akan Dibayar</h4> <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>Gambar</th>
@@ -54,97 +65,51 @@ $total = 0;
             <tbody>
 
                 <?php
-
+                // Logika ini tidak perlu diubah, karena $result sudah berisi data yang benar (terfilter)
                 mysqli_data_seek($result, 0);
-
                 $subtotal = 0;
-
-
-
                 while ($row = mysqli_fetch_assoc($result)) :
-
                     $harga = $row['harga'];
-
                     $item_subtotal = $harga * $row['jumlah_barang'];
-
                     $subtotal += $item_subtotal;
-
                 ?>
-
                     <tr>
-
                         <td><img src="<?= $row['link_gambar']; ?>" width="80"></td>
-
                         <td><?= $row['nama_produk']; ?></td>
-
                         <td><?= $row['jumlah_barang']; ?></td>
-
                         <td>Rp <?= number_format($harga, 0, ',', '.'); ?></td>
-
                         <td>Rp <?= number_format($item_subtotal, 0, ',', '.'); ?></td>
-
                     </tr>
-
                 <?php endwhile; ?>
 
-
-
                 <?php
-
-                // Kalkulasi total akhir dengan memperhitungkan voucher
-
+                // Kalkulasi ini juga tidak perlu diubah, karena $subtotal sudah benar
                 $ongkir = $subtotal * 0.01;
-
                 $grand_total = ($subtotal - $voucher_discount) + $ongkir;
-
                 if ($grand_total < 0) {
-
                     $grand_total = 0;
                 }
-
                 ?>
 
-
-
-
-
-
-
                 <?php if ($voucher_discount > 0): ?>
-
                     <tr>
-
                         <td colspan="4" class="text-end text-success"><strong>Diskon (<?= htmlspecialchars($voucher_code); ?>)</strong></td>
-
                         <td class="text-success"><strong>- Rp <?= number_format($voucher_discount, 0, ',', '.'); ?></strong></td>
-
                     </tr>
-
                 <?php endif; ?>
 
-
-
                 <tr>
-
                     <td colspan="4" class="text-end"><strong>Ongkir (1%)</strong></td>
-
                     <td>Rp <?= number_format($ongkir, 0, ',', '.'); ?></td>
-
                 </tr>
-
                 <tr class="fw-bold table-group-divider">
-
                     <td colspan="4" class="text-end"><strong>Total</strong></td>
-
                     <td><strong>Rp <?= number_format($grand_total, 0, ',', '.'); ?></strong></td>
-
                 </tr>
-
             </tbody>
         </table>
     </div>
 
-    <!-- Pilihan Metode Pembayaran -->
     <div class="mb-4">
         <h4 class="mb-3 text-center">Pilih Metode Pembayaran</h4>
         <div class="payment-methods justify-content-center">
@@ -157,7 +122,6 @@ $total = 0;
                     </div>
                 </label>
             </div>
-
             <div class="payment-option">
                 <input type="radio" name="metode" id="transfer" value="Transfer" class="payment-input" checked>
                 <label for="transfer" class="payment-label">
@@ -170,21 +134,19 @@ $total = 0;
         </div>
     </div>
 
-    <!-- Area Tampilan Pembayaran -->
-    <div id="paymentContainer">
+    <div id="paymentContainer"></div>
 
-    </div>
-
-    <!-- Tombol Pay (Original Button) -->
     <div class="text-center mb-4">
         <button class="btn btn-lg btn-warning" onclick="mulaiPembayaran()">Pay</button>
     </div>
 
-    <!-- Script -->
     <script>
         let qrTimer, qrContent = "",
             paymentChecked = false;
         const grandTotal = <?= $grand_total ?>;
+        
+        // TAMBAHAN: Kirim data item terpilih ke Javascript agar bisa diteruskan ke checkout.php
+        const selectedItems = <?= json_encode($selected_cart_ids); ?>;
 
         function mulaiPembayaran() {
             const metode = document.querySelector('input[name="metode"]:checked');
@@ -194,6 +156,12 @@ $total = 0;
                 alert("Silakan pilih metode pembayaran terlebih dahulu.");
                 return;
             }
+
+            // TAMBAHAN: Buat hidden input untuk setiap item yang dipilih
+            let hiddenInputs = '';
+            selectedItems.forEach(id => {
+                hiddenInputs += `<input type="hidden" name="selected_items[]" value="${id}">`;
+            });
 
             let html = "";
 
@@ -205,7 +173,7 @@ $total = 0;
                     <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
                     <div class="qris-timer" id="timer">02:00</div>
                     <form action="checkout.php" method="post">
-                        <input type="hidden" name="metode" value="QRIS">
+                        ${hiddenInputs} <input type="hidden" name="metode" value="QRIS">
                         <input type="hidden" name="total" value="${grandTotal}">
                         <input type="hidden" name="kode_transaksi" value="${qrContent}">
                         <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
@@ -220,7 +188,7 @@ $total = 0;
                     <p>Silakan transfer ke rekening:</p>
                     <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
                     <form action="checkout.php" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="metode" value="Transfer">
+                        ${hiddenInputs} <input type="hidden" name="metode" value="Transfer">
                         <div class="mb-3">
                             <label for="bukti" class="form-label">Upload Bukti Transfer</label>
                             <input type="file" name="bukti" class="form-control" required accept="image/*">
@@ -236,10 +204,8 @@ $total = 0;
         }
 
         <?php
-        // KODE PHP YANG HILANG, SEKARANG DIKEMBALIKAN
         $order_query = mysqli_query($conn, "SELECT MAX(order_id) AS last_id FROM orders");
         $order_data = mysqli_fetch_assoc($order_query);
-        // Tambahan pengaman jika tabel orders masih kosong
         $next_order_id = ($order_data['last_id'] ?? 0) + 1;
         ?>
 
@@ -253,28 +219,23 @@ $total = 0;
         function startQRISTimer() {
             clearInterval(qrTimer);
             paymentChecked = false;
-
             let duration = 120;
             const timerDisplay = document.getElementById("timer");
-
             qrTimer = setInterval(() => {
                 const minutes = Math.floor(duration / 60);
                 const seconds = duration % 60;
                 timerDisplay.textContent =
                     (minutes < 10 ? "0" : "") + minutes + ":" +
                     (seconds < 10 ? "0" : "") + seconds;
-
                 if (--duration < 0) {
                     clearInterval(qrTimer);
                     qrContent = generateQRContent();
                     document.getElementById("qrImage").src =
                         "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
-
                     const kodeTransaksiInput = document.querySelector("input[name='kode_transaksi']");
                     if (kodeTransaksiInput) {
                         kodeTransaksiInput.value = qrContent;
                     }
-
                     startQRISTimer();
                     alert("QR baru telah digenerate karena timeout.");
                 }
