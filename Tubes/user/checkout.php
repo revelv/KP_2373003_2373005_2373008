@@ -13,9 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $payment_method = $_POST['metode'] ?? '';
 
     // Ambil data cart
+    if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
+        die("Tidak ada item yang dipilih untuk diproses.");
+    }
+    $selected_cart_ids = $_POST['selected_items'];
+    $in_clause = implode(',', array_map('intval', $selected_cart_ids));
+
     $query = "SELECT c.*, p.harga, p.stok FROM carts c 
-              JOIN products p ON c.product_id = p.product_id 
-              WHERE c.customer_id = '$customer_id'";
+          JOIN products p ON c.product_id = p.product_id 
+          WHERE c.customer_id = '$customer_id' AND c.cart_id IN ($in_clause)";
     $result = mysqli_query($conn, $query);
 
     $total = 0;
@@ -37,11 +43,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'subtotal' => $subtotal
         ];
     }
+    $voucher_discount = $_SESSION['voucher_discount'] ?? 0;
 
     // VALIDASI dan SET nilai variabel penting
     if ($payment_method === 'Transfer' || $payment_method === 'QRIS') {
+
+
+        // PERBAIKAN: Perhitungan grand_total sekarang konsisten dengan halaman payment
         $ongkir = $total * 0.01;
-        $grand_total = $total + $ongkir;
+        $grand_total = ($total - $voucher_discount) + $ongkir;
+        if ($grand_total < 0) {
+            $grand_total = 0; // Pastikan total tidak minus jika diskon besar
+        }
         $tanggal = date("Y-m-d H:i:s");
         $status = ($payment_method === 'Transfer') ? 'pending' : 'proses';
     } else {
@@ -64,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             SET stok = stok - {$item['jumlah']} 
             WHERE product_id = '{$item['product_id']}'");
     }
+
+
 
     // === Handle metode Transfer Bank ===
     if ($payment_method === 'Transfer') {
@@ -110,8 +125,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES ('$order_id', 'QRIS', '$grand_total', '$tanggal', '$qris_code', 'proses')");
     }
 
-    // Bersihkan cart
-    mysqli_query($conn, "DELETE FROM carts WHERE customer_id = '$customer_id'");
+    if (isset($_SESSION['voucher_code'])) {
+        $kode_voucher_terpakai = $_SESSION['voucher_code'];
+
+        // Update status voucher di database menjadi 'terpakai'
+        $update_stmt = $conn->prepare("UPDATE vouchers SET status = 'terpakai' WHERE kode_voucher = ?");
+        if ($update_stmt) {
+            $update_stmt->bind_param("s", $kode_voucher_terpakai);
+            $update_stmt->execute();
+            $update_stmt->close();
+        }
+
+        // Hapus data voucher dari session setelah digunakan
+        unset($_SESSION['voucher_code']);
+        unset($_SESSION['voucher_discount']);
+    }
+
+    mysqli_query($conn, "DELETE FROM carts WHERE customer_id = '$customer_id' AND cart_id IN ($in_clause)");
 
     echo "<script>
         alert('Pembayaran berhasil diproses! Order Anda akan segera diproses.');
