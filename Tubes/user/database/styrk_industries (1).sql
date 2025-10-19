@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Waktu pembuatan: 18 Okt 2025 pada 07.37
+-- Waktu pembuatan: 19 Okt 2025 pada 12.19
 -- Versi server: 8.4.3
 -- Versi PHP: 8.3.16
 
@@ -60,7 +60,7 @@ CREATE TABLE `carts` (
 --
 
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
-(27, 8, 'KB006', 1, '2025-10-12 13:12:46', '2025-10-12 13:12:46');
+(34, 10, 'KB013', 1, '2025-10-19 12:07:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -111,7 +111,7 @@ INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`
 (5, 'Jeremia', '$2y$10$fwucJezb3RQTmc5Gz2a56uyAjvXYyMdS/V38v913qqxpJtpMF5sRS', 'jeremiadylan80@gmail.com', '081312663058', 'Jalan kebenara 169', NULL, NULL),
 (6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'Jalan asmi no 123', NULL, NULL),
 (7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', 'jalan tuhan kebenaran no. 100', NULL, NULL),
-(8, 'Sammy', '$2y$10$2EN2UCTPYl0Fjmxx2h4kp.cSSOUGkIg2Z4p2qR0mAsDX.ne85ZTZm', '2373003@maranatha.ac.id', '62289', 'jalan sammy ganteng 123', NULL, NULL);
+(10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', 'rumahsammy 123', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -134,7 +134,10 @@ CREATE TABLE `orders` (
 INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `total_harga`, `status`) VALUES
 (18, 7, '2025-06-24 23:40:55', 90.90, 'batal'),
 (19, 7, '2025-06-24 23:58:37', 663.87, 'batal'),
-(20, 7, '2025-06-24 23:59:39', 272.70, 'batal');
+(20, 7, '2025-06-24 23:59:39', 272.70, 'batal'),
+(21, 10, '2025-10-19 08:04:46', 2929000.00, 'proses'),
+(22, 10, '2025-10-19 10:59:04', 2424000.00, 'proses'),
+(23, 10, '2025-10-19 12:17:02', 1899132.00, 'proses');
 
 -- --------------------------------------------------------
 
@@ -159,7 +162,11 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `h
 (22, 18, 'KB008', 1, 90.00, 90.00),
 (23, 19, 'KB010', 1, 299.00, 299.00),
 (24, 19, 'KB006', 1, 358.30, 358.30),
-(25, 20, 'KB008', 3, 90.00, 270.00);
+(25, 20, 'KB008', 3, 90.00, 270.00),
+(26, 21, 'KB008', 2, 1450000.00, 2900000.00),
+(27, 22, 'SW005', 1, 650000.00, 650000.00),
+(28, 22, 'KC006', 1, 1750000.00, 1750000.00),
+(29, 23, 'KB009', 1, 1900000.00, 1900000.00);
 
 -- --------------------------------------------------------
 
@@ -207,7 +214,10 @@ CREATE TABLE `payments` (
 INSERT INTO `payments` (`payment_id`, `order_id`, `metode`, `jumlah_dibayar`, `tanggal_bayar`, `payment_proof`, `payment_status`) VALUES
 (8, 18, 'Transfer Bank', 90.90, '2025-06-24 23:40:55', '../payment_proofs/proof_18_1750808455.png', 'rejected'),
 (9, 19, 'QRIS', 663.87, '2025-06-24 23:58:37', 'STYRK_ORDER19_811', 'rejected'),
-(10, 20, 'QRIS', 272.70, '2025-06-24 23:59:39', 'STYRK_ORDER20_747', 'rejected');
+(10, 20, 'QRIS', 272.70, '2025-06-24 23:59:39', 'STYRK_ORDER20_747', 'rejected'),
+(11, 21, 'QRIS', 2929000.00, '2025-10-19 08:04:46', 'STYRK_ORDER21_121', 'proses'),
+(12, 22, 'QRIS', 2424000.00, '2025-10-19 10:59:04', 'STYRK_ORDER22_959', 'proses'),
+(13, 23, 'QRIS', 1899132.00, '2025-10-19 12:17:02', 'STYRK_ORDER23_252', 'proses');
 
 -- --------------------------------------------------------
 
@@ -230,58 +240,58 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`) VALUES
-('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 115.00, 8, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1),
-('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 200.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2),
-('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 500.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2),
-('KB003', 'KBD8X MKIII Keyboard', 'A beloved full-sized mechanical keyboard featuring top mount design and premium aluminum construction. Now at half price, it\'s a steal for serious keyboard builders.', 500.00, 9, 'https://i.postimg.cc/JnhynC7d/4.jpg', 2),
-('KB004', 'Magnum65', 'A 65% layout keyboard with a bold design and exceptional build quality. The Magnum65 is for those who want a compact form factor without compromising on performance.', 80.00, 7, 'https://i.postimg.cc/sfqBVLkw/5.jpg', 2),
-('KB005', 'Quartz Stone Wrist Rest', 'A solid quartz wrist rest designed to offer comfort and elegance. Its cool, stone finish adds a premium touch to your keyboard setup.', 40.00, 8, 'https://i.postimg.cc/jSQC4SLF/7.jpg', 2),
-('KB006', 'Odin 75 Hot-swap Keyboard with PBTfans Courage red', 'A ready-to-use Odin 75 keyboard with bold Courage Red keycaps. Hot-swap sockets make switch swapping easy without soldering.', 358.30, 10, 'https://i.postimg.cc/bwH9Mn60/17.jpg', 2),
-('KB007', 'Keychron K8 Wireless', 'A tenkeyless wireless mechanical keyboard compatible with Mac and Windows.', 80.00, 9, 'https://i.postimg.cc/mrPhMfFc/21.jpg', 2),
-('KB008', 'Akko 3068B Plus', 'A compact 65% keyboard with wireless connectivity and hot-swappable switches.', 90.00, 10, 'https://i.postimg.cc/0Nhj0WpV/22.png', 2),
-('KB009', 'Ducky One 3 Mini', 'A 60% keyboard known for vibrant colors and premium build.', 120.00, 9, 'https://i.postimg.cc/vB9Bqrhb/23.jpg', 2),
-('KB010', 'Mode Sonnet Keyboard', 'A custom keyboard with a sleek design and premium materials.', 299.00, 10, 'https://i.postimg.cc/XqbvTr1F/25.jpg', 2),
-('KB011', 'Keychron Q1 V2', 'A customizable 75% keyboard with QMK/VIA support.', 170.00, 10, 'https://i.postimg.cc/KjDYFmCW/26.jpg', 2),
-('KB012', 'Ikki68 Aurora', 'A popular entry-level custom keyboard kit.', 135.00, 10, 'https://i.postimg.cc/J7N0jQtQ/27.jpg', 2),
-('KB013', 'MelGeek Mojo68', 'A semi-transparent wireless keyboard with customizable layout.', 230.00, 10, 'https://i.postimg.cc/X7NjdSRV/33.jpg', 2),
-('KB014', 'NK65 Entry Edition', 'A budget-friendly 65% mechanical keyboard with a polycarbonate case.', 95.00, 10, 'https://i.postimg.cc/ydzBNwhC/36.jpg', 2),
-('KB015', 'Keychron V4', 'A budget 60% keyboard with QMK/VIA support.', 65.00, 10, 'https://i.postimg.cc/43cssJ91/37.jpg', 2),
-('KB016', 'Ajazz AK966', '96% layout wireless mechanical keyboard with knob.', 120.00, 10, 'https://i.postimg.cc/ZRFmvVjB/38.jpg\r\n', 2),
-('KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 145.00, 10, 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2),
-('KB018', 'Rama M65-B', 'High-end aluminum 65% keyboard with elegant design.', 360.00, 10, 'https://i.postimg.cc/Qd2Z6RyK/41.jpg', 2),
-('KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 230.00, 10, 'https://i.postimg.cc/6QCJFYkj/42.jpg', 2),
-('KB020', 'Drop ALT Keyboard', 'Compact mechanical keyboard with hot-swap sockets.', 180.00, 10, 'https://i.postimg.cc/bNFhnG0T/43.jpg', 2),
-('KB021', 'Varmilo VA87M', 'Tenkeyless keyboard with a variety of themes and switches.', 140.00, 10, 'https://i.postimg.cc/vZgdtQ3d/44.jpg', 2),
-('KB022', 'Zoom65 V2', 'A versatile 65% keyboard with wireless features.', 175.00, 10, 'https://i.postimg.cc/63wJKCw9/45.jpg', 2),
-('KB023', 'MelGeek Pixel Keyboard', 'A customizable Lego-style keyboard.', 270.00, 10, 'https://i.postimg.cc/Jnqwzt4j/46.jpg', 2),
-('KB024', 'IDOBAO ID80', 'Gasket-mounted keyboard with a unique acrylic body.', 190.00, 10, 'https://i.postimg.cc/Zn716gNR/47.jpg', 2),
-('KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 130.00, 10, 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 2),
-('KB026', 'Royal Kludge RK61', 'Budget 60% wireless mechanical keyboard.', 50.00, 10, 'https://i.postimg.cc/RCg5r3YB/51.jpg', 2),
-('KC001', 'Circus PGA Profile Keycaps', 'A vibrant and playful set of PGA profile keycaps inspired by circus aesthetics. Perfect for mechanical keyboard enthusiasts looking to add a burst of color and uniqueness to their setup.', 80.00, 10, 'https://i.postimg.cc/zBPyH2VD/1.jpg', 3),
-('KC002', 'Dusk 67 with PBTfans Inkdrop', 'A beautifully themed 65% keyboard featuring the Dusk 67 case and PBTfans Inkdrop keycaps. This bundle is perfect for those who want a cohesive, stunning setup.', 207.20, 10, 'https://i.postimg.cc/WpC8JTFZ/13.jpg', 3),
-('KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 253.63, 10, 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 3),
-('KC004', 'KBD8X MKIII HE Gaming Keyboard with PBTfans Blush', 'A performance-focused version of the KBD8X MKIII featuring Hall Effect switches for rapid input and PBTfans Blush keycaps for soft, pastel aesthetics.', 262.86, 10, 'https://i.postimg.cc/HWXcBgvX/18.jpg', 3),
-('KC005', 'GMK Red Samurai Keycap Set', 'A premium GMK keycap set inspired by traditional samurai aesthetics.', 150.00, 10, 'https://i.postimg.cc/SKSfpK5B/19.jpg', 3),
-('KC006', 'KAT Milkshake Keycap Set', 'A colorful pastel keycap set with a unique KAT profile.', 110.00, 10, 'https://i.postimg.cc/c4DsckWf/34.jpg', 3),
-('KC007', 'SA Bliss Keycap Set', 'A vibrant SA profile keycap set inspired by serene aesthetics.', 130.00, 10, 'https://i.postimg.cc/0yFPT6bQ/35.jpg', 3),
-('KC008', 'GMK Olivia Keycap Set', 'Elegant pink and black themed GMK keycap set.', 150.00, 10, 'https://i.postimg.cc/zXQsBs52/49.png', 3),
-('KK001', 'Tofu60 Redux Plate', 'A compatible plate for the Tofu60 Redux case, offering improved rigidity and mounting flexibility. Great for customizing your typing feel.', 20.00, 10, 'https://i.postimg.cc/L6PJhTRR/6.jpg', 4),
-('KK002', 'KBD67 Lite R4 Mechanical Keyboard Kit', 'A budget-friendly yet high-performing 65% keyboard kit. Ideal for newcomers and veterans alike, with hot-swap functionality and great acoustics.', 119.00, 10, 'https://i.postimg.cc/2SfVWZ8W/8.jpg', 4),
-('KK003', 'KBDfans Odin 75 Mechanical Keyboard Kit', 'A compact 75% layout keyboard with a stylish and functional design. The Odin 75 offers great balance between form and usability.', 239.00, 10, 'https://i.postimg.cc/mrLkXW92/9.jpg', 4),
-('KK004', 'Sebas Keyboard kit', 'A stylish and sturdy keyboard kit designed with premium materials. Its layout and build make it suitable for both work and play.', 215.00, 10, 'https://i.postimg.cc/2jVT6V6m/12.jpg', 4),
-('KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 119.00, 10, 'https://i.postimg.cc/pyMXKwxv/14.jpg', 4),
-('KK006', 'Margo Case', 'A uniquely designed keyboard case with gentle curves and premium anodization. A great choice for custom keyboard builds looking to stand out.', 135.20, 10, 'https://i.postimg.cc/9F9pdKZn/15.jpg', 4),
-('KK007', 'GMMK Pro Barebone', 'A 75% layout mechanical keyboard with a rotary knob and aluminum body.', 170.00, 10, 'https://i.postimg.cc/0NVd5s1b/20.jpg', 4),
-('KK008', 'Tofu65 Kit', 'Aluminum 65% DIY keyboard kit with customizable options.', 170.00, 10, 'https://i.postimg.cc/m2Vr52Yz/28.jpg', 4),
-('KK009', 'KBD75 V3 Kit', '75% aluminum keyboard with refined layout and features.', 185.00, 10, 'https://i.postimg.cc/Kjv6kFRw/48.jpg', 4),
-('KP001', 'Taco Pad', 'A novelty macropad shaped like a taco. Fun, quirky, and useful for macros, shortcuts, or artisan display. A must-have desk companion for enthusiasts.', 90.00, 10, 'https://i.postimg.cc/C5BzGCqG/3.jpg', 5),
-('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 22.00, 10, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6),
-('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 230.00, 10, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7),
-('SW002', 'NovelKeys Cream Switches (70 pcs)', 'Smooth linear switches with self-lubricating POM housing.', 56.00, 10, 'https://i.postimg.cc/jS5j00c8/29.jpg', 7),
-('SW003', 'Akko CS Jelly Purple (45 pcs)', 'Tactile mechanical switches with a unique jelly-like stem.', 20.00, 10, 'https://i.postimg.cc/SKYNR6wC/30.jpg', 7),
-('SW004', 'Glorious Panda Switches (36 pcs)', 'Tactile switches with a strong bump and satisfying sound.', 35.00, 10, 'https://i.postimg.cc/DfPfSyYj/32.jpg', 7),
-('SW005', 'Gateron Oil King Switches (70 pcs)', 'Smooth linear switches with a deep, satisfying sound.', 40.00, 10, 'https://i.postimg.cc/zvzrCKPd/39.jpg', 7),
-('SW006', 'GATERON BLUE G PRO 3.0 (LUBED) Mechanical Keyboard Switch', 'Gateron Blue G Pro 3.0 (Lubed) は、クリッキータイプのメカニカルスイッチで、押すたびに明確なタクタイルフィードバックと爽快なクリック音を提供します。  工場出荷時から潤滑済み（factory-lubed）のため、キーストロークがスムーズで、スプリングの雑音も軽減されています。  ナイロンハウジングとPOMステムを採用しており、耐久性に優れ、安定した動作を実現します。', 25.00, 5, 'https://postimg.cc/56jr57D1', 7);
+('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 8, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1),
+('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 3200000.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2),
+('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 7500000.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2),
+('KB003', 'KBD8X MKIII Keyboard', 'A beloved full-sized mechanical keyboard featuring top mount design and premium aluminum construction. Now at half price, it\'s a steal for serious keyboard builders.', 7800000.00, 9, 'https://i.postimg.cc/JnhynC7d/4.jpg', 2),
+('KB004', 'Magnum65', 'A 65% layout keyboard with a bold design and exceptional build quality. The Magnum65 is for those who want a compact form factor without compromising on performance.', 1250000.00, 7, 'https://i.postimg.cc/sfqBVLkw/5.jpg', 2),
+('KB005', 'Quartz Stone Wrist Rest', 'A solid quartz wrist rest designed to offer comfort and elegance. Its cool, stone finish adds a premium touch to your keyboard setup.', 650000.00, 8, 'https://i.postimg.cc/jSQC4SLF/7.jpg', 2),
+('KB006', 'Odin 75 Hot-swap Keyboard with PBTfans Courage red', 'A ready-to-use Odin 75 keyboard with bold Courage Red keycaps. Hot-swap sockets make switch swapping easy without soldering.', 5750000.00, 10, 'https://i.postimg.cc/bwH9Mn60/17.jpg', 2),
+('KB007', 'Keychron K8 Wireless', 'A tenkeyless wireless mechanical keyboard compatible with Mac and Windows.', 1300000.00, 9, 'https://i.postimg.cc/mrPhMfFc/21.jpg', 2),
+('KB008', 'Akko 3068B Plus', 'A compact 65% keyboard with wireless connectivity and hot-swappable switches.', 1450000.00, 8, 'https://i.postimg.cc/0Nhj0WpV/22.png', 2),
+('KB009', 'Ducky One 3 Mini', 'A 60% keyboard known for vibrant colors and premium build.', 1900000.00, 8, 'https://i.postimg.cc/vB9Bqrhb/23.jpg', 2),
+('KB010', 'Mode Sonnet Keyboard', 'A custom keyboard with a sleek design and premium materials.', 4800000.00, 10, 'https://i.postimg.cc/XqbvTr1F/25.jpg', 2),
+('KB011', 'Keychron Q1 V2', 'A customizable 75% keyboard with QMK/VIA support.', 2800000.00, 10, 'https://i.postimg.cc/KjDYFmCW/26.jpg', 2),
+('KB012', 'Ikki68 Aurora', 'A popular entry-level custom keyboard kit.', 2150000.00, 10, 'https://i.postimg.cc/J7N0jQtQ/27.jpg', 2),
+('KB013', 'MelGeek Mojo68', 'A semi-transparent wireless keyboard with customizable layout.', 3600000.00, 10, 'https://i.postimg.cc/X7NjdSRV/33.jpg', 2),
+('KB014', 'NK65 Entry Edition', 'A budget-friendly 65% mechanical keyboard with a polycarbonate case.', 1500000.00, 10, 'https://i.postimg.cc/ydzBNwhC/36.jpg', 2),
+('KB015', 'Keychron V4', 'A budget 60% keyboard with QMK/VIA support.', 1100000.00, 10, 'https://i.postimg.cc/43cssJ91/37.jpg', 2),
+('KB016', 'Ajazz AK966', '96% layout wireless mechanical keyboard with knob.', 1950000.00, 10, 'https://i.postimg.cc/ZRFmvVjB/38.jpg\r\n', 2),
+('KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 2300000.00, 10, 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2),
+('KB018', 'Rama M65-B', 'High-end aluminum 65% keyboard with elegant design.', 5800000.00, 10, 'https://i.postimg.cc/Qd2Z6RyK/41.jpg', 2),
+('KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 3700000.00, 10, 'https://i.postimg.cc/6QCJFYkj/42.jpg', 2),
+('KB020', 'Drop ALT Keyboard', 'Compact mechanical keyboard with hot-swap sockets.', 2900000.00, 10, 'https://i.postimg.cc/bNFhnG0T/43.jpg', 2),
+('KB021', 'Varmilo VA87M', 'Tenkeyless keyboard with a variety of themes and switches.', 2250000.00, 10, 'https://i.postimg.cc/vZgdtQ3d/44.jpg', 2),
+('KB022', 'Zoom65 V2', 'A versatile 65% keyboard with wireless features.', 2850000.00, 10, 'https://i.postimg.cc/63wJKCw9/45.jpg', 2),
+('KB023', 'MelGeek Pixel Keyboard', 'A customizable Lego-style keyboard.', 4200000.00, 10, 'https://i.postimg.cc/Jnqwzt4j/46.jpg', 2),
+('KB024', 'IDOBAO ID80', 'Gasket-mounted keyboard with a unique acrylic body.', 3000000.00, 10, 'https://i.postimg.cc/Zn716gNR/47.jpg', 2),
+('KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 2100000.00, 10, 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 2),
+('KB026', 'Royal Kludge RK61', 'Budget 60% wireless mechanical keyboard.', 800000.00, 10, 'https://i.postimg.cc/RCg5r3YB/51.jpg', 2),
+('KC001', 'Circus PGA Profile Keycaps', 'A vibrant and playful set of PGA profile keycaps inspired by circus aesthetics. Perfect for mechanical keyboard enthusiasts looking to add a burst of color and uniqueness to their setup.', 1250000.00, 10, 'https://i.postimg.cc/zBPyH2VD/1.jpg', 3),
+('KC002', 'Dusk 67 with PBTfans Inkdrop', 'A beautifully themed 65% keyboard featuring the Dusk 67 case and PBTfans Inkdrop keycaps. This bundle is perfect for those who want a cohesive, stunning setup.', 3300000.00, 10, 'https://i.postimg.cc/WpC8JTFZ/13.jpg', 3),
+('KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 4000000.00, 10, 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 3),
+('KC004', 'KBD8X MKIII HE Gaming Keyboard with PBTfans Blush', 'A performance-focused version of the KBD8X MKIII featuring Hall Effect switches for rapid input and PBTfans Blush keycaps for soft, pastel aesthetics.', 4200000.00, 10, 'https://i.postimg.cc/HWXcBgvX/18.jpg', 3),
+('KC005', 'GMK Red Samurai Keycap Set', 'A premium GMK keycap set inspired by traditional samurai aesthetics.', 2400000.00, 10, 'https://i.postimg.cc/SKSfpK5B/19.jpg', 3),
+('KC006', 'KAT Milkshake Keycap Set', 'A colorful pastel keycap set with a unique KAT profile.', 1750000.00, 9, 'https://i.postimg.cc/c4DsckWf/34.jpg', 3),
+('KC007', 'SA Bliss Keycap Set', 'A vibrant SA profile keycap set inspired by serene aesthetics.', 2100000.00, 10, 'https://i.postimg.cc/0yFPT6bQ/35.jpg', 3),
+('KC008', 'GMK Olivia Keycap Set', 'Elegant pink and black themed GMK keycap set.', 2400000.00, 10, 'https://i.postimg.cc/zXQsBs52/49.png', 3),
+('KK001', 'Tofu60 Redux Plate', 'A compatible plate for the Tofu60 Redux case, offering improved rigidity and mounting flexibility. Great for customizing your typing feel.', 320000.00, 10, 'https://i.postimg.cc/L6PJhTRR/6.jpg', 4),
+('KK002', 'KBD67 Lite R4 Mechanical Keyboard Kit', 'A budget-friendly yet high-performing 65% keyboard kit. Ideal for newcomers and veterans alike, with hot-swap functionality and great acoustics.', 1900000.00, 10, 'https://i.postimg.cc/2SfVWZ8W/8.jpg', 4),
+('KK003', 'KBDfans Odin 75 Mechanical Keyboard Kit', 'A compact 75% layout keyboard with a stylish and functional design. The Odin 75 offers great balance between form and usability.', 3800000.00, 10, 'https://i.postimg.cc/mrLkXW92/9.jpg', 4),
+('KK004', 'Sebas Keyboard kit', 'A stylish and sturdy keyboard kit designed with premium materials. Its layout and build make it suitable for both work and play.', 3450000.00, 10, 'https://i.postimg.cc/2jVT6V6m/12.jpg', 4),
+('KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 1900000.00, 10, 'https://i.postimg.cc/pyMXKwxv/14.jpg', 4),
+('KK006', 'Margo Case', 'A uniquely designed keyboard case with gentle curves and premium anodization. A great choice for custom keyboard builds looking to stand out.', 2150000.00, 10, 'https://i.postimg.cc/9F9pdKZn/15.jpg', 4),
+('KK007', 'GMMK Pro Barebone', 'A 75% layout mechanical keyboard with a rotary knob and aluminum body.', 2750000.00, 10, 'https://i.postimg.cc/0NVd5s1b/20.jpg', 4),
+('KK008', 'Tofu65 Kit', 'Aluminum 65% DIY keyboard kit with customizable options.', 2700000.00, 10, 'https://i.postimg.cc/m2Vr52Yz/28.jpg', 4),
+('KK009', 'KBD75 V3 Kit', '75% aluminum keyboard with refined layout and features.', 2950000.00, 10, 'https://i.postimg.cc/Kjv6kFRw/48.jpg', 4),
+('KP001', 'Taco Pad', 'A novelty macropad shaped like a taco. Fun, quirky, and useful for macros, shortcuts, or artisan display. A must-have desk companion for enthusiasts.', 1450000.00, 10, 'https://i.postimg.cc/C5BzGCqG/3.jpg', 5),
+('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 10, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6),
+('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 3700000.00, 10, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7),
+('SW002', 'NovelKeys Cream Switches (70 pcs)', 'Smooth linear switches with self-lubricating POM housing.', 900000.00, 10, 'https://i.postimg.cc/jS5j00c8/29.jpg', 7),
+('SW003', 'Akko CS Jelly Purple (45 pcs)', 'Tactile mechanical switches with a unique jelly-like stem.', 320000.00, 10, 'https://i.postimg.cc/SKYNR6wC/30.jpg', 7),
+('SW004', 'Glorious Panda Switches (36 pcs)', 'Tactile switches with a strong bump and satisfying sound.', 550000.00, 10, 'https://i.postimg.cc/DfPfSyYj/32.jpg', 7),
+('SW005', 'Gateron Oil King Switches (70 pcs)', 'Smooth linear switches with a deep, satisfying sound.', 650000.00, 9, 'https://i.postimg.cc/zvzrCKPd/39.jpg', 7),
+('SW006', 'GATERON BLUE G PRO 3.0 (LUBED) Mechanical Keyboard Switch', 'Gateron Blue G Pro 3.0 (Lubed) は、クリッキータイプのメカニカルスイッチで、押すたびに明確なタクタイルフィードバックと爽快なクリック音を提供します。  工場出荷時から潤滑済み（factory-lubed）のため、キーストロークがスムーズで、スプリングの雑音も軽減されています。  ナイロンハウジングとPOMステムを採用しており、耐久性に優れ、安定した動作を実現します。', 400000.00, 5, 'https://postimg.cc/56jr57D1', 7);
 
 -- --------------------------------------------------------
 
@@ -299,6 +309,13 @@ CREATE TABLE `vouchers` (
   `status` enum('aktif','terpakai') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'aktif',
   `keterangan` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `vouchers`
+--
+
+INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupiah`, `tgl_dibuat`, `tgl_kadaluarsa`, `status`, `keterangan`) VALUES
+(1, 10, 'STYRKF4087D', 19868, '2025-10-18 12:41:44', '2025-11-01 05:41:44', 'terpakai', 'Voucher Selamat Datang');
 
 --
 -- Indexes for dumped tables
@@ -388,7 +405,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT untuk tabel `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT untuk tabel `category`
@@ -400,19 +417,19 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT untuk tabel `customer`
 --
 ALTER TABLE `customer`
-  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT untuk tabel `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `order_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `order_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT untuk tabel `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT untuk tabel `order_tracking`
@@ -424,13 +441,13 @@ ALTER TABLE `order_tracking`
 -- AUTO_INCREMENT untuk tabel `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT untuk tabel `vouchers`
 --
 ALTER TABLE `vouchers`
-  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
