@@ -2,6 +2,65 @@
 include 'header.php';
 ?>
 
+<?php
+// --- COPY DARI SINI ---
+$recommendations_for_user = [];
+if (isset($_SESSION['kd_cs'])) {
+    $customer_id = $_SESSION['kd_cs'];
+
+    // 1. Cari order terakhir dari customer yang sedang login
+    $order_stmt = $conn->prepare("SELECT order_id FROM orders WHERE customer_id = ? ORDER BY tgl_order DESC LIMIT 1");
+    if ($order_stmt) {
+        $order_stmt->bind_param("i", $customer_id);
+        $order_stmt->execute();
+        $order_result = $order_stmt->get_result();
+        
+        if ($order_result->num_rows > 0) {
+            $last_order = $order_result->fetch_assoc();
+            $last_order_id = $last_order['order_id'];
+
+            // 2. Cari semua kategori produk yang ada di order terakhir itu
+            $categories_in_last_order = [];
+            $cat_stmt = $conn->prepare("SELECT DISTINCT p.category_id FROM order_details od JOIN products p ON od.product_id = p.product_id WHERE od.order_id = ?");
+            if ($cat_stmt) {
+                $cat_stmt->bind_param("i", $last_order_id);
+                $cat_stmt->execute();
+                $cat_result = $cat_stmt->get_result();
+                while ($cat_row = $cat_result->fetch_assoc()) {
+                    $categories_in_last_order[] = $cat_row['category_id'];
+                }
+                $cat_stmt->close();
+            }
+
+            // 3. Jika customer membeli Keyboard (category_id = 2), rekomendasikan aksesoris
+            if (in_array(2, $categories_in_last_order)) {
+                $accessory_categories = [1, 3, 4, 5, 6, 7]; // Case, Keycaps, Kit, Keypad, Stabilizers, Switch
+                $recommend_categories = array_diff($accessory_categories, $categories_in_last_order);
+                
+                if (!empty($recommend_categories)) {
+                    $placeholders = implode(',', array_fill(0, count($recommend_categories), '?'));
+                    $types = str_repeat('i', count($recommend_categories));
+                    
+                    // 4. Ambil 3 produk acak dari kategori aksesoris
+                    $rec_stmt = $conn->prepare("SELECT * FROM products WHERE category_id IN ($placeholders) ORDER BY RAND() LIMIT 3");
+                    if ($rec_stmt) {
+                        $rec_stmt->bind_param($types, ...$recommend_categories);
+                        $rec_stmt->execute();
+                        $rec_result = $rec_stmt->get_result();
+                        while ($rec_product = $rec_result->fetch_assoc()) {
+                            $recommendations_for_user[] = $rec_product;
+                        }
+                        $rec_stmt->close();
+                    }
+                }
+            }
+        }
+        $order_stmt->close();
+    }
+}
+// --- SAMPAI SINI ---
+?>
+
 <html lang="en">
 
 <head>
@@ -56,6 +115,49 @@ include 'header.php';
 
 		<h2 id="judul">Our Products</h2>
 		<div class="text-center">
+			<?php if (!empty($recommendations_for_user)): ?>
+<div class="container_produk mb-4">
+    <div class="text-center">
+        <h2 class="section-heading text-uppercase">Rekomendasi Untuk Anda</h2>
+    </div>
+    <div class="row">
+        <?php foreach ($recommendations_for_user as $rec_row): ?>
+            <div class="col-sm-6 col-md-4">
+                <div class="thumbnail">
+                    <a href="#" class="product-detail" data-bs-toggle="modal" data-bs-target="#detailModal"
+                       data-id="<?= $rec_row['product_id']; ?>"
+                       data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
+                       data-harga="<?= $rec_row['harga']; ?>"
+                       data-stok="<?= $rec_row['stok']; ?>"
+                       data-kategori="<?= $rec_row['category_id']; ?>"
+                       data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
+                       data-gambar="<?= $rec_row['link_gambar']; ?>">
+                        <img id="gambar" src="<?= $rec_row['link_gambar']; ?>" alt="<?= $rec_row['nama_produk']; ?>">
+                    </a>
+                    <div class="caption">
+                        <h3><?= $rec_row['nama_produk']; ?></h3>
+                        <h4>Rp <?= number_format($rec_row['harga'], 0, ',', '.'); ?></h4>
+                    </div>
+                    <div class="button">
+                        <?php
+                        $rec_stok = (int)$rec_row['stok'];
+                        if ($rec_stok < 1) {
+                            echo '<div class=""><button class="btn btn-secondary btn-block" disabled>SOLD OUT</button></div>';
+                        } else {
+                            if (isset($_SESSION['kd_cs'])) {
+                                echo '<div class=""><a href="add_to_cart.php?product_id=' . $rec_row['product_id'] . '" class="btn btn-success btn-block" role="button"><i class="glyphicon glyphicon-shopping-cart"></i> Add to cart</a></div>';
+                            } else {
+                                echo '<div class=""><a href="#" class="btn btn-success btn-block" role="button"><i class="glyphicon glyphicon-shopping-cart"></i> Login to Add</a></div>';
+                            }
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 			<h2 class="section-heading text-uppercase">Recommendations</h2>
 		</div>
 		<div class="row">
