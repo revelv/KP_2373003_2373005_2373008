@@ -49,7 +49,7 @@ $stmt->bind_param("sssssss", $nama, $hashed_password, $email, $no_telepon, $prov
 if ($stmt->execute()) {
     $newUserId = $conn->insert_id;
 
-    $pilihanNominal = [5000, 7500, 10000, 12500, 15000, 20000];
+    $pilihanNominal = [10000];
     $nilaiVoucher = $pilihanNominal[array_rand($pilihanNominal)];
     $voucher = buatVoucherDb($newUserId, $nilaiVoucher, 14, "Voucher Selamat Datang");
 
