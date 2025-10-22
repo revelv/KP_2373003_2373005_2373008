@@ -10,6 +10,8 @@ if ($conn->connect_error) {
 
 $nama = $_POST['nama'];
 $email = $_POST['email'];
+$provinsi = $_POST['provinsi'];
+$kota = $_POST['kota'];
 $alamat = $_POST['alamat'];
 $no_telepon = $_POST['telp'];
 $password = $_POST['password'];
@@ -41,8 +43,8 @@ if (!empty($errors)) {
 
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-$stmt = $conn->prepare("INSERT INTO customer (nama, password, email, no_telepon, alamat) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("sssss", $nama, $hashed_password, $email, $no_telepon, $alamat);
+$stmt = $conn->prepare("INSERT INTO customer (nama, password, email, no_telepon, provinsi, kota, alamat) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$stmt->bind_param("sssssss", $nama, $hashed_password, $email, $no_telepon, $provinsi, $kota, $alamat);
 
 if ($stmt->execute()) {
     $newUserId = $conn->insert_id;

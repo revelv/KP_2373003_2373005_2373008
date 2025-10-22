@@ -3,7 +3,7 @@ include 'header.php';
 ?>
 
 <?php
-// --- COPY DARI SINI ---
+
 $recommendations_for_user = [];
 if (isset($_SESSION['kd_cs'])) {
     $customer_id = $_SESSION['kd_cs'];

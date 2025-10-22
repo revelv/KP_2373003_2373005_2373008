@@ -215,6 +215,22 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
+                        <label for="provinsi">Provinsi</label>
+                        <select id="provinsi" name="provinsi" class="form-control" required>
+                            <option value="">-- Pilih Provinsi --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="kota">Kota</label>
+                        <select id="kota" name="kota" class="form-control" required disabled>
+                            <option value="">-- Pilih Provinsi Dahulu --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
                         <label for="alamat">Alamat</label>
                         <input type="text" id="alamat" name="alamat" class="form-control" required
                             value="<?= htmlspecialchars($old['alamat'] ?? '') ?>" placeholder="Alamat lengkap">
@@ -241,6 +257,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                             placeholder="Ketik ulang password">
                     </div>
                 </div>
+
             </div>
 
             <div class="form-actions">
@@ -250,5 +267,111 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
         </form>
     </div>
 </body>
+
+<script>
+    // Auto-load provinsi saat halaman siap
+    document.addEventListener('DOMContentLoaded', async () => {
+        const selProv = document.getElementById('provinsi');
+        if (!selProv) return;
+
+        try {
+            const res = await fetch('../../user/rajaongkir/get-province.php', {
+                cache: 'no-store'
+            });
+            const text = await res.text();
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                selProv.innerHTML = `<option value="">Gagal parsing JSON: ${e.message}</option>`;
+                console.error('Response:', text);
+                return;
+            }
+
+            const list = Array.isArray(data) ? data : (data.data || []);
+
+            if (!Array.isArray(list) || list.length === 0) {
+                selProv.innerHTML = `<option value="">Tidak ada data provinsi</option>`;
+                return;
+            }
+
+            // Clear & isi ulang
+            selProv.innerHTML = `<option value="">-- pilih provinsi --</option>`;
+            for (const p of list) {
+                const id = p.id ?? p.province_id ?? '';
+                const name = p.name ?? p.province ?? '';
+                if (!id || !name) continue;
+
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = name;
+                selProv.appendChild(opt);
+            }
+
+            <?php if (!empty($old['provinsi'])): ?>
+                selProv.value = <?= json_encode($old['provinsi']) ?>;
+            <?php endif; ?>
+
+        } catch (err) {
+            selProv.innerHTML = `<option value="">Fetch error: ${err.message}</option>`;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const selProv = document.getElementById('provinsi');
+        const selKota = document.getElementById('kota');
+
+        async function loadCities(provinceId) {
+            selKota.innerHTML = `<option value="">(loading…)</option>`;
+            selKota.disabled = true;
+            try {
+                const res = await fetch('../../user/rajaongkir/get-cities.php?province=' + encodeURIComponent(provinceId), {
+                    cache: 'no-store'
+                });
+                const data = await res.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    selKota.innerHTML = `<option value="">(tidak ada data)</option>`;
+                    return;
+                }
+                selKota.innerHTML = `<option value="">-- Pilih Kota --</option>`;
+                for (const c of data) {
+                    const id = c.id ?? '';
+                    const name = c.name ?? '';
+                    if (!id || !name) continue;
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = name + (c.zip_code && c.zip_code !== '0' ? ` (${c.zip_code})` : '');
+                    selKota.appendChild(opt);
+                }
+                selKota.disabled = false;
+
+                // (opsional) set nilai lama dari PHP session kalau ada
+                <?php if (!empty($old['kota'])): ?>
+                    selKota.value = <?= json_encode($old['kota']) ?>;
+                <?php endif; ?>
+            } catch (e) {
+                selKota.innerHTML = `<option value="">Error: ${e.message}</option>`;
+            }
+        }
+
+        // ketika provinsi dipilih
+        selProv?.addEventListener('change', () => {
+            const pid = selProv.value;
+            if (!pid) {
+                selKota.innerHTML = `<option value="">-- Pilih Provinsi Dulu --</option>`;
+                selKota.disabled = true;
+                return;
+            }
+            loadCities(pid);
+        });
+
+        // kalau halaman reload dengan provinsi sudah terpilih (old value), langsung load kotanya
+        <?php if (!empty($old['provinsi'])): ?>
+            if (selProv.value) loadCities(selProv.value);
+        <?php endif; ?>
+    });
+</script>
+
 
 </html>
