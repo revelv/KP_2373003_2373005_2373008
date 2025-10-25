@@ -50,109 +50,168 @@ if (isset($_GET['logout'])) {
     <link rel="stylesheet" href="./css/header.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
-</head>
 
-<body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container_header">
-            <a class="navbar-brand" href="./HOME/index.php">
-                <img src="https://i.postimg.cc/855ZSty7/no-bg.png" alt="Styrk Industries">
-            </a>
+    <style>
+        .floating-wa {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background-color: #25D366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: transform 0.2s ease;
+        }
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-                aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="bi bi-list" style="color: var(--primary-yellow); font-size: 2rem;"></i>
-            </button>
+        .floating-wa:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head> ```
 
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0" style="gap: 2rem;">
-                    <li class="nav-item">
-                        <a class="nav-link" href="./HOME/index.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./produk.php">Products</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./HOME/index.php#about">About Us</a>
-                    </li>
-                    <?php
-                    $cart_count = 0;
-                    if (isset($_SESSION['kd_cs'])) {
-                        $kode_cs = $_SESSION['kd_cs'];
-                        $result = mysqli_query($conn, "SELECT COUNT(cart_id) as count from carts where customer_id ='$kode_cs'");
-                        if ($result) {
-                            $row = mysqli_fetch_assoc($result);
-                            $cart_count = $row['count'];
+---
+
+#### 2. Tambahkan HTML (Tombolnya)
+
+Copy-paste kode HTML ini **sebelum** tag penutup `</body>` di file `header.php` kamu. (Bisa ditaruh setelah script Bootstrap).
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<a href="https://wa.me/628xxxxxxxxxx?text=Halo%20Styrk%20Industries%2C%20saya%20mau%20bertanya..."
+    class="floating-wa"
+    target="_blank">
+    <i class="bi bi-whatsapp"></i>
+</a>
+</body> ```
+
+---
+
+### ⚠️ **PENTING: Yang Harus Kamu Ganti**
+
+Setelah di-copy, ada 2 hal yang **WAJIB** kamu sesuaikan di dalam tag `<a>`:
+
+    1. **Ganti Nomor HP:**
+    * Ubah `628xxxxxxxxxx` dengan nomor WhatsApp yang terdaftar di Fonnte.
+    * **Formatnya harus** `62` (kode negara), lalu nomor HP tanpa `0` di depan. (Contoh: `628123456789`).
+
+    2. **Ganti Teks Otomatis:**
+    * Teks `Halo%20Styrk%20Industries%2C%20saya%20mau%20bertanya...` adalah pesan yang akan otomatis terisi di WA user.
+    * `%20` itu artinya spasi, `%2C` itu koma.
+    * Kamu bisa ganti teksnya. Kalau mau gampang, tulis aja di URL encoder (cari di Google) terus copy hasilnya.
+    * Teks ini nanti bisa kamu jadikan *trigger* di Fonnte. Misalnya, jika Fonnte menerima pesan yang diawali "Halo Styrk", maka bot Fonnte akan otomatis membalas.
+
+    Setelah kamu simpan `header.php`, tombol WA ini akan otomatis muncul di semua halaman yang nge-load header itu.
+    </head>
+
+    <body>
+        <nav class="navbar navbar-expand-lg">
+            <div class="container_header">
+                <a class="navbar-brand" href="./HOME/index.php">
+                    <img src="https://i.postimg.cc/855ZSty7/no-bg.png" alt="Styrk Industries">
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+                    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list" style="color: var(--primary-yellow); font-size: 2rem;"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0" style="gap: 2rem;">
+                        <li class="nav-item">
+                            <a class="nav-link" href="./HOME/index.php">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./produk.php">Products</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./HOME/index.php#about">About Us</a>
+                        </li>
+                        <?php
+                        $cart_count = 0;
+                        if (isset($_SESSION['kd_cs'])) {
+                            $kode_cs = $_SESSION['kd_cs'];
+                            $result = mysqli_query($conn, "SELECT COUNT(cart_id) as count from carts where customer_id ='$kode_cs'");
+                            if ($result) {
+                                $row = mysqli_fetch_assoc($result);
+                                $cart_count = $row['count'];
+                            }
                         }
-                    }
-                    ?>
-                    <li class="nav-item">
-                        <a class="nav-link" href="./cart.php">
-                            <i class="bi-cart-fill me-2"></i>
-                            Carts [<?= $cart_count ?>]
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <?php if (isset($_SESSION['email'])): ?>
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-fill me-2"></i>
-                                <?= $_SESSION['nama'] ?>
+                        ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="./cart.php">
+                                <i class="bi-cart-fill me-2"></i>
+                                Carts [<?= $cart_count ?>]
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-circle me-2"></i>Profil Saya</a></li>
-                                <li><a class="dropdown-item" href="riwayat_belanja.php"><i class="bi bi-receipt me-2"></i>Riwayat Belanja</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item" href="?logout=1"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-                            </ul>
-                        <?php else: ?>
-                            <a class="nav-link dropdown-toggle" href="#" id="loginDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>
-                                Login
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loginDropdown">
-                                <li>
-                                    <div class="login-form">
-                                        <form method="post" action="">
-                                            <div class="mb-3">
-                                                <label for="email" class="form-label">Email</label>
-                                                <input type="text" class="form-control" id="username" name="username" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="password" class="form-label">Password</label>
-                                                <input type="password" class="form-control" id="password" name="password" required>
-                                            </div>
-                                            <?php if (isset($login_error)): ?>
-                                                <div class="login-error"><?= $login_error ?>
-                                                    <a href="forgot_password.php">forgot password?</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <?php if (isset($_SESSION['kd_cs'])): ?>
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-fill me-2"></i>
+                                    <?= $_SESSION['nama'] ?>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-circle me-2"></i>Profil Saya</a></li>
+                                    <li><a class="dropdown-item" href="riwayat_belanja.php"><i class="bi bi-receipt me-2"></i>Riwayat Belanja</a></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item" href="?logout=1"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                                </ul>
+                            <?php else: ?>
+                                <a class="nav-link dropdown-toggle" href="#" id="loginDropdown" role="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                    Login
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loginDropdown">
+                                    <li>
+                                        <div class="login-form">
+                                            <form method="post" action="">
+                                                <div class="mb-3">
+                                                    <label for="email" class="form-label">Email</label>
+                                                    <input type="text" class="form-control" id="username" name="username" required>
                                                 </div>
+                                                <div class="mb-3">
+                                                    <label for="password" class="form-label">Password</label>
+                                                    <input type="password" class="form-control" id="password" name="password" required>
+                                                </div>
+                                                <?php if (isset($login_error)): ?>
+                                                    <div class="login-error"><?= $login_error ?>
+                                                        <a href="forgot_password.php">forgot password?</a>
+                                                    </div>
 
-                                            <?php endif; ?>
-                                            <button type="submit" name="login" class="btn btn-warning">
-                                                <i class="bi bi-box-arrow-in-right me-2"></i>
-                                                Login
-                                            </button>
-                                        </form>
-                                        <div class="text-center mt-3">
-                                            <a href="./Login/registrasi.php" style="color: var(--black); text-decoration: none; font-size: 1.1rem;">
-                                                <i class="bi bi-person-plus me-2"></i>
-                                                Belum punya akun? Daftar
-                                            </a>
+                                                <?php endif; ?>
+                                                <button type="submit" name="login" class="btn btn-warning">
+                                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                                    Login
+                                                </button>
+                                            </form>
+                                            <div class="text-center mt-3">
+                                                <a href="./Login/registrasi.php" style="color: var(--black); text-decoration: none; font-size: 1.1rem;">
+                                                    <i class="bi bi-person-plus me-2"></i>
+                                                    Belum punya akun? Daftar
+                                                </a>
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        <?php endif; ?>
-                    </li>
-                </ul>
+                                    </li>
+                                </ul>
+                            <?php endif; ?>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
 
 </html>

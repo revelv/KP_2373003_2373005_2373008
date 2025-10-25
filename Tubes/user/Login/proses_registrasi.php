@@ -49,6 +49,11 @@ $stmt->bind_param("sssssss", $nama, $hashed_password, $email, $no_telepon, $prov
 if ($stmt->execute()) {
     $newUserId = $conn->insert_id;
 
+    $_SESSION['kd_cs'] = $newUserId;
+    $_SESSION['nama'] = $nama;
+    $_SESSION['email'] = $email;
+
+
     $pilihanNominal = [10000];
     $nilaiVoucher = $pilihanNominal[array_rand($pilihanNominal)];
     $voucher = buatVoucherDb($newUserId, $nilaiVoucher, 14, "Voucher Selamat Datang");
@@ -64,11 +69,26 @@ if ($stmt->execute()) {
             <h2>Registrasi Berhasil!</h2>
             <p>Selamat datang, " . htmlspecialchars($nama) . ".</p>
             <p>Sebuah voucher selamat datang telah kami kirimkan ke email Anda.</p>
-            <p>Anda akan diarahkan ke halaman produk dalam 3 detik...</p>
+            <p>Anda akan diarahkan ke halaman produk dalam <span id='countdown'>3</span> detik...</p>
         </div>
     ";
 
-    header("Refresh: 3; url=../produk.php");
+    echo "
+        <script>
+            let seconds = 3;
+            const countdownElement = document.getElementById('countdown');
+            
+            const interval = setInterval(() => {
+                seconds--; // Kurangi 1 detik
+                countdownElement.textContent = seconds; // Update angka di layar
+                
+                if (seconds <= 0) {
+                    clearInterval(interval); // Hentikan hitungan
+                    window.location.href = '../produk.php'; // Redirect ke halaman produk
+                }
+            }, 1000); // Ulangi setiap 1000ms (1 detik)
+        </script>
+    ";
 } else {
     echo "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
     echo "<a href='javascript:history.back()'>Kembali</a>";
