@@ -1,6 +1,9 @@
 <?php
+
 session_start();
 include '../koneksi.php';
+
+
 
 // TAMBAHAN: Validasi & Ambil data item yang dipilih dari cart.php
 // Cek apakah ada data 'selected_items' yang dikirim dari form sebelumnya
@@ -42,7 +45,87 @@ $total = 0;
     <link rel="stylesheet" href="./css/payment.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* 1. Biar judul FAQ kelihatan */
+        footer h2,
+        footer h2.text-center {
+            color: #fff !important;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: .03em;
+            text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Matikan garis kuning blur lama di atas judul (yang sekarang nongol di kiri) */
+        footer h2.text-center::before,
+        footer h2.text-center::after {
+            content: none !important;
+        }
+
+        /* 2. Rapihin panel accordion biar gak ada garis kuning di setiap item */
+        footer .accordion {
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 8px;
+        }
+
+        /* hapus highlight/gradient kuning di border-top antar item */
+        footer .accordion-item {
+            background-color: #2a2d2f !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 4px !important;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
+            margin-bottom: .75rem;
+        }
+
+        /* hilangin garis kuning custom yang lo punya di bagian atas/bawah item */
+        footer .accordion-item::before,
+        footer .accordion-item::after {
+            content: none !important;
+        }
+
+        /* tombol pertanyaan */
+        footer .accordion-button {
+            background-color: #2a2d2f !important;
+            color: #f5f5f5 !important;
+            font-weight: 500;
+            border: 0 !important;
+            box-shadow: none !important;
+            padding: 1rem 1.25rem;
+        }
+
+        /* state kebuka */
+        footer .accordion-button:not(.collapsed) {
+            background-color: #34383c !important;
+            color: #d5b958 !important;
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* body jawaban */
+        footer .accordion-body {
+            background-color: #34383c !important;
+            color: #dcdcdc !important;
+            font-size: .9rem;
+            line-height: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* 3. ubah warna caret bootstrap (panah ▼ di kanan) */
+        footer .accordion-button::after {
+            filter: brightness(0) saturate(100%) invert(90%) sepia(28%) saturate(210%) hue-rotate(7deg) brightness(105%) contrast(97%);
+            /* hasilnya: putih kekuningan, bukan biru */
+            opacity: 0.9;
+        }
+
+        footer .accordion-button:not(.collapsed)::after {
+            transform: rotate(-180deg);
+        }
+    </style>
 </head>
+
 
 <body class="container mt-4">
 
@@ -52,7 +135,8 @@ $total = 0;
     </div>
 
     <div class="mb-4">
-        <h4>Barang yang akan Dibayar</h4> <table class="table table-bordered">
+        <h4>Barang yang akan Dibayar</h4>
+        <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>Gambar</th>
@@ -144,7 +228,7 @@ $total = 0;
         let qrTimer, qrContent = "",
             paymentChecked = false;
         const grandTotal = <?= $grand_total ?>;
-        
+
         // TAMBAHAN: Kirim data item terpilih ke Javascript agar bisa diteruskan ke checkout.php
         const selectedItems = <?= json_encode($selected_cart_ids); ?>;
 
@@ -242,6 +326,9 @@ $total = 0;
             }, 1000);
         }
     </script>
+    <?php
+    include 'footer.php';
+    ?>
 </body>
 
 </html>
