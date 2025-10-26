@@ -1,5 +1,5 @@
 <?php
-include 'header.php'; // Pastikan header.php sudah punya koneksi $conn
+include 'header.php';
 
 // Pastikan user sudah login untuk bisa akses forum
 if (!isset($_SESSION['kd_cs'])) {
@@ -14,55 +14,98 @@ $query_threads = "
            (SELECT MAX(p.created_at) FROM posts p WHERE p.thread_id = t.thread_id) as last_reply_time
     FROM threads t
     JOIN customer c ON t.customer_id = c.customer_id
-    ORDER BY COALESCE(last_reply_time, t.created_at) DESC -- Urutkan berdasarkan aktivitas terakhir
+    ORDER BY COALESCE(last_reply_time, t.created_at) DESC
 ";
 $result_threads = mysqli_query($conn, $query_threads);
-
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forum Komunitas - Styrk Industries</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
+        :root {
+            --gold: #ffdc73;
+            /* sebelumnya #d4af37 */
+            --dark-gray: #1f1f1f;
+        }
+
         body {
             background-color: #f8f9fa;
         }
 
         .forum-container {
             max-width: 900px;
-            margin: 30px auto;
+            margin: 40px auto;
             background: #fff;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-new-thread {
+            background-color: var(--gold);
+            border: none;
+            color: var(--dark-gray);
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-new-thread:hover {
+            background-color: #ffe58a;
+            /* sedikit lebih terang saat hover */
+            transform: translateY(-1px);
+        }
+
+        /* === THREAD LIST === */
+        .thread-list {
+            margin-top: 20px;
         }
 
         .thread-item {
-            border-bottom: 1px solid #eee;
-            padding: 15px 0;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.25s ease-in-out;
+            cursor: pointer;
         }
 
-        .thread-item:last-child {
-            border-bottom: none;
+        .thread-item:hover {
+            border-color: var(--gold);
+            box-shadow: 0 6px 18px rgba(212, 175, 55, 0.15);
+            transform: translateY(-2px);
+            background-color: #fffbea;
+        }
+
+        .thread-info {
+            flex: 1;
+        }
+
+        .thread-title {
+            margin-bottom: 6px;
         }
 
         .thread-title a {
             text-decoration: none;
-            color: #333;
+            color: #212529;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
+            transition: color 0.2s ease;
         }
 
-        .thread-title a:hover {
+        .thread-item:hover .thread-title a {
             color: var(--gold);
         }
 
@@ -73,11 +116,12 @@ $result_threads = mysqli_query($conn, $query_threads);
 
         .thread-stats {
             text-align: right;
-            min-width: 100px;
+            min-width: 120px;
         }
 
         .replies {
             font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .last-reply {
@@ -85,16 +129,16 @@ $result_threads = mysqli_query($conn, $query_threads);
             color: #6c757d;
         }
 
-        .btn-new-thread {
-            background-color: var(--gold);
-            border: none;
-            color: var(--dark-gray);
-        }
+        @media (max-width: 600px) {
+            .thread-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
 
-        .btn-new-thread:hover {
-            background-color: #c49a2a;
-            color: var(--black);
-           
+            .thread-stats {
+                text-align: left;
+            }
         }
     </style>
 </head>
@@ -103,7 +147,9 @@ $result_threads = mysqli_query($conn, $query_threads);
 
     <div class="forum-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-chat-dots-fill me-2"></i> Forum Komunitas Keyboard</h2>
+            <h2 class="fw-semibold mb-0">
+                <i class="bi bi-chat-dots-fill me-2"></i> Forum Komunitas Keyboard
+            </h2>
             <a href="create_thread_form.php" class="btn btn-new-thread">
                 <i class="bi bi-plus-lg me-1"></i> Buat Topik Baru
             </a>
@@ -112,7 +158,7 @@ $result_threads = mysqli_query($conn, $query_threads);
         <?php if ($result_threads && mysqli_num_rows($result_threads) > 0): ?>
             <div class="thread-list">
                 <?php while ($thread = mysqli_fetch_assoc($result_threads)): ?>
-                    <div class="thread-item">
+                    <div class="thread-item" onclick="window.location='thread.php?id=<?= $thread['thread_id']; ?>'">
                         <div class="thread-info">
                             <h5 class="thread-title mb-1">
                                 <a href="thread.php?id=<?= $thread['thread_id']; ?>">
@@ -135,7 +181,6 @@ $result_threads = mysqli_query($conn, $query_threads);
         <?php else: ?>
             <p class="text-center text-muted">Belum ada topik diskusi. Jadilah yang pertama!</p>
         <?php endif; ?>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

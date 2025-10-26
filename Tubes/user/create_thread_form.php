@@ -27,18 +27,37 @@ if (!isset($_SESSION['kd_cs'])) {
             margin: 30px auto;
             background: #fff;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
         }
 
+        /* Tombol submit cerah */
         .btn-submit-thread {
-            background-color: var(--gold);
             border: none;
-            color: var(--dark-gray);
+            background-color: #ffdc73;
+            color: #1f1f1f;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.2s ease-in-out;
         }
 
         .btn-submit-thread:hover {
-            background-color: #c49a2a;
+            background-color: #ffe58a;
+            transform: translateY(-1px);
+        }
+
+        /* Tombol batal */
+        .btn-secondary {
+            background-color: #e9ecef;
+            border: none;
+            color: #333;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #dee2e6;
         }
     </style>
 </head>

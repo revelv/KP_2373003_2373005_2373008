@@ -48,75 +48,276 @@ $result_posts = $stmt_posts->get_result();
 
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($thread['title']); ?> - Forum Komunitas</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
-        body { background-color: #f8f9fa; }
-        .thread-container { max-width: 900px; margin: 30px auto; }
-        .thread-header { background: #fff; padding: 20px; border-radius: 8px 8px 0 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-bottom: 1px solid #eee; }
-        .thread-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
-        .thread-meta { font-size: 0.9rem; color: #6c757d; }
-        .post-list { margin-top: 0; padding: 0; }
-        .post-item { background: #fff; padding: 20px; border-bottom: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-        .post-item:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
-        .post-author { font-weight: 600; color: var(--gold); }
-        .post-time { font-size: 0.8rem; color: #adb5bd; margin-left: 10px; }
-        .post-content { margin-top: 10px; line-height: 1.7; color: #495057; white-space: pre-wrap; /* Agar baris baru tampil */ }
-        .reply-form { background: #fff; padding: 30px; border-radius: 8px; margin-top: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .btn-submit-reply { background-color: var(--gold); border: none; color: #fff; }
-        .btn-submit-reply:hover { background-color: #c49a2a; }
+        :root {
+            --gold: #ffdc73;
+            /* sebelumnya #d4af37 */
+            --dark-gray: #1f1f1f;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .thread-container {
+            max-width: 900px;
+            margin: 30px auto 60px auto;
+        }
+
+        /* === CARD THREAD + POSTS === */
+        .thread-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-soft);
+            overflow: hidden;
+        }
+
+        .thread-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-soft);
+            background-color: #fff;
+        }
+
+        .thread-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #111827;
+            line-height: 1.3;
+        }
+
+        .thread-meta {
+            font-size: 0.9rem;
+            color: #6b7280;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 16px;
+        }
+
+        .thread-meta .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 999px;
+            background-color: #9ca3af;
+            display: inline-block;
+        }
+
+        .back-btn-small {
+            font-size: 0.8rem;
+            line-height: 1.2rem;
+            padding: 4px 10px;
+        }
+
+        /* === LIST POST === */
+        .post-list {
+            margin: 0;
+            padding: 0;
+        }
+
+        .post-item {
+            padding: 12px 20px;
+            /* lebih kecil biar nggak renggang */
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #fff;
+        }
+
+        .post-item:last-child {
+            border-bottom: none;
+        }
+
+        .post-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            /* kecilin juga biar rapat */
+        }
+
+        /* avatar bulat inisial */
+        .post-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            background-color: #111827;
+            background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,.2) 0%, rgba(0,0,0,0) 60%);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        } 
+
+        .post-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .post-headline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 8px 12px;
+        }
+
+        .post-author {
+            font-weight: 600;
+            color: #111827;
+            font-size: 0.95rem;
+        }
+
+        .post-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .post-content {
+            margin-top: 4px;
+            /* kecilin jarak dari nama ke isi */
+            line-height: 1.5;
+        }
+
+        /* === CARD REPLY FORM === */
+        .reply-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-soft);
+            margin-top: 24px;
+            padding: 24px;
+        }
+
+        .reply-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        textarea.form-control {
+            border-radius: 8px;
+        }
+
+        .btn-submit-reply {
+            background-color: var(--gold) !important;
+            border: none !important;
+            color: var(--dark-gray) !important;
+            font-weight: 600;
+            padding: 10px 16px !important;
+            border-radius: 8px !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            cursor: pointer !important;
+        }
+
+        .btn-submit-reply:hover {
+            filter: brightness(0.95);
+        }
     </style>
 </head>
+
 <body>
 
-<div class="thread-container">
-    <div class="thread-header">
-        <h1 class="thread-title"><?= htmlspecialchars($thread['title']); ?></h1>
-        <p class="thread-meta">
-            Dimulai oleh <?= htmlspecialchars($thread['author_name']); ?> • <?= date('d M Y, H:i', strtotime($thread['thread_created'])); ?>
-            <a href="community.php" class="ms-3 btn btn-sm btn-outline-secondary">← Kembali ke Forum</a>
-        </p>
-    </div>
+    <div class="thread-container">
 
-    <div class="post-list">
-        <?php if ($result_posts && mysqli_num_rows($result_posts) > 0): ?>
-            <?php while ($post = $result_posts->fetch_assoc()): ?>
-                <div class="post-item">
-                    <div class="post-header">
-                        <span class="post-author"><?= htmlspecialchars($post['author_name']); ?></span>
-                        <span class="post-time"><?= date('d M Y, H:i', strtotime($post['post_created'])); ?></span>
+        <!-- CARD THREAD + POSTS -->
+        <div class="thread-card">
+
+            <!-- HEADER THREAD -->
+            <div class="thread-header">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start align-items-stretch">
+                    <div class="me-md-3">
+                        <h1 class="thread-title"><?= htmlspecialchars($thread['title']); ?></h1>
+
+                        <div class="thread-meta">
+                            <span>Dimulai oleh <strong><?= htmlspecialchars($thread['author_name']); ?></strong></span>
+                            <span class="dot"></span>
+                            <span><?= date('d M Y, H:i', strtotime($thread['thread_created'])); ?></span>
+                        </div>
                     </div>
-                    <div class="post-content">
-                        <?= nl2br(htmlspecialchars($post['content'])); // nl2br untuk menampilkan baris baru ?>
+
+                    <div class="mt-3 mt-md-0">
+                        <a href="community.php" class="btn btn-outline-secondary back-btn-small">
+                            ← Kembali ke Forum
+                        </a>
                     </div>
                 </div>
-            <?php endwhile; ?>
-        <?php else: ?>
-            <p class="text-center p-3 text-muted">Belum ada balasan.</p>
-        <?php endif; ?>
-        <?php $stmt_posts->close(); ?>
-    </div>
-
-    <div class="reply-form">
-        <h4 class="mb-3">Tambahkan Balasan</h4>
-        <form action="proses_add_reply.php" method="POST">
-            <input type="hidden" name="thread_id" value="<?= $thread['thread_id']; ?>">
-            <div class="mb-3">
-                <textarea class="form-control" name="content" rows="5" required placeholder="Tulis balasan Anda..."></textarea>
             </div>
-            <button type="submit" class="btn btn-submit-reply">
-                <i class="bi bi-send-fill me-1"></i> Kirim Balasan
-            </button>
-        </form>
-    </div>
 
-</div>
+            <!-- LIST BALASAN -->
+            <div class="post-list">
+                <?php if ($result_posts && mysqli_num_rows($result_posts) > 0): ?>
+                    <?php while ($post = $result_posts->fetch_assoc()): ?>
+                        <?php
+                        // ambil inisial buat avatar
+                        $initials = mb_substr($post['author_name'], 0, 1, 'UTF-8');
+                        ?>
+                        <div class="post-item">
+                            <div class="post-wrapper">
+                                <div class="post-avatar">
+                                    <?= htmlspecialchars(strtoupper($initials)); ?>
+                                </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                                <div class="post-body">
+                                    <div class="post-headline">
+                                        <span class="post-author"><?= htmlspecialchars($post['author_name']); ?></span>
+                                        <span class="post-time"><?= date('d M Y, H:i', strtotime($post['post_created'])); ?></span>
+                                    </div>
+
+                                    <div class="post-content">
+                                        <?= nl2br(htmlspecialchars($post['content'])); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="post-item text-center text-muted">
+                        Belum ada balasan.
+                    </div>
+                <?php endif; ?>
+                <?php $stmt_posts->close(); ?>
+            </div>
+
+        </div>
+
+        <!-- CARD REPLY -->
+        <div class="reply-card">
+            <div class="reply-title">Tambahkan Balasan</div>
+
+            <form action="proses_add_reply.php" method="POST">
+                <input type="hidden" name="thread_id" value="<?= $thread['thread_id']; ?>">
+
+                <div class="mb-3">
+                    <textarea class="form-control" name="content" rows="5" required placeholder="Tulis balasan Anda..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-submit-reply">
+                    <i class="bi bi-send-fill"></i>
+                    <span>Kirim Balasan</span>
+                </button>
+            </form>
+        </div>
+
+    </div><!-- /thread-container -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
