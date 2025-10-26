@@ -193,16 +193,6 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                         </button>
                     </form>
 
-                    <?php if ($voucher_code): ?>
-                        <div class="mt-2" style="font-size: 0.9rem;">
-                            <span class="text-success fw-semibold">Voucher aktif:</span>
-                            <span class="fw-semibold"><?= htmlspecialchars($voucher_code); ?></span>
-                            <a href="remove_voucher.php"
-                               style="color:red; text-decoration:none; font-size:0.8rem; margin-left:8px;">
-                               Remove
-                            </a>
-                        </div>
-                    <?php endif; ?>
                 </div>
 
                 <!-- kanan: tombol bayar -->
