@@ -25,7 +25,7 @@ if (isset($_POST['login'])) {
             $_SESSION['email'] = $user['email'];
             $_SESSION['nama'] = $user['nama'];
 
-            $customer_id_login = $user['customer_id']; 
+            $customer_id_login = $user['customer_id'];
             $update_stmt = $conn->prepare("UPDATE customer SET last_login = NOW() WHERE customer_id = ?");
             if ($update_stmt) {
                 $update_stmt->bind_param("i", $customer_id_login);
@@ -131,6 +131,10 @@ if (isset($_GET['logout'])) {
 
                     <li class="nav-item">
                         <a class="nav-link" href="./HOME/index.php#about">About Us</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="./community.php">Community</a>
                     </li>
 
                     <?php
