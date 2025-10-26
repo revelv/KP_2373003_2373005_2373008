@@ -62,7 +62,7 @@ function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $
                 <h3 style='background: #f0f0f0; padding: 15px; text-align: center; letter-spacing: 2px;'>{$voucherData['kode']}</h3>
                 <p>Voucher ini berlaku hingga <strong>{$kadaluarsaFormatted}</strong>. Jangan sampai terlewat!</p>
                 <br>
-                <a href='http://localhost/Tubes/user/produk.php' style='background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px;'>Belanja Sekarang</a>
+                <a href='http://localhost/Tubes/user/produk.php' style='background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>Belanja Sekarang</a>
             </body></html>
         ";
 
