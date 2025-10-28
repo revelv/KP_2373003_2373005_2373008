@@ -3,15 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
-<<<<<<< HEAD
--- Generation Time: Oct 28, 2025 at 07:38 AM
+-- Generation Time: Oct 28, 2025 at 08:18 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
-=======
--- Waktu pembuatan: 26 Okt 2025 pada 18.02
--- Versi server: 8.4.3
--- Versi PHP: 8.3.16
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -67,14 +61,8 @@ CREATE TABLE `carts` (
 
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 1, '2025-10-19 12:07:07', NULL),
-<<<<<<< HEAD
 (55, 18, 'KB012', 1, '2025-10-26 13:26:32', NULL),
 (56, 18, 'KB006', 1, '2025-10-26 13:28:10', NULL);
-=======
-(55, 16, 'KB012', 2, '2025-10-26 17:29:55', NULL),
-(56, 16, 'KB013', 1, '2025-10-26 17:29:57', NULL),
-(57, 16, 'KB006', 1, '2025-10-26 17:29:59', NULL);
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 -- --------------------------------------------------------
 
@@ -158,15 +146,9 @@ INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`
 (6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', '', '', 'Jalan asmi no 123', NULL, NULL),
 (7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', 'jalan tuhan kebenaran no. 100', NULL, NULL),
 (10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', 'rumahsammy 123', NULL, NULL),
-<<<<<<< HEAD
 (16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', 'gunung gede 123', '2025-06-26 08:30:06', '2025-10-26 08:32:45'),
 (17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', 'banjaran 120', NULL, NULL),
-(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', '5', '55', 'Taman Kopo Indah 69 Blok S', '2025-10-27 15:38:06', NULL);
-=======
-(12, 'JRMIA', '$2y$12$tzAx012j9sKDVpzX/JjkY.IIeryx45XdJJO7NGy6ZpivAxkn0wn4C', 'jeremiadylan15@gmail.com', '081312663058', '18', '531', 'Taman Kopo Indah 69 Blok S', NULL, NULL),
-(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', 'gunung gede 123', '2025-10-26 13:26:46', '2025-10-26 08:32:45'),
-(17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', 'banjaran 120', NULL, NULL);
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
+(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', '5', '55', 'Taman Kopo Indah 69 Blok S', '2025-10-28 07:46:39', NULL);
 
 -- --------------------------------------------------------
 
@@ -306,14 +288,9 @@ CREATE TABLE `posts` (
 
 INSERT INTO `posts` (`post_id`, `thread_id`, `customer_id`, `content`, `created_at`) VALUES
 (1, 1, 16, 'Brandnya bagus sih tapi kalau claim garansi nya gimana ya kak? kok susah banget', '2025-10-26 09:01:33'),
-<<<<<<< HEAD
 (2, 2, 18, 'Genta ganteng banget', '2025-10-26 13:24:47'),
 (3, 2, 18, 'sekya', '2025-10-26 15:20:59'),
 (4, 1, 18, 'keren banget kamu kak', '2025-10-26 15:21:28');
-=======
-(2, 1, 16, 'jelek', '2025-10-26 14:09:29'),
-(3, 1, 16, 'ganteng', '2025-10-26 14:33:21');
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 -- --------------------------------------------------------
 
@@ -427,35 +404,21 @@ CREATE TABLE `vouchers` (
   `tgl_kadaluarsa` timestamp NOT NULL,
   `status` enum('aktif','terpakai') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'aktif',
   `keterangan` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `tipe` enum('rupiah','persen') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'rupiah'
+  `tipe` enum('rupiah','persen') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'rupiah'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `vouchers`
 --
 
-<<<<<<< HEAD
-INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupiah`, `tgl_dibuat`, `tgl_kadaluarsa`, `status`, `keterangan`) VALUES
-(1, 10, 'STYRKF4087D', 19868, '2025-10-18 12:41:44', '2025-11-01 05:41:44', 'terpakai', 'Voucher Selamat Datang'),
-(2, 11, 'STYRKBA5480', 10000, '2025-10-19 12:35:45', '2025-11-02 05:35:45', 'terpakai', 'Voucher Selamat Datang'),
-(3, 12, 'STYRK65D3ED', 20000, '2025-10-22 14:14:30', '2025-11-05 07:14:30', 'aktif', 'Voucher Selamat Datang'),
-(4, 13, 'STYRK610940', 15000, '2025-10-22 15:11:35', '2025-11-05 08:11:35', 'aktif', 'Voucher Selamat Datang'),
-(5, 14, 'STYRK40CC72', 10000, '2025-10-25 05:49:41', '2025-11-07 22:49:41', 'aktif', 'Voucher Selamat Datang'),
-(6, 15, 'STYRK86A756', 10000, '2025-10-25 08:52:00', '2025-11-08 01:52:00', 'aktif', 'Voucher Selamat Datang'),
-(7, 16, 'STYRK3CF97A', 10000, '2025-10-25 08:59:15', '2025-11-08 01:59:15', 'aktif', 'Voucher Selamat Datang'),
-(8, 16, 'STYRK7F7EBF', 30000, '2025-10-26 08:32:40', '2025-11-02 01:32:40', 'aktif', 'Voucher Comeback!'),
-(9, 17, 'STYRK14614D', 10000, '2025-10-26 09:41:20', '2025-11-09 02:41:20', 'aktif', 'Voucher Selamat Datang'),
-(10, 18, 'STYRK0748FB', 10000, '2025-10-26 13:23:30', '2025-11-09 06:23:30', 'aktif', 'Voucher Selamat Datang');
-=======
 INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupiah`, `nilai_persen`, `tgl_dibuat`, `tgl_kadaluarsa`, `status`, `keterangan`, `tipe`) VALUES
-(6, 15, 'STYRK86A756', 10000, NULL, '2025-10-25 08:52:00', '2025-11-08 01:52:00', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(7, 16, 'STYRK3CF97A', 10000, NULL, '2025-10-25 08:59:15', '2025-11-08 01:59:15', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(8, 16, 'STYRK7F7EBF', 30000, NULL, '2025-10-26 08:32:40', '2025-11-02 01:32:40', 'aktif', 'Voucher Comeback!', 'rupiah'),
-(9, 17, 'STYRK14614D', 10000, NULL, '2025-10-26 09:41:20', '2025-11-09 02:41:20', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(10, 19, 'STYRK448348', 10000, NULL, '2025-10-26 13:17:56', '2025-11-09 06:17:56', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(11, 20, 'STYRK58BD69', 10000, NULL, '2025-10-26 13:20:03', '2025-11-09 06:20:03', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 17:29:13', '2026-10-26 10:29:13', 'aktif', 'Voucher global diskon 10% - STYRKIKUZO', 'persen');
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
+(6, 15, 'STYRK86A756', 10000, NULL, '2025-10-25 01:52:00', '2025-11-07 18:52:00', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
+(7, 16, 'STYRK3CF97A', 10000, NULL, '2025-10-25 01:59:15', '2025-11-07 18:59:15', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
+(8, 16, 'STYRK7F7EBF', 30000, NULL, '2025-10-26 01:32:40', '2025-11-01 18:32:40', 'aktif', 'Voucher Comeback!', 'rupiah'),
+(9, 17, 'STYRK14614D', 10000, NULL, '2025-10-26 02:41:20', '2025-11-08 19:41:20', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
+(10, 19, 'STYRK448348', 10000, NULL, '2025-10-26 06:17:56', '2025-11-08 23:17:56', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
+(11, 20, 'STYRK58BD69', 10000, NULL, '2025-10-26 06:20:03', '2025-11-08 23:20:03', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
+(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 10:29:13', '2026-10-26 03:29:13', 'aktif', 'Voucher global diskon 10% - STYRKIKUZO', 'persen');
 
 --
 -- Indexes for dumped tables
@@ -545,14 +508,6 @@ ALTER TABLE `threads`
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indexes for table `vouchers`
---
-ALTER TABLE `vouchers`
-  ADD PRIMARY KEY (`voucher_id`),
-  ADD UNIQUE KEY `kode_voucher` (`kode_voucher`),
-  ADD KEY `customer_id` (`customer_id`);
-
---
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -566,11 +521,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-<<<<<<< HEAD
   MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
-=======
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -582,11 +533,7 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `customer`
 --
 ALTER TABLE `customer`
-<<<<<<< HEAD
   MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
-=======
-  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -616,27 +563,13 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `posts`
 --
 ALTER TABLE `posts`
-<<<<<<< HEAD
   MODIFY `post_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-=======
-  MODIFY `post_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 --
 -- AUTO_INCREMENT for table `threads`
 --
 ALTER TABLE `threads`
   MODIFY `thread_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `vouchers`
---
-ALTER TABLE `vouchers`
-<<<<<<< HEAD
-  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
-=======
-  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
->>>>>>> f56171cc7fe3b94ce37fb32765b3e529fa3a696c
 
 --
 -- Constraints for dumped tables
