@@ -32,7 +32,7 @@ $result_orders = mysqli_query($conn, $query_orders);
             <div class="order-header">
                 ID Order: <?= $order['order_id'] ?> |
                 Tanggal: <?= $order['tgl_order'] ?> |
-                Total: $<?= number_format($order['total_harga'], 0, ',', '.') ?> |
+                Total: Rp.<?= number_format($order['total_harga'], 0, ',', '.') ?> |
                 Status: <strong id="status"><?= ucfirst($order['status']) ?></strong>
             </div>
 
