@@ -74,7 +74,7 @@ if (!isset($_SESSION['kd_cs'])) {
             </div>
             <div class="mb-3">
                 <label for="threadContent" class="form-label">Pesan Pertama</label>
-                <textarea class="form-control" id="threadContent" name="content" rows="8" required placeholder="Tuliskan pertanyaan atau topik diskusi Anda di sini..."></textarea>
+                <textarea class="form-control" id="threadContent" name="content" rows="8" placeholder="Tuliskan pertanyaan atau topik diskusi Anda di sini..."></textarea>
             </div>
             <div class="d-flex justify-content-between">
                 <a href="community.php" class="btn btn-secondary">Batal</a>
