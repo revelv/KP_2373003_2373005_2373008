@@ -25,10 +25,42 @@ $query = "SELECT p.*, c.jumlah_barang, c.cart_id
           WHERE c.customer_id = '$customer_id'";
 $result = mysqli_query($conn, $query);
 
-// Inisialisasi total & voucher
+// --- Voucher session data ---
+$voucher_code        = $_SESSION['voucher_code']             ?? null;   // misal "STYRKIKUZO"
+$voucher_tipe        = $_SESSION['voucher_tipe']             ?? null;   // 'persen' | 'rupiah' | null
+$voucher_persen      = $_SESSION['voucher_nilai_persen']     ?? 0;      // ex: 10
+$voucher_rupiah      = $_SESSION['voucher_nilai_rupiah']     ?? 0;      // ex: 25000
+
+// Hitung subtotal & total awal
 $subtotal = 0;
-$voucher_discount = $_SESSION['voucher_discount'] ?? 0;
-$voucher_code = $_SESSION['voucher_code'] ?? null;
+$rows = [];
+
+if ($result && mysqli_num_rows($result) > 0) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        $rows[] = $row;
+        $harga_numerik = (float)$row['harga'];
+        $subtotal += $harga_numerik * $row['jumlah_barang'];
+    }
+}
+
+// Hitung diskon awal (server-side, untuk tampilan pertama)
+$voucher_discount = 0;
+if ($voucher_code && $voucher_tipe === 'persen') {
+    $voucher_discount = $subtotal * ($voucher_persen / 100);
+} elseif ($voucher_code && $voucher_tipe === 'rupiah') {
+    $voucher_discount = $voucher_rupiah;
+}
+
+// Jangan lebih dari subtotal
+if ($voucher_discount > $subtotal) {
+    $voucher_discount = $subtotal;
+}
+
+// total setelah diskon
+$total_setelah_diskon = $subtotal - $voucher_discount;
+if ($total_setelah_diskon < 0) {
+    $total_setelah_diskon = 0;
+}
 ?>
 
 <html lang="en">
@@ -73,7 +105,7 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
     <div class="container_cart mt-4">
         <h2 class="mb-4">Your Shopping Cart</h2>
 
-        <?php if ($result && mysqli_num_rows($result) > 0): ?>
+        <?php if (!empty($rows)): ?>
             <form action="payment.php" method="POST" id="cart-form">
                 <table class="table table-bordered">
                     <thead class="table-dark">
@@ -87,10 +119,9 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = mysqli_fetch_assoc($result)):
+                        <?php foreach ($rows as $row):
                             $harga_numerik = (float)$row['harga'];
                             $total_per_item = $harga_numerik * $row['jumlah_barang'];
-                            $subtotal += $total_per_item;
                         ?>
                             <tr>
                                 <td>
@@ -134,7 +165,7 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                                     </a>
                                 </td>
                             </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </tbody>
                     <tfoot>
                         <tr class="table-group-divider fw-bold">
@@ -145,6 +176,11 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                                     <small style="font-weight:normal;">
                                         (Voucher:
                                         <?= htmlspecialchars($voucher_code); ?>
+
+                                        <?php if ($voucher_tipe === 'persen'): ?>
+                                            - <?= (int)$voucher_persen; ?>%
+                                        <?php endif; ?>
+
                                         <a href="remove_voucher.php"
                                            style="color:red; text-decoration:none; font-size:12px;">
                                             Remove
@@ -154,9 +190,12 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                             </th>
                             <th colspan="2"
                                 id="cart-total-display"
-                                data-voucher-discount="<?= $voucher_discount; ?>">
-                                
-                                Rp <?= number_format($subtotal - $voucher_discount, 0, ',', '.'); ?>
+                                data-voucher-code="<?= htmlspecialchars($voucher_code ?? '', ENT_QUOTES); ?>"
+                                data-voucher-tipe="<?= htmlspecialchars($voucher_tipe ?? '', ENT_QUOTES); ?>"
+                                data-voucher-pct="<?= (int)$voucher_persen; ?>"
+                                data-voucher-rp="<?= (float)$voucher_rupiah; ?>">
+
+                                Rp <?= number_format($total_setelah_diskon, 0, ',', '.'); ?>
 
                                 <?php if ($voucher_discount > 0): ?>
                                     <br>
@@ -254,7 +293,12 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
             const selectAllCheckbox = document.getElementById('select-all');
             const itemCheckboxes = document.querySelectorAll('.item-checkbox');
             const totalDisplay = document.getElementById('cart-total-display');
-            const voucherDiscount = parseFloat(totalDisplay.dataset.voucherDiscount) || 0;
+
+            // data voucher yang lagi aktif
+            const activeVoucherCode  = totalDisplay.dataset.voucherCode || '';
+            const activeVoucherType  = totalDisplay.dataset.voucherTipe || '';
+            const activeVoucherPct   = parseFloat(totalDisplay.dataset.voucherPct) || 0;
+            const activeVoucherRp    = parseFloat(totalDisplay.dataset.voucherRp) || 0;
 
             function formatRupiah(number) {
                 return new Intl.NumberFormat('id-ID', {
@@ -264,9 +308,8 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                 }).format(number);
             }
 
-            function updateTotalPrice() {
+            function hitungSubtotalTerpilih() {
                 let newSubtotal = 0;
-
                 itemCheckboxes.forEach(checkbox => {
                     if (checkbox.checked) {
                         const price = parseFloat(checkbox.dataset.price);
@@ -274,19 +317,49 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                         newSubtotal += price * quantity;
                     }
                 });
+                return newSubtotal;
+            }
 
-                const finalTotal = newSubtotal - voucherDiscount;
+            function getVoucherDiscountDynamic(subtotalNow) {
+                if (!activeVoucherCode) {
+                    return 0;
+                }
+                if (activeVoucherType === 'persen') {
+                    // diskon persen dinamis (misal STYRKIKUZO 10%)
+                    return subtotalNow * (activeVoucherPct / 100);
+                }
+                if (activeVoucherType === 'rupiah') {
+                    // diskon fixed rupiah
+                    return activeVoucherRp;
+                }
+                return 0;
+            }
 
-                let totalHTML = formatRupiah(finalTotal);
+            function updateTotalPrice() {
+                const newSubtotal = hitungSubtotalTerpilih();
+                let discountNow = getVoucherDiscountDynamic(newSubtotal);
 
-                if (voucherDiscount > 0) {
+                if (discountNow > newSubtotal) {
+                    discountNow = newSubtotal;
+                }
+
+                const finalTotal = newSubtotal - discountNow;
+
+                let totalHTML = formatRupiah(finalTotal < 0 ? 0 : finalTotal);
+
+                if (discountNow > 0) {
                     totalHTML += `<br><small style="font-weight:normal; color: #28a745;">
-                        (Savings: ${formatRupiah(voucherDiscount)})
+                        (Savings: ${formatRupiah(discountNow)})
                     </small>`;
+                }
+
+                if (activeVoucherCode) {
+                    totalHTML = totalHTML; // total sudah termasuk diskon
                 }
 
                 totalDisplay.innerHTML = totalHTML;
 
+                // handle checkbox "select all"
                 const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
                 selectAllCheckbox.checked = allChecked;
             }
@@ -304,7 +377,7 @@ $voucher_code = $_SESSION['voucher_code'] ?? null;
                 checkbox.addEventListener('change', updateTotalPrice);
             });
 
-            // Init pertama
+            // Init awal
             updateTotalPrice();
         });
     </script>

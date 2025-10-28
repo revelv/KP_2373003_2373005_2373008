@@ -73,4 +73,43 @@ function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $
         return false;
     }
 }
+
+
+
+/* ===============================================================
+   Tambahan: Voucher STYRKIKUZO (10% global, unlimited use)
+   =============================================================== */
+function buatVoucherSTYRKIKUZO() {
+    global $conn;
+
+    $kodeVoucher = 'STYRKIKUZO';
+    $persen = 10;
+    $customerId = 0; // global, semua bisa pakai
+    $tglKadaluarsa = date('Y-m-d H:i:s', strtotime('+365 days')); // berlaku 1 tahun, bisa lo ubah
+    $keterangan = 'Voucher global diskon 10% - STYRKIKUZO';
+
+    // Cek dulu biar gak dobel
+    $cek = $conn->prepare("SELECT kode_voucher FROM vouchers WHERE kode_voucher = ?");
+    $cek->bind_param("s", $kodeVoucher);
+    $cek->execute();
+    $hasil = $cek->get_result();
+
+    if ($hasil && $hasil->num_rows > 0) {
+        return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
+    }
+
+    // Insert baru kalau belum ada
+    $sql = "INSERT INTO vouchers (customer_id, kode_voucher, tipe, nilai_rupiah, nilai_persen, tgl_kadaluarsa, status, keterangan)
+            VALUES (?, ?, 'persen', 0, ?, ?, 'aktif', ?)";
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param("isiss", $customerId, $kodeVoucher, $persen, $tglKadaluarsa, $keterangan);
+        if ($stmt->execute()) {
+            return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
+        }
+    }
+
+    return null;
+}
+
 ?>
