@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 session_start();
 include '../koneksi.php';
 
@@ -10,29 +11,25 @@ if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
 }
 $selected_cart_ids = array_map('intval', $_POST['selected_items']);
 $in_clause         = implode(',', $selected_cart_ids);
-
-// === Voucher dari session (versi terbaru) ===
-$voucher_code = $_SESSION['voucher_code']         ?? null;  // ex: STYRKIKUZO
-$voucher_tipe = $_SESSION['voucher_tipe']         ?? null;  // 'persen' | 'rupiah'
-$voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
-$voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
-
-// === Customer ===
-$customer_id = $_SESSION['kd_cs'] ?? null;
+$customer_id = $_SESSION['kd_cs'];
 
 // === Ambil item yang dipilih ===
 $query = "
-    SELECT c.*, p.nama_produk, p.harga, p.link_gambar
+    SELECT c.cart_id, c.product_id, c.jumlah_barang,
+           p.nama_produk, p.harga, p.link_gambar, p.stok
     FROM carts c
     JOIN products p ON c.product_id = p.product_id
-    WHERE c.customer_id = '".mysqli_real_escape_string($conn, $customer_id)."'
+    WHERE c.customer_id = '".mysqli_real_escape_string($conn, (string)$customer_id)."'
       AND c.cart_id IN ($in_clause)
 ";
-$result   = mysqli_query($conn, $query);
+$result = mysqli_query($conn, $query);
 
+$rows = [];
 $subtotal = 0;
-$rows     = [];
 while ($row = mysqli_fetch_assoc($result)) {
+    if ((int)$row['stok'] < (int)$row['jumlah_barang']) {
+        die("Stok produk {$row['nama_produk']} tidak cukup.");
+    }
     $row['harga']         = (int)$row['harga'];
     $row['jumlah_barang'] = (int)$row['jumlah_barang'];
     $row['item_subtotal'] = $row['harga'] * $row['jumlah_barang'];
@@ -40,17 +37,23 @@ while ($row = mysqli_fetch_assoc($result)) {
     $rows[]               = $row;
 }
 
-// === Hitung diskon voucher ===
+// === Voucher (pakai session yang sudah ada) ===
+$voucher_code = $_SESSION['voucher_code']         ?? null;  
+$voucher_tipe = $_SESSION['voucher_tipe']         ?? null;  // 'persen' | 'rupiah'
+$voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
+$voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
+
+// hitung diskon tampilan 
 $voucher_discount = 0;
 if ($voucher_code && $voucher_tipe === 'persen') {
-    $voucher_discount = $subtotal * ($voucher_pct / 100);
+    $voucher_discount = (int) round($subtotal * ($voucher_pct / 100));
 } elseif ($voucher_code && $voucher_tipe === 'rupiah') {
     $voucher_discount = $voucher_rp;
 }
 if ($voucher_discount > $subtotal) $voucher_discount = $subtotal;
 
-// === Total dasar (tanpa ongkir; ongkir dari API setelah pilih layanan) ===
-$base_total  = max(0, $subtotal - (int)$voucher_discount);
+// === Total dasar (tanpa ongkir) ===
+$base_total  = max(0, $subtotal - $voucher_discount);
 $init_ongkir = 0;
 $grand_total = $base_total + $init_ongkir;
 
@@ -58,12 +61,8 @@ $grand_total = $base_total + $init_ongkir;
 $current_courier = $_REQUEST['code_courier'] ?? ($_SESSION['checkout_courier'] ?? '');
 if (!preg_match('/^[a-z0-9_\-]*$/i', $current_courier)) $current_courier = '';
 $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier ORDER BY code_courier ASC");
-
-// === Prefix order untuk QRIS ===
-$order_query   = mysqli_query($conn, "SELECT MAX(order_id) AS last_id FROM orders");
-$order_data    = mysqli_fetch_assoc($order_query);
-$next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -183,7 +182,8 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
     <div id="paymentContainer"></div>
 
     <div class="text-center mb-4">
-        <button class="btn btn-lg btn-warning" onclick="mulaiPembayaran()">Pay</button>
+        <button id="btnPay" class="btn btn-lg btn-warning" onclick="mulaiPembayaran()" disabled>Pay</button>
+        <!-- tombol Pay DIPAKSA DISABLED sampai layanan dipilih -->
     </div>
 
     <script>
@@ -198,12 +198,48 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
         const svcBox        = document.getElementById('shippingServices');
         const ongkirCell    = document.getElementById('ongkirCell');
         const grandCell     = document.getElementById('grandTotalCell');
+        const btnPay        = document.getElementById('btnPay');
+
+        // === State pilihan ongkir ===
+        let currentShipping = { cost: 0, courier: '', service: '' };
+
+        function ensureShippingHiddenInputs(formEl) {
+            if (!formEl) return;
+            const setHidden = (name, val) => {
+                let el = formEl.querySelector(`input[name="${name}"]`);
+                if (!el) {
+                    el = document.createElement('input');
+                    el.type = 'hidden';
+                    el.name = name;
+                    formEl.appendChild(el);
+                }
+                el.value = val ?? '';
+            };
+            setHidden('shipping_cost', String(currentShipping.cost || 0));
+            setHidden('shipping_courier', currentShipping.courier || '');
+            setHidden('shipping_service', currentShipping.service || '');
+
+            // ikutkan cart
+            (selectedItems || []).forEach(id => {
+                const i = document.createElement('input');
+                i.type = 'hidden';
+                i.name = 'selected_items[]';
+                i.value = String(id);
+                formEl.appendChild(i);
+            });
+        }
 
         function updateTotals(cost = 0) {
             const ongkir = Number(cost) || 0;
             const grand  = Math.max(0, baseTotal + ongkir);
             if (ongkirCell) ongkirCell.textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
             if (grandCell)  grandCell.textContent  = 'Rp ' + grand.toLocaleString('id-ID');
+
+            currentShipping.cost    = ongkir;
+            currentShipping.courier = courierSelect?.value || '';
+
+            // aktifkan tombol Pay hanya jika layanan sudah dipilih (cost > 0 atau layanan valid)
+            btnPay.disabled = !(currentShipping.service && (ongkir >= 0));
         }
         updateTotals(0);
 
@@ -216,6 +252,8 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
 
             svcBox.textContent = 'Menghitung ongkir...';
             updateTotals(0);
+            currentShipping.service = ''; // reset
+            btnPay.disabled = true;
 
             try {
                 const res  = await fetch('./rajaongkir/calc_ongkir.php', { method: 'POST', body: formData });
@@ -246,8 +284,14 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
 
                 const svc = document.getElementById('serviceSelect');
                 function applyCost() {
-                    const cost = parseInt(svc.selectedOptions[0]?.dataset.cost || '0', 10);
+                    const opt  = svc.selectedOptions[0];
+                    const cost = parseInt(opt?.dataset.cost || '0', 10);
+                    currentShipping.service = svc.value || '';
                     updateTotals(cost);
+
+                    // sync hidden inputs kalau form payment sudah dirender
+                    ensureShippingHiddenInputs(document.getElementById('formQRIS'));
+                    ensureShippingHiddenInputs(document.getElementById('formTransfer'));
                 }
                 applyCost();
                 svc.addEventListener('change', applyCost);
@@ -258,38 +302,27 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
             }
         }
 
-        // Load layanan saat user pilih kurir / saat halaman punya pilihan dari session
         courierSelect?.addEventListener('change', (e) => loadServices(e.target.value));
-        <?php if (!empty($current_courier)): ?>
-        if (courierSelect && courierSelect.value) loadServices(courierSelect.value);
-        <?php endif; ?>
 
-        // =======================
-        //         PEMBAYARAN
-        // =======================
+        // ======================= PEMBAYARAN =======================
         let qrTimer;
         let qrContent = "";
-        const fixedOrderID = "STYRK_ORDER<?= $next_order_id ?>_";
 
         function generateQRContent() {
             const randomCode = Math.floor(Math.random() * 900) + 100;
-            return encodeURIComponent(fixedOrderID + randomCode);
-        }
-
-        function hiddenSelectedInputs() {
-            return selectedItems.map(id => `<input type="hidden" name="selected_items[]" value="${id}">`).join('');
+            return encodeURIComponent("STYRK_QRIS_" + Date.now() + "_" + randomCode);
         }
 
         function mulaiPembayaran() {
+            // wajib pilih layanan dulu
+            if (!currentShipping.service) {
+                alert("Pilih kurir & layanan pengiriman dulu ya bro.");
+                return;
+            }
+
             const metode    = document.querySelector('input[name="metode"]:checked');
             const container = document.getElementById("paymentContainer");
             if (!metode) { alert("Silakan pilih metode pembayaran terlebih dahulu."); return; }
-
-            // Ambil total saat ini (sesuai ongkir terpilih)
-            const currentGrand = (() => {
-                const txt = (document.getElementById('grandTotalCell')?.textContent || "").replace(/[^\d]/g, '');
-                return txt ? parseInt(txt, 10) : <?= (int)$grand_total ?>;
-            })();
 
             let html = "";
             if (metode.value === "QRIS") {
@@ -299,16 +332,15 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
                         <h5>QRIS</h5>
                         <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
                         <div class="qris-timer" id="timer">02:00</div>
-                        <form action="checkout.php" method="post">
-                            ${hiddenSelectedInputs()}
+                        <form id="formQRIS" action="checkout.php" method="post">
                             <input type="hidden" name="metode" value="QRIS">
-                            <input type="hidden" name="total" value="${currentGrand}">
                             <input type="hidden" name="kode_transaksi" value="${qrContent}">
                             <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
                         </form>
                     </div>
                 `;
                 container.innerHTML = html;
+                ensureShippingHiddenInputs(document.getElementById('formQRIS'));
                 startQRISTimer();
             } else {
                 html = `
@@ -316,8 +348,7 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
                         <h5>Transfer Bank</h5>
                         <p>Silakan transfer ke rekening:</p>
                         <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
-                        <form action="checkout.php" method="post" enctype="multipart/form-data">
-                            ${hiddenSelectedInputs()}
+                        <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
                             <input type="hidden" name="metode" value="Transfer">
                             <div class="mb-3">
                                 <label for="bukti" class="form-label">Upload Bukti Transfer</label>
@@ -331,6 +362,7 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
                     </div>
                 `;
                 container.innerHTML = html;
+                ensureShippingHiddenInputs(document.getElementById('formTransfer'));
             }
         }
 
@@ -352,7 +384,7 @@ $next_order_id = (int)($order_data['last_id'] ?? 0) + 1;
                     qrContent = generateQRContent();
                     const qrImg = document.getElementById("qrImage");
                     if (qrImg) qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
-                    const kodeTransaksiInput = document.querySelector("input[name='kode_transaksi']");
+                    const kodeTransaksiInput = document.querySelector("#formQRIS input[name='kode_transaksi']");
                     if (kodeTransaksiInput) kodeTransaksiInput.value = qrContent;
                     startQRISTimer();
                     alert("QR baru telah digenerate karena timeout.");

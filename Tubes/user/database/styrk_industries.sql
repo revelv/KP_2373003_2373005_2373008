@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 28, 2025 at 08:18 AM
+-- Generation Time: Oct 28, 2025 at 02:49 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -61,8 +61,7 @@ CREATE TABLE `carts` (
 
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 1, '2025-10-19 12:07:07', NULL),
-(55, 18, 'KB012', 1, '2025-10-26 13:26:32', NULL),
-(56, 18, 'KB006', 1, '2025-10-26 13:28:10', NULL);
+(67, 18, 'SW001', 1, '2025-10-28 14:45:20', NULL);
 
 -- --------------------------------------------------------
 
@@ -157,9 +156,10 @@ INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`
 --
 
 CREATE TABLE `orders` (
-  `order_id` int NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `customer_id` int NOT NULL,
   `tgl_order` datetime NOT NULL,
+  `ongkos_kirim` int NOT NULL,
   `total_harga` decimal(12,2) NOT NULL,
   `status` enum('pending','proses','selesai','batal') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -168,16 +168,9 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `total_harga`, `status`) VALUES
-(18, 7, '2025-06-24 23:40:55', 90.90, 'batal'),
-(19, 7, '2025-06-24 23:58:37', 663.87, 'batal'),
-(20, 7, '2025-06-24 23:59:39', 272.70, 'batal'),
-(21, 10, '2025-10-19 08:04:46', 2929000.00, 'proses'),
-(22, 10, '2025-10-19 10:59:04', 2424000.00, 'proses'),
-(23, 10, '2025-10-19 12:17:02', 1899132.00, 'proses'),
-(26, 16, '2025-10-25 12:31:49', 6110500.00, 'proses'),
-(27, 16, '2025-10-25 13:34:14', 7070000.00, 'proses'),
-(28, 16, '2025-10-25 14:14:13', 3838000.00, 'proses');
+INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `ongkos_kirim`, `total_harga`, `status`) VALUES
+('STYRK176165953555005', 18, '2025-10-28 13:52:15', 9000, 3114000.00, 'proses'),
+('STYRK176166240778383', 18, '2025-10-28 14:40:07', 9000, 1109000.00, 'proses');
 
 -- --------------------------------------------------------
 
@@ -187,32 +180,20 @@ INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `total_harga`, `st
 
 CREATE TABLE `order_details` (
   `detail_id` int NOT NULL,
-  `order_id` int NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `product_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `jumlah` int NOT NULL,
   `harga_satuan` int NOT NULL,
-  `subtotal` int NOT NULL,
-  `ongkos_kirim` int NOT NULL
+  `subtotal` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order_details`
 --
 
-INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `harga_satuan`, `subtotal`, `ongkos_kirim`) VALUES
-(22, 18, 'KB008', 1, 90, 90, 0),
-(23, 19, 'KB010', 1, 299, 299, 0),
-(24, 19, 'KB006', 1, 358, 358, 0),
-(25, 20, 'KB008', 3, 90, 270, 0),
-(26, 21, 'KB008', 2, 1450000, 2900000, 0),
-(27, 22, 'SW005', 1, 650000, 650000, 0),
-(28, 22, 'KC006', 1, 1750000, 1750000, 0),
-(29, 23, 'KB009', 1, 1900000, 1900000, 0),
-(33, 26, 'KB010', 1, 4800000, 4800000, 0),
-(34, 26, 'KB004', 1, 1250000, 1250000, 0),
-(35, 27, 'KC004', 1, 4200000, 4200000, 0),
-(36, 27, 'KB011', 1, 2800000, 2800000, 0),
-(37, 28, 'KK003', 1, 3800000, 3800000, 0);
+INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `harga_satuan`, `subtotal`) VALUES
+(47, 'STYRK176165953555005', 'KK004', 1, 3450000, 3450000),
+(48, 'STYRK176166240778383', 'KB015', 1, 1100000, 1100000);
 
 -- --------------------------------------------------------
 
@@ -222,20 +203,11 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `h
 
 CREATE TABLE `order_tracking` (
   `tracking_id` int NOT NULL,
-  `order_id` int NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `timestamp` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `order_tracking`
---
-
-INSERT INTO `order_tracking` (`tracking_id`, `order_id`, `status`, `description`, `timestamp`) VALUES
-(1, 18, 'batal', 'Payment rejected, order canceled and stock restored', '2025-06-25 06:52:23'),
-(2, 19, 'batal', 'Pembayaran ditolak, silahkan belanja kembali.', '2025-06-25 06:59:07'),
-(3, 20, 'batal', 'Pembayaran ditolak, silahkan belanja kembali.', '2025-06-25 07:00:13');
 
 -- --------------------------------------------------------
 
@@ -245,7 +217,7 @@ INSERT INTO `order_tracking` (`tracking_id`, `order_id`, `status`, `description`
 
 CREATE TABLE `payments` (
   `payment_id` int NOT NULL,
-  `order_id` int NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `metode` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `jumlah_dibayar` decimal(12,2) NOT NULL,
   `tanggal_bayar` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -258,15 +230,8 @@ CREATE TABLE `payments` (
 --
 
 INSERT INTO `payments` (`payment_id`, `order_id`, `metode`, `jumlah_dibayar`, `tanggal_bayar`, `payment_proof`, `payment_status`) VALUES
-(8, 18, 'Transfer Bank', 90.90, '2025-06-24 23:40:55', '../payment_proofs/proof_18_1750808455.png', 'rejected'),
-(9, 19, 'QRIS', 663.87, '2025-06-24 23:58:37', 'STYRK_ORDER19_811', 'rejected'),
-(10, 20, 'QRIS', 272.70, '2025-06-24 23:59:39', 'STYRK_ORDER20_747', 'rejected'),
-(11, 21, 'QRIS', 2929000.00, '2025-10-19 08:04:46', 'STYRK_ORDER21_121', 'proses'),
-(12, 22, 'QRIS', 2424000.00, '2025-10-19 10:59:04', 'STYRK_ORDER22_959', 'proses'),
-(13, 23, 'QRIS', 1899132.00, '2025-10-19 12:17:02', 'STYRK_ORDER23_252', 'proses'),
-(16, 26, 'QRIS', 6110500.00, '2025-10-25 12:31:49', 'STYRK_ORDER24_791', 'proses'),
-(17, 27, 'QRIS', 7070000.00, '2025-10-25 13:34:14', 'STYRK_ORDER27_451', 'proses'),
-(18, 28, 'QRIS', 3838000.00, '2025-10-25 14:14:13', 'STYRK_ORDER28_456', 'proses');
+(26, 'STYRK176165953555005', 'QRIS', 3114000.00, '2025-10-28 13:52:15', 'STYRK_QRIS_1761659519923_752', 'proses'),
+(27, 'STYRK176166240778383', 'QRIS', 1109000.00, '2025-10-28 14:40:07', 'STYRK_QRIS_1761662405558_370', 'proses');
 
 -- --------------------------------------------------------
 
@@ -314,22 +279,22 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`, `weight`) VALUES
-('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 8, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500),
+('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 6, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500),
 ('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 3200000.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2, 1000),
 ('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 7500000.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2, 1000),
 ('KB003', 'KBD8X MKIII Keyboard', 'A beloved full-sized mechanical keyboard featuring top mount design and premium aluminum construction. Now at half price, it\'s a steal for serious keyboard builders.', 7800000.00, 9, 'https://i.postimg.cc/JnhynC7d/4.jpg', 2, 1000),
 ('KB004', 'Magnum65', 'A 65% layout keyboard with a bold design and exceptional build quality. The Magnum65 is for those who want a compact form factor without compromising on performance.', 1250000.00, 5, 'https://i.postimg.cc/sfqBVLkw/5.jpg', 2, 1000),
 ('KB005', 'Quartz Stone Wrist Rest', 'A solid quartz wrist rest designed to offer comfort and elegance. Its cool, stone finish adds a premium touch to your keyboard setup.', 650000.00, 6, 'https://i.postimg.cc/jSQC4SLF/7.jpg', 2, 1000),
-('KB006', 'Odin 75 Hot-swap Keyboard with PBTfans Courage red', 'A ready-to-use Odin 75 keyboard with bold Courage Red keycaps. Hot-swap sockets make switch swapping easy without soldering.', 5750000.00, 10, 'https://i.postimg.cc/bwH9Mn60/17.jpg', 2, 1000),
+('KB006', 'Odin 75 Hot-swap Keyboard with PBTfans Courage red', 'A ready-to-use Odin 75 keyboard with bold Courage Red keycaps. Hot-swap sockets make switch swapping easy without soldering.', 5750000.00, 9, 'https://i.postimg.cc/bwH9Mn60/17.jpg', 2, 1000),
 ('KB007', 'Keychron K8 Wireless', 'A tenkeyless wireless mechanical keyboard compatible with Mac and Windows.', 1300000.00, 9, 'https://i.postimg.cc/mrPhMfFc/21.jpg', 2, 1000),
 ('KB008', 'Akko 3068B Plus', 'A compact 65% keyboard with wireless connectivity and hot-swappable switches.', 1450000.00, 8, 'https://i.postimg.cc/0Nhj0WpV/22.png', 2, 1000),
 ('KB009', 'Ducky One 3 Mini', 'A 60% keyboard known for vibrant colors and premium build.', 1900000.00, 8, 'https://i.postimg.cc/vB9Bqrhb/23.jpg', 2, 1000),
 ('KB010', 'Mode Sonnet Keyboard', 'A custom keyboard with a sleek design and premium materials.', 4800000.00, 9, 'https://i.postimg.cc/XqbvTr1F/25.jpg', 2, 1000),
 ('KB011', 'Keychron Q1 V2', 'A customizable 75% keyboard with QMK/VIA support.', 2800000.00, 9, 'https://i.postimg.cc/KjDYFmCW/26.jpg', 2, 1000),
-('KB012', 'Ikki68 Aurora', 'A popular entry-level custom keyboard kit.', 2150000.00, 10, 'https://i.postimg.cc/J7N0jQtQ/27.jpg', 2, 1000),
+('KB012', 'Ikki68 Aurora', 'A popular entry-level custom keyboard kit.', 2150000.00, 9, 'https://i.postimg.cc/J7N0jQtQ/27.jpg', 2, 1000),
 ('KB013', 'MelGeek Mojo68', 'A semi-transparent wireless keyboard with customizable layout.', 3600000.00, 10, 'https://i.postimg.cc/X7NjdSRV/33.jpg', 2, 1000),
-('KB014', 'NK65 Entry Edition', 'A budget-friendly 65% mechanical keyboard with a polycarbonate case.', 1500000.00, 10, 'https://i.postimg.cc/ydzBNwhC/36.jpg', 2, 1000),
-('KB015', 'Keychron V4', 'A budget 60% keyboard with QMK/VIA support.', 1100000.00, 10, 'https://i.postimg.cc/43cssJ91/37.jpg', 2, 1000),
+('KB014', 'NK65 Entry Edition', 'A budget-friendly 65% mechanical keyboard with a polycarbonate case.', 1500000.00, 9, 'https://i.postimg.cc/ydzBNwhC/36.jpg', 2, 1000),
+('KB015', 'Keychron V4', 'A budget 60% keyboard with QMK/VIA support.', 1100000.00, 9, 'https://i.postimg.cc/43cssJ91/37.jpg', 2, 1000),
 ('KB016', 'Ajazz AK966', '96% layout wireless mechanical keyboard with knob.', 1950000.00, 10, 'https://i.postimg.cc/ZRFmvVjB/38.jpg\r\n', 2, 1000),
 ('KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 2300000.00, 10, 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2, 1000),
 ('KB018', 'Rama M65-B', 'High-end aluminum 65% keyboard with elegant design.', 5800000.00, 10, 'https://i.postimg.cc/Qd2Z6RyK/41.jpg', 2, 1000),
@@ -352,18 +317,18 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 ('KK001', 'Tofu60 Redux Plate', 'A compatible plate for the Tofu60 Redux case, offering improved rigidity and mounting flexibility. Great for customizing your typing feel.', 320000.00, 10, 'https://i.postimg.cc/L6PJhTRR/6.jpg', 4, 200),
 ('KK002', 'KBD67 Lite R4 Mechanical Keyboard Kit', 'A budget-friendly yet high-performing 65% keyboard kit. Ideal for newcomers and veterans alike, with hot-swap functionality and great acoustics.', 1900000.00, 10, 'https://i.postimg.cc/2SfVWZ8W/8.jpg', 4, 200),
 ('KK003', 'KBDfans Odin 75 Mechanical Keyboard Kit', 'A compact 75% layout keyboard with a stylish and functional design. The Odin 75 offers great balance between form and usability.', 3800000.00, 9, 'https://i.postimg.cc/mrLkXW92/9.jpg', 4, 200),
-('KK004', 'Sebas Keyboard kit', 'A stylish and sturdy keyboard kit designed with premium materials. Its layout and build make it suitable for both work and play.', 3450000.00, 10, 'https://i.postimg.cc/2jVT6V6m/12.jpg', 4, 200),
+('KK004', 'Sebas Keyboard kit', 'A stylish and sturdy keyboard kit designed with premium materials. Its layout and build make it suitable for both work and play.', 3450000.00, 8, 'https://i.postimg.cc/2jVT6V6m/12.jpg', 4, 200),
 ('KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 1900000.00, 10, 'https://i.postimg.cc/pyMXKwxv/14.jpg', 4, 200),
 ('KK006', 'Margo Case', 'A uniquely designed keyboard case with gentle curves and premium anodization. A great choice for custom keyboard builds looking to stand out.', 2150000.00, 10, 'https://i.postimg.cc/9F9pdKZn/15.jpg', 4, 200),
 ('KK007', 'GMMK Pro Barebone', 'A 75% layout mechanical keyboard with a rotary knob and aluminum body.', 2750000.00, 10, 'https://i.postimg.cc/0NVd5s1b/20.jpg', 4, 200),
 ('KK008', 'Tofu65 Kit', 'Aluminum 65% DIY keyboard kit with customizable options.', 2700000.00, 10, 'https://i.postimg.cc/m2Vr52Yz/28.jpg', 4, 200),
 ('KK009', 'KBD75 V3 Kit', '75% aluminum keyboard with refined layout and features.', 2950000.00, 10, 'https://i.postimg.cc/Kjv6kFRw/48.jpg', 4, 200),
 ('KP001', 'Taco Pad', 'A novelty macropad shaped like a taco. Fun, quirky, and useful for macros, shortcuts, or artisan display. A must-have desk companion for enthusiasts.', 1450000.00, 10, 'https://i.postimg.cc/C5BzGCqG/3.jpg', 5, 400),
-('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 10, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6, 20),
+('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 9, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6, 20),
 ('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 3700000.00, 10, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7, 100),
 ('SW002', 'NovelKeys Cream Switches (70 pcs)', 'Smooth linear switches with self-lubricating POM housing.', 900000.00, 10, 'https://i.postimg.cc/jS5j00c8/29.jpg', 7, 100),
 ('SW003', 'Akko CS Jelly Purple (45 pcs)', 'Tactile mechanical switches with a unique jelly-like stem.', 320000.00, 10, 'https://i.postimg.cc/SKYNR6wC/30.jpg', 7, 100),
-('SW004', 'Glorious Panda Switches (36 pcs)', 'Tactile switches with a strong bump and satisfying sound.', 550000.00, 10, 'https://i.postimg.cc/DfPfSyYj/32.jpg', 7, 100),
+('SW004', 'Glorious Panda Switches (36 pcs)', 'Tactile switches with a strong bump and satisfying sound.', 550000.00, 9, 'https://i.postimg.cc/DfPfSyYj/32.jpg', 7, 100),
 ('SW005', 'Gateron Oil King Switches (70 pcs)', 'Smooth linear switches with a deep, satisfying sound.', 650000.00, 9, 'https://i.postimg.cc/zvzrCKPd/39.jpg', 7, 100),
 ('SW006', 'GATERON BLUE G PRO 3.0 (LUBED) Mechanical Keyboard Switch', 'Gateron Blue G Pro 3.0 (Lubed) は、クリッキータイプのメカニカルスイッチで、押すたびに明確なタクタイルフィードバックと爽快なクリック音を提供します。  工場出荷時から潤滑済み（factory-lubed）のため、キーストロークがスムーズで、スプリングの雑音も軽減されています。  ナイロンハウジングとPOMステムを採用しており、耐久性に優れ、安定した動作を実現します。', 400000.00, 5, 'https://postimg.cc/56jr57D1', 7, 100);
 
@@ -418,7 +383,7 @@ INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupi
 (9, 17, 'STYRK14614D', 10000, NULL, '2025-10-26 02:41:20', '2025-11-08 19:41:20', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
 (10, 19, 'STYRK448348', 10000, NULL, '2025-10-26 06:17:56', '2025-11-08 23:17:56', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
 (11, 20, 'STYRK58BD69', 10000, NULL, '2025-10-26 06:20:03', '2025-11-08 23:20:03', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 10:29:13', '2026-10-26 03:29:13', 'aktif', 'Voucher global diskon 10% - STYRKIKUZO', 'persen');
+(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 10:29:13', '2025-10-31 13:36:28', 'terpakai', 'Voucher global diskon 10% - STYRKIKUZO', 'persen');
 
 --
 -- Indexes for dumped tables
@@ -508,6 +473,12 @@ ALTER TABLE `threads`
   ADD KEY `customer_id` (`customer_id`);
 
 --
+-- Indexes for table `vouchers`
+--
+ALTER TABLE `vouchers`
+  ADD PRIMARY KEY (`voucher_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -521,7 +492,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -536,16 +507,10 @@ ALTER TABLE `customer`
   MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
--- AUTO_INCREMENT for table `orders`
---
-ALTER TABLE `orders`
-  MODIFY `order_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
-
---
 -- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `order_tracking`
@@ -557,7 +522,7 @@ ALTER TABLE `order_tracking`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `posts`
@@ -592,20 +557,20 @@ ALTER TABLE `orders`
 -- Constraints for table `order_details`
 --
 ALTER TABLE `order_details`
-  ADD CONSTRAINT `FK_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `FK_ORDER_ID` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `order_tracking`
 --
 ALTER TABLE `order_tracking`
-  ADD CONSTRAINT `FK_ORDER_ID_TRACK` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+  ADD CONSTRAINT `FK_ODER_ID_TRACK` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `payments`
 --
 ALTER TABLE `payments`
-  ADD CONSTRAINT `FK_order_id_payment` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `FK_ORDER_ID_PAYMENT` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `posts`

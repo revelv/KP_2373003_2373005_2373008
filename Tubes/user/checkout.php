@@ -1,152 +1,178 @@
 <?php
+
+declare(strict_types=1);
 session_start();
 include '../koneksi.php';
 
-if (!isset($_SESSION['kd_cs'])) {
-    die("Anda harus login terlebih dahulu.");
-}
-
+if (!isset($_SESSION['kd_cs'])) die("Anda harus login terlebih dahulu.");
 $customer_id = $_SESSION['kd_cs'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Metode tidak valid.");
+if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) die("Tidak ada item dipilih.");
 
-    $payment_method = $_POST['metode'] ?? '';
+$payment_method = $_POST['metode'] ?? '';
+if (!in_array($payment_method, ['Transfer', 'QRIS'], true)) die("Metode pembayaran tidak valid.");
 
-    // Ambil data cart
-    if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
-        die("Tidak ada item yang dipilih untuk diproses.");
+$selected_cart_ids = array_map('intval', $_POST['selected_items']);
+$selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
+$in_clause         = implode(',', $selected_cart_ids);
+
+// ===== Ongkir: dari POST (prioritas), fallback session =====
+$shipping_cost = isset($_POST['shipping_cost'])
+    ? max(0, (int)$_POST['shipping_cost'])
+    : (int)($_SESSION['shipping_cost'] ?? 0);
+$_SESSION['shipping_cost'] = $shipping_cost; // sync
+
+// ===== Voucher (backend guard) =====
+$voucher_code = $_SESSION['voucher_code'] ?? null;
+$voucher_tipe = $_SESSION['voucher_tipe'] ?? null; // 'persen'|'rupiah'
+$voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
+$voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
+
+// ===== Ambil item cart =====
+$sql = "SELECT c.cart_id, c.product_id, c.jumlah_barang, p.harga, p.stok, p.nama_produk
+        FROM carts c
+        JOIN products p ON p.product_id = c.product_id
+        WHERE c.customer_id=? AND c.cart_id IN ($in_clause)";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('s', $customer_id);
+$stmt->execute();
+$res = $stmt->get_result();
+
+$items = [];
+$total_barang = 0;
+while ($r = $res->fetch_assoc()) {
+    if ((int)$r['stok'] < (int)$r['jumlah_barang']) {
+        die("Stok produk {$r['nama_produk']} tidak cukup.");
     }
-    $selected_cart_ids = $_POST['selected_items'];
-    $in_clause = implode(',', array_map('intval', $selected_cart_ids));
+    $jumlah = (int)$r['jumlah_barang'];
+    $harga  = (int)$r['harga'];
+    $sub    = $jumlah * $harga;
+    $items[] = [
+        'product_id' => $r['product_id'],
+        'jumlah'     => $jumlah,
+        'harga'      => $harga,
+        'subtotal'   => $sub
+    ];
+    $total_barang += $sub;
+}
+$stmt->close();
+if (!$items) die("Keranjang kosong / tidak ditemukan.");
 
-    $query = "SELECT c.*, p.harga, p.stok FROM carts c 
-          JOIN products p ON c.product_id = p.product_id 
-          WHERE c.customer_id = '$customer_id' AND c.cart_id IN ($in_clause)";
-    $result = mysqli_query($conn, $query);
+// ===== Hitung diskon rupiah (guard) =====
+$voucher_discount = 0;
+if ($voucher_code && $voucher_tipe === 'persen') {
+    $voucher_discount = (int) round($total_barang * ($voucher_pct / 100));
+} elseif ($voucher_code && $voucher_tipe === 'rupiah') {
+    $voucher_discount = $voucher_rp;
+}
+if ($voucher_discount > $total_barang) $voucher_discount = $total_barang;
 
-    $total = 0;
-    $cart_items = [];
+// ===== Util: generate AWB unik (order_id) =====
+function generate_awb(mysqli $conn): string
+{
+    do {
+        $awb = 'STYRK' . time() . str_pad((string)mt_rand(0, 99999), 5, '0', STR_PAD_LEFT);
+        $q = $conn->prepare("SELECT 1 FROM orders WHERE order_id=? LIMIT 1");
+        $q->bind_param('s', $awb);
+        $q->execute();
+        $exists = (bool)$q->get_result()->fetch_row();
+        $q->close();
+    } while ($exists);
+    return $awb;
+}
 
-    while ($row = mysqli_fetch_assoc($result)) {
-        $harga = $row['harga'];
-        $subtotal = $harga * $row['jumlah_barang'];
-        $total += $subtotal;
+$tanggal = date("Y-m-d H:i:s");
+$status  = ($payment_method === 'Transfer') ? 'pending' : 'proses';
 
-        if ($row['stok'] < $row['jumlah_barang']) {
-            die("Stok produk {$row['product_id']} tidak cukup.");
-        }
+$conn->begin_transaction();
+try {
+    // 1) Insert header orders (total_harga = 0 dulu, ongkos_kirim diisi sekarang)
+    $order_id = generate_awb($conn);
+    $insOrder = $conn->prepare("INSERT INTO orders (order_id, customer_id, tgl_order, ongkos_kirim, total_harga, status)
+                                VALUES (?, ?, ?, ?, 0, ?)");
+    $insOrder->bind_param('sssis', $order_id, $customer_id, $tanggal, $shipping_cost, $status);
+    if (!$insOrder->execute()) throw new Exception("Gagal insert orders: " . $insOrder->error);
+    $insOrder->close();
 
-        $cart_items[] = [
-            'product_id' => $row['product_id'],
-            'jumlah' => $row['jumlah_barang'],
-            'harga' => $harga,
-            'subtotal' => $subtotal
-        ];
+    // 2) Insert detail item, update stok
+    $insDet   = $conn->prepare("INSERT INTO order_details (order_id, product_id, jumlah, harga_satuan, subtotal)
+                                VALUES (?, ?, ?, ?, ?)");
+    $updStock = $conn->prepare("UPDATE products SET stok = stok - ? WHERE product_id = ?");
+
+    foreach ($items as $it) {
+        $insDet->bind_param('ssiii', $order_id, $it['product_id'], $it['jumlah'], $it['harga'], $it['subtotal']);
+        if (!$insDet->execute()) throw new Exception("Gagal insert detail: " . $insDet->error);
+
+        $updStock->bind_param('is', $it['jumlah'], $it['product_id']);
+        if (!$updStock->execute()) throw new Exception("Gagal update stok: " . $updStock->error);
     }
-    $voucher_discount = $_SESSION['voucher_discount'] ?? 0;
+    $insDet->close();
+    $updStock->close();
 
-    // VALIDASI dan SET nilai variabel penting
-    if ($payment_method === 'Transfer' || $payment_method === 'QRIS') {
+    // 3) Hitung total akhir = total_barang - diskon + ongkir
+    $grand_total = max(0, (float)$total_barang - (float)$voucher_discount + (float)$shipping_cost);
 
+    // 4) Update total ke header orders
+    $upd = $conn->prepare("UPDATE orders SET total_harga=? WHERE order_id=?");
+    $upd->bind_param('ds', $grand_total, $order_id);
+    if (!$upd->execute()) throw new Exception("Gagal update total order: " . $upd->error);
+    $upd->close();
 
-        // PERBAIKAN: Perhitungan grand_total sekarang konsisten dengan halaman payment
-        $ongkir = $total * 0.01;
-        $grand_total = ($total - $voucher_discount) + $ongkir;
-        if ($grand_total < 0) {
-            $grand_total = 0; // Pastikan total tidak minus jika diskon besar
-        }
-        $tanggal = date("Y-m-d H:i:s");
-        $status = ($payment_method === 'Transfer') ? 'pending' : 'proses';
-    } else {
-        die("Metode pembayaran tidak valid.");
-    }
-
-    // INSERT orders
-    $sql_order = "INSERT INTO orders (customer_id, tgl_order, total_harga, status) 
-                  VALUES ('$customer_id', '$tanggal', '$grand_total', '$status')";
-    mysqli_query($conn, $sql_order);
-    $order_id = mysqli_insert_id($conn);
-
-    // Insert order detail & update stok
-    foreach ($cart_items as $item) {
-        mysqli_query($conn, "INSERT INTO order_details 
-            (order_id, product_id, jumlah, harga_satuan, subtotal) 
-            VALUES ('$order_id', '{$item['product_id']}', '{$item['jumlah']}', '{$item['harga']}', '{$item['subtotal']}')");
-
-        mysqli_query($conn, "UPDATE products 
-            SET stok = stok - {$item['jumlah']} 
-            WHERE product_id = '{$item['product_id']}'");
-    }
-
-
-
-    // === Handle metode Transfer Bank ===
+    // 5) Payments
     if ($payment_method === 'Transfer') {
-        if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] === UPLOAD_ERR_OK) {
-            $target_dir = "../payment_proofs/";
-            if (!file_exists($target_dir)) {
-                mkdir($target_dir, 0755, true);
-            }
-
-            $file_ext = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
-            $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array(strtolower($file_ext), $allowed_ext)) {
-                die("Format file tidak didukung.");
-            }
-
-            if ($_FILES['bukti']['size'] > 2000000) {
-                die("Ukuran file maksimal 2MB.");
-            }
-
-            $new_filename = "proof_" . $order_id . "_" . time() . "." . $file_ext;
-            $target_file = $target_dir . $new_filename;
-
-            if (move_uploaded_file($_FILES['bukti']['tmp_name'], $target_file)) {
-                mysqli_query($conn, "INSERT INTO payments 
-                    (order_id, metode, jumlah_dibayar, tanggal_bayar, payment_proof, payment_status) 
-                    VALUES ('$order_id', 'Transfer Bank', '$grand_total', '$tanggal', '$target_file', 'pending')");
-            } else {
-                die("Gagal upload bukti pembayaran.");
-            }
-        } else {
-            die("Bukti pembayaran wajib diupload.");
+        if (!isset($_FILES['bukti']) || $_FILES['bukti']['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Bukti pembayaran wajib diupload.");
         }
-    }
+        $dir = "../payment_proofs/";
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
 
-    // === Handle metode QRIS ===
-    elseif ($payment_method === 'QRIS') {
-        $qris_code = $_POST['kode_transaksi'] ?? '';
-        if (empty($qris_code)) {
-            die("Kode transaksi QRIS wajib diisi.");
+        $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif'], true)) throw new Exception("Format file tidak didukung.");
+        if ($_FILES['bukti']['size'] > 2_000_000) throw new Exception("Ukuran file maksimal 2MB.");
+
+        $proof = $dir . "proof_" . $order_id . "_" . time() . "." . $ext;
+        if (!move_uploaded_file($_FILES['bukti']['tmp_name'], $proof)) {
+            throw new Exception("Gagal upload bukti.");
         }
 
-        mysqli_query($conn, "INSERT INTO payments 
-            (order_id, metode, jumlah_dibayar, tanggal_bayar, payment_proof, payment_status) 
-            VALUES ('$order_id', 'QRIS', '$grand_total', '$tanggal', '$qris_code', 'proses')");
+        $pay = $conn->prepare("INSERT INTO payments (order_id, metode, jumlah_dibayar, tanggal_bayar, payment_proof, payment_status)
+                               VALUES (?, 'Transfer Bank', ?, ?, ?, 'pending')");
+        $pay->bind_param('sdss', $order_id, $grand_total, $tanggal, $proof);
+        if (!$pay->execute()) throw new Exception("Gagal insert payment: " . $pay->error);
+        $pay->close();
+    } else { // QRIS
+        $kode = $_POST['kode_transaksi'] ?? '';
+        if ($kode === '') throw new Exception("Kode transaksi QRIS wajib diisi.");
+
+        $pay = $conn->prepare("INSERT INTO payments (order_id, metode, jumlah_dibayar, tanggal_bayar, payment_proof, payment_status)
+                               VALUES (?, 'QRIS', ?, ?, ?, 'proses')");
+        $pay->bind_param('sdss', $order_id, $grand_total, $tanggal, $kode);
+        if (!$pay->execute()) throw new Exception("Gagal insert payment: " . $pay->error);
+        $pay->close();
     }
 
-    if (isset($_SESSION['voucher_code'])) {
-        $kode_voucher_terpakai = $_SESSION['voucher_code'];
-
-        // Update status voucher di database menjadi 'terpakai'
-        $update_stmt = $conn->prepare("UPDATE vouchers SET status = 'terpakai' WHERE kode_voucher = ?");
-        if ($update_stmt) {
-            $update_stmt->bind_param("s", $kode_voucher_terpakai);
-            $update_stmt->execute();
-            $update_stmt->close();
-        }
-
-        // Hapus data voucher dari session setelah digunakan
-        unset($_SESSION['voucher_code']);
-        unset($_SESSION['voucher_discount']);
+    // 6) Tandai voucher terpakai (jika ada)
+    if (!empty($voucher_code)) {
+        $v = $conn->prepare("UPDATE vouchers SET status='terpakai' WHERE kode_voucher=?");
+        $v->bind_param('s', $voucher_code);
+        $v->execute();
+        $v->close();
+        unset($_SESSION['voucher_code'], $_SESSION['voucher_tipe'], $_SESSION['voucher_nilai_rupiah'], $_SESSION['voucher_nilai_persen']);
     }
 
-    mysqli_query($conn, "DELETE FROM carts WHERE customer_id = '$customer_id' AND cart_id IN ($in_clause)");
+    // 7) Hapus cart
+    if (!$conn->query("DELETE FROM carts WHERE customer_id='" . mysqli_real_escape_string($conn, (string)$customer_id) . "' AND cart_id IN ($in_clause)")) {
+        throw new Exception("Gagal hapus cart: " . $conn->error);
+    }
 
+    $conn->commit();
     echo "<script>
-        alert('Pembayaran berhasil diproses! Order Anda akan segera diproses.');
+        alert('Order sukses!');
         window.location.href = 'riwayat_belanja.php';
     </script>";
     exit;
-    
+} catch (Exception $e) {
+    $conn->rollback();
+    die("Transaksi gagal: " . $e->getMessage());
 }
