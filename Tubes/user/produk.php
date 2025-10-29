@@ -11,7 +11,7 @@ if (isset($_SESSION['kd_cs'])) {
         $order_stmt->bind_param("i", $customer_id);
         $order_stmt->execute();
         $order_result = $order_stmt->get_result();
-        
+
         if ($order_result->num_rows > 0) {
             $last_order = $order_result->fetch_assoc();
             $last_order_id = $last_order['order_id'];
@@ -36,11 +36,11 @@ if (isset($_SESSION['kd_cs'])) {
             if (in_array(2, $categories_in_last_order)) {
                 $accessory_categories = [1, 3, 4, 5, 6, 7];
                 $recommend_categories = array_diff($accessory_categories, $categories_in_last_order);
-                
+
                 if (!empty($recommend_categories)) {
                     $placeholders = implode(',', array_fill(0, count($recommend_categories), '?'));
                     $types = str_repeat('i', count($recommend_categories));
-                    
+
                     $rec_stmt = $conn->prepare("
                         SELECT * 
                         FROM products 
@@ -66,9 +66,12 @@ if (isset($_SESSION['kd_cs'])) {
 ?>
 
 <script>
-const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
+    const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
 </script>
 
+<link rel="stylesheet" href="css/produk.css">
+
+<html>
 <div class="container_produk mb-4">
     <form method="GET" class="row g-3 align-items-center">
         <div class="col-auto">
@@ -107,60 +110,60 @@ const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
 
     <div class="text-center">
         <?php if (!empty($recommendations_for_user)): ?>
-        <div class="container_produk mb-4">
-            <div class="text-center">
-                <h2 class="section-heading text-uppercase">Rekomendasi Untuk Anda</h2>
-            </div>
-            <div class="row">
-                <?php foreach ($recommendations_for_user as $rec_row): ?>
-                    <div class="col-sm-6 col-md-4">
-                        <div class="thumbnail">
-                            <a href="#"
-                               class="product-detail"
-                               data-bs-toggle="modal"
-                               data-bs-target="#detailModal"
-                               data-id="<?= $rec_row['product_id']; ?>"
-                               data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
-                               data-harga="<?= $rec_row['harga']; ?>"
-                               data-stok="<?= $rec_row['stok']; ?>"
-                               data-kategori="<?= $rec_row['category_id']; ?>"
-                               data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
-                               data-gambar="<?= $rec_row['link_gambar']; ?>">
-                                <img id="gambar" src="<?= $rec_row['link_gambar']; ?>" alt="<?= $rec_row['nama_produk']; ?>">
-                            </a>
+            <div class="container_produk mb-4">
+                <div class="text-center">
+                    <h2 class="section-heading text-uppercase">Rekomendasi Untuk Anda</h2>
+                </div>
+                <div class="row">
+                    <?php foreach ($recommendations_for_user as $rec_row): ?>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="thumbnail">
+                                <a href="#"
+                                    class="product-detail"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#detailModal"
+                                    data-id="<?= $rec_row['product_id']; ?>"
+                                    data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
+                                    data-harga="<?= $rec_row['harga']; ?>"
+                                    data-stok="<?= $rec_row['stok']; ?>"
+                                    data-kategori="<?= $rec_row['category_id']; ?>"
+                                    data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
+                                    data-gambar="<?= $rec_row['link_gambar']; ?>">
+                                    <img id="gambar" src="<?= $rec_row['link_gambar']; ?>" alt="<?= $rec_row['nama_produk']; ?>">
+                                </a>
 
-                            <div class="caption">
-                                <h3><?= $rec_row['nama_produk']; ?></h3>
-                                <h4>Rp <?= number_format($rec_row['harga'], 0, ',', '.'); ?></h4>
-                            </div>
+                                <div class="caption">
+                                    <h3><?= $rec_row['nama_produk']; ?></h3>
+                                    <h4>Rp <?= number_format($rec_row['harga'], 0, ',', '.'); ?></h4>
+                                </div>
 
-                            <div class="button">
-                                <?php
-                                $rec_stok = (int)$rec_row['stok'];
-                                if ($rec_stok < 1) {
-                                    echo '<div class=""><button class="btn btn-secondary btn-block" disabled>SOLD OUT</button></div>';
-                                } else {
-                                    if (isset($_SESSION['kd_cs'])) {
-                                        echo '<div class="">
+                                <div class="button">
+                                    <?php
+                                    $rec_stok = (int)$rec_row['stok'];
+                                    if ($rec_stok < 1) {
+                                        echo '<div class=""><button class="btn btn-secondary btn-block" disabled>SOLD OUT</button></div>';
+                                    } else {
+                                        if (isset($_SESSION['kd_cs'])) {
+                                            echo '<div class="">
                                             <a href="add_to_cart.php?product_id=' . $rec_row['product_id'] . '" class="btn btn-success btn-block" role="button">
                                                 <i class="glyphicon glyphicon-shopping-cart"></i> Add to cart
                                             </a>
                                         </div>';
-                                    } else {
-                                        echo '<div class="">
+                                        } else {
+                                            echo '<div class="">
                                             <a href="login.php" class="btn btn-success btn-block" role="button">
                                                 <i class="glyphicon glyphicon-shopping-cart"></i> Login to Add
                                             </a>
                                         </div>';
+                                        }
                                     }
-                                }
-                                ?>
+                                    ?>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
             </div>
-        </div>
         <?php endif; ?>
 
         <h2 class="section-heading text-uppercase">Recommendations</h2>
@@ -176,16 +179,16 @@ const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
             <div class="col-sm-6 col-md-4">
                 <div class="thumbnail">
                     <a href="#"
-                       class="product-detail"
-                       data-bs-toggle="modal"
-                       data-bs-target="#detailModal"
-                       data-id="<?= $rec_row['product_id']; ?>"
-                       data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
-                       data-harga="<?= $rec_row['harga']; ?>"
-                       data-stok="<?= $rec_row['stok']; ?>"
-                       data-kategori="<?= $rec_row['category_id']; ?>"
-                       data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
-                       data-gambar="<?= $rec_row['link_gambar']; ?>">
+                        class="product-detail"
+                        data-bs-toggle="modal"
+                        data-bs-target="#detailModal"
+                        data-id="<?= $rec_row['product_id']; ?>"
+                        data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
+                        data-harga="<?= $rec_row['harga']; ?>"
+                        data-stok="<?= $rec_row['stok']; ?>"
+                        data-kategori="<?= $rec_row['category_id']; ?>"
+                        data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
+                        data-gambar="<?= $rec_row['link_gambar']; ?>">
                         <img id="gambar" src="<?= $rec_row['link_gambar']; ?>" alt="<?= $rec_row['nama_produk']; ?>">
                     </a>
 
@@ -258,16 +261,16 @@ const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
             <div class="col-sm-6 col-md-4">
                 <div class="thumbnail">
                     <a href="#"
-                       class="product-detail"
-                       data-bs-toggle="modal"
-                       data-bs-target="#detailModal"
-                       data-id="<?= $row['product_id']; ?>"
-                       data-nama="<?= htmlspecialchars($row['nama_produk'], ENT_QUOTES); ?>"
-                       data-harga="<?= $row['harga']; ?>"
-                       data-stok="<?= $row['stok']; ?>"
-                       data-kategori="<?= $row['category_id']; ?>"
-                       data-deskripsi="<?= htmlspecialchars($row['deskripsi_produk'] ?? ''); ?>"
-                       data-gambar="<?= $row['link_gambar']; ?>">
+                        class="product-detail"
+                        data-bs-toggle="modal"
+                        data-bs-target="#detailModal"
+                        data-id="<?= $row['product_id']; ?>"
+                        data-nama="<?= htmlspecialchars($row['nama_produk'], ENT_QUOTES); ?>"
+                        data-harga="<?= $row['harga']; ?>"
+                        data-stok="<?= $row['stok']; ?>"
+                        data-kategori="<?= $row['category_id']; ?>"
+                        data-deskripsi="<?= htmlspecialchars($row['deskripsi_produk'] ?? ''); ?>"
+                        data-gambar="<?= $row['link_gambar']; ?>">
                         <img id="gambar" src="<?= $row['link_gambar']; ?>" alt="<?= $row['nama_produk']; ?>">
                     </a>
 
@@ -341,85 +344,87 @@ const isLoggedIn = <?= isset($_SESSION['kd_cs']) ? 'true' : 'false'; ?>;
     </div>
 </div>
 
+</html>
+
 <script>
-// handle klik setiap produk (buka modal + isi konten)
-document.querySelectorAll('.product-detail').forEach(el => {
-    el.addEventListener('click', function() {
-        const nama = this.dataset.nama;
-        const harga = this.dataset.harga;
-        const stok = this.dataset.stok;
-        const deskripsi = this.dataset.deskripsi;
-        const gambar = this.dataset.gambar;
-        const id = this.dataset.id;
-        const kategori = this.dataset.kategori;
+    // handle klik setiap produk (buka modal + isi konten)
+    document.querySelectorAll('.product-detail').forEach(el => {
+        el.addEventListener('click', function() {
+            const nama = this.dataset.nama;
+            const harga = this.dataset.harga;
+            const stok = this.dataset.stok;
+            const deskripsi = this.dataset.deskripsi;
+            const gambar = this.dataset.gambar;
+            const id = this.dataset.id;
+            const kategori = this.dataset.kategori;
 
-        // Isi modal konten
-        document.getElementById('modal-nama').textContent = nama;
-        document.getElementById('modal-harga').textContent = Number(harga).toLocaleString('id-ID');
-        document.getElementById('modal-stok').textContent = stok;
-        document.getElementById('modal-deskripsi').textContent = deskripsi;
-        document.getElementById('modal-gambar').src = gambar;
+            // Isi modal konten
+            document.getElementById('modal-nama').textContent = nama;
+            document.getElementById('modal-harga').textContent = Number(harga).toLocaleString('id-ID');
+            document.getElementById('modal-stok').textContent = stok;
+            document.getElementById('modal-deskripsi').textContent = deskripsi;
+            document.getElementById('modal-gambar').src = gambar;
 
-        // Tombol Add/SOLD OUT + LOGIN TO ADD
-        const container = document.getElementById('modal-button-container');
-        container.innerHTML = '';
+            // Tombol Add/SOLD OUT + LOGIN TO ADD
+            const container = document.getElementById('modal-button-container');
+            container.innerHTML = '';
 
-        if (parseInt(stok) > 0) {
-            if (isLoggedIn) {
-                container.innerHTML = `<a href="add_to_cart.php?product_id=${id}" class="btn btn-success">Add to Cart</a>`;
+            if (parseInt(stok) > 0) {
+                if (isLoggedIn) {
+                    container.innerHTML = `<a href="add_to_cart.php?product_id=${id}" class="btn btn-success">Add to Cart</a>`;
+                } else {
+                    container.innerHTML = `<a href="login.php" class="btn btn-warning">Login to Add</a>`;
+                }
             } else {
-                container.innerHTML = `<a href="login.php" class="btn btn-warning">Login to Add</a>`;
-            }
-        } else {
-            container.innerHTML = `<button class="btn btn-secondary" disabled>SOLD OUT</button>`;
-        }
-
-        // Audio kategori dan tombol play/pause
-        const audioContainer = document.getElementById('modal-audio-container');
-        const audioElement   = document.getElementById('product-audio');
-        const toggleButton   = document.getElementById('toggle-audio');
-
-        if (audioContainer && audioElement && toggleButton) {
-            // Reset tombol + audio
-            toggleButton.textContent = '▶️ Play Sound';
-            audioElement.pause();
-            audioElement.currentTime = 0;
-
-            if (kategori === '7') {
-                audioElement.src = '../sounds/switch_sound.mp3';
-                audioContainer.style.display = 'block';
-            } else if (kategori === '2') {
-                audioElement.src = '../sounds/keyboard_sound.mp3';
-                audioContainer.style.display = 'block';
-            } else {
-                audioElement.src = '';
-                audioContainer.style.display = 'none';
-            }
-        }
-    });
-});
-
-// toggle play/pause audio di modal
-(function(){
-    const toggleBtn = document.getElementById('toggle-audio');
-    const audioEl   = document.getElementById('product-audio');
-
-    if (toggleBtn && audioEl) {
-        toggleBtn.addEventListener('click', function() {
-            if (audioEl.paused) {
-                audioEl.play();
-                this.textContent = '⏸️ Pause Sound';
-            } else {
-                audioEl.pause();
-                this.textContent = '▶️ Play Sound';
+                container.innerHTML = `<button class="btn btn-secondary" disabled>SOLD OUT</button>`;
             }
 
-            audioEl.onended = () => {
-                this.textContent = '▶️ Play Sound';
-            };
+            // Audio kategori dan tombol play/pause
+            const audioContainer = document.getElementById('modal-audio-container');
+            const audioElement = document.getElementById('product-audio');
+            const toggleButton = document.getElementById('toggle-audio');
+
+            if (audioContainer && audioElement && toggleButton) {
+                // Reset tombol + audio
+                toggleButton.textContent = '▶️ Play Sound';
+                audioElement.pause();
+                audioElement.currentTime = 0;
+
+                if (kategori === '7') {
+                    audioElement.src = '../sounds/switch_sound.mp3';
+                    audioContainer.style.display = 'block';
+                } else if (kategori === '2') {
+                    audioElement.src = '../sounds/keyboard_sound.mp3';
+                    audioContainer.style.display = 'block';
+                } else {
+                    audioElement.src = '';
+                    audioContainer.style.display = 'none';
+                }
+            }
         });
-    }
-})();
+    });
+
+    // toggle play/pause audio di modal
+    (function() {
+        const toggleBtn = document.getElementById('toggle-audio');
+        const audioEl = document.getElementById('product-audio');
+
+        if (toggleBtn && audioEl) {
+            toggleBtn.addEventListener('click', function() {
+                if (audioEl.paused) {
+                    audioEl.play();
+                    this.textContent = '⏸️ Pause Sound';
+                } else {
+                    audioEl.pause();
+                    this.textContent = '▶️ Play Sound';
+                }
+
+                audioEl.onended = () => {
+                    this.textContent = '▶️ Play Sound';
+                };
+            });
+        }
+    })();
 </script>
 
 <?php include 'footer.php'; ?>
