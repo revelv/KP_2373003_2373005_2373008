@@ -12,7 +12,33 @@ if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
 }
 $selected_cart_ids = array_map('intval', $_POST['selected_items']);
 $in_clause         = implode(',', $selected_cart_ids);
-$customer_id = $_SESSION['kd_cs'];
+
+// === Ambil data customer (alamat profil) ===
+if (!isset($_SESSION['kd_cs'])) {
+    $_SESSION['message'] = 'Anda harus login terlebih dahulu.';
+    header('Location: ../user/Login/login.php');
+    exit();
+}
+$customer_id = (int)$_SESSION['kd_cs'];
+
+$profil_nama    = '';
+$profil_prov    = '';
+$profil_kota    = '';
+$profil_alamat  = '';
+
+$stmt = $conn->prepare("SELECT nama, provinsi, kota, alamat FROM customer WHERE customer_id = ?");
+if ($stmt) {
+    $stmt->bind_param("i", $customer_id);
+    $stmt->execute();
+    $resCust = $stmt->get_result();
+    if ($rowCust = $resCust->fetch_assoc()) {
+        $profil_nama   = $rowCust['nama'] ?? '';
+        $profil_prov   = $rowCust['provinsi'] ?? '';
+        $profil_kota   = $rowCust['kota'] ?? '';
+        $profil_alamat = $rowCust['alamat'] ?? '';
+    }
+    $stmt->close();
+}
 
 // === Ambil item yang dipilih ===
 $query = "
@@ -25,7 +51,7 @@ $query = "
 ";
 $result = mysqli_query($conn, $query);
 
-$rows = [];
+$rows     = [];
 $subtotal = 0;
 while ($row = mysqli_fetch_assoc($result)) {
     if ((int)$row['stok'] < (int)$row['jumlah_barang']) {
@@ -83,6 +109,9 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             <a href="cart.php" class="btn btn-secondary">← Back to Cart</a>
         </div>
 
+
+
+        <!-- ====================== BARANG YANG DIBAYAR ====================== -->
         <div class="mb-4">
             <h4>Barang yang akan Dibayar</h4>
             <table class="table table-bordered">
@@ -118,6 +147,58 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         </tr>
                     <?php endif; ?>
 
+                    <tr>
+                        <td>Alamat Pengiriman</td>
+                        <td colspan="1">
+                            <!-- ====================== ALAMAT PENGIRIMAN ====================== -->
+                            <div class="mb-4">
+
+                                <!-- Pilih mode alamat -->
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="alamat_mode" id="alamatProfil"
+                                        value="profil" required>
+                                    <label class="form-check-label" for="alamatProfil">Gunakan alamat di profil</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="alamat_mode" id="alamatLain"
+                                        value="custom">
+                                    <label class="form-check-label" for="alamatLain">Gunakan alamat lain</label>
+                                </div>
+
+                            </div>
+                        </td>
+                        <td colspan="3">
+                            <!-- kartu alamat profil -->
+                            <div class="border rounded p-3 mb-3 address-panel" id="cardAlamatProfil">
+                                <strong><?= htmlspecialchars($profil_nama) ?></strong><br>
+                                <?= nl2br(htmlspecialchars($profil_alamat)) ?><br>
+                                <?= htmlspecialchars($profil_kota) ?> - <?= htmlspecialchars($profil_prov) ?>
+                            </div>
+
+                            <!-- form alamat lain -->
+                            <div class="border rounded p-3 mt-2 address-panel" id="formAlamatLain">
+                                <div class="mb-2">
+                                    <label for="provinsi_lain" class="form-label">Provinsi</label>
+                                    <select id="provinsi_lain" class="form-select">
+                                        <option value="">-- Pilih Provinsi --</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="kota_lain" class="form-label">Kota / Kabupaten</label>
+                                    <select id="kota_lain" class="form-select" disabled>
+                                        <option value="">-- Pilih Kota --</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="alamat_lain" class="form-label">Alamat Lengkap</label>
+                                    <textarea id="alamat_lain" class="form-control" rows="3"
+                                        placeholder="Jalan, No, RT/RW, patokan, dll"></textarea>
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+
                     <!-- Pilih Kurir -->
                     <tr>
                         <td colspan="1">Pilih Courier</td>
@@ -131,7 +212,8 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                     <option value="" disabled <?= $current_courier === '' ? 'selected' : '' ?>>-- Pilih Kurir --</option>
                                     <?php if ($kurir_res): ?>
                                         <?php while ($k = mysqli_fetch_assoc($kurir_res)): ?>
-                                            <option value="<?= htmlspecialchars($k['code_courier']) ?>" <?= $current_courier === $k['code_courier'] ? 'selected' : '' ?>>
+                                            <option value="<?= htmlspecialchars($k['code_courier']) ?>"
+                                                <?= $current_courier === $k['code_courier'] ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($k['nama_kurir']) ?>
                                             </option>
                                         <?php endwhile;
@@ -159,6 +241,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             </table>
         </div>
 
+        <input type="hidden" id="profile_province_id" value="<?= htmlspecialchars($profil_prov_id ?? '') ?>">
+        <input type="hidden" id="profile_city_id" value="<?= htmlspecialchars($profil_kota_id ?? '') ?>">
+
+
+        <!-- ====================== METODE PEMBAYARAN ====================== -->
         <div class="mb-4">
             <h4 class="mb-3 text-center">Pilih Metode Pembayaran</h4>
             <div class="payment-methods justify-content-center">
@@ -187,232 +274,443 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         <div class="text-center mb-4">
             <button id="btnPay" class="btn btn-lg btn-warning" onclick="mulaiPembayaran()" disabled>Pay</button>
-            <!-- tombol Pay DIPAKSA DISABLED sampai layanan dipilih -->
         </div>
-
-        <script>
-            // === Data dasar dari PHP ===
-            const selectedItems = <?= json_encode($selected_cart_ids) ?>;
-            const baseSubtotal = <?= (int)$subtotal ?>;
-            const voucherDiscount = <?= (int)$voucher_discount ?>;
-            const baseTotal = Math.max(0, baseSubtotal - voucherDiscount); // tanpa ongkir
-
-            // === Elemen DOM ===
-            const courierSelect = document.getElementById('code_courier');
-            const svcBox = document.getElementById('shippingServices');
-            const ongkirCell = document.getElementById('ongkirCell');
-            const grandCell = document.getElementById('grandTotalCell');
-            const btnPay = document.getElementById('btnPay');
-
-            // === State pilihan ongkir ===
-            let currentShipping = {
-                cost: 0,
-                courier: '',
-                service: ''
-            };
-
-            function ensureShippingHiddenInputs(formEl) {
-                if (!formEl) return;
-                const setHidden = (name, val) => {
-                    let el = formEl.querySelector(`input[name="${name}"]`);
-                    if (!el) {
-                        el = document.createElement('input');
-                        el.type = 'hidden';
-                        el.name = name;
-                        formEl.appendChild(el);
-                    }
-                    el.value = val ?? '';
-                };
-                setHidden('shipping_cost', String(currentShipping.cost || 0));
-                setHidden('shipping_courier', currentShipping.courier || '');
-                setHidden('shipping_service', currentShipping.service || '');
-
-                // ikutkan cart
-                (selectedItems || []).forEach(id => {
-                    const i = document.createElement('input');
-                    i.type = 'hidden';
-                    i.name = 'selected_items[]';
-                    i.value = String(id);
-                    formEl.appendChild(i);
-                });
-            }
-
-            function updateTotals(cost = 0) {
-                const ongkir = Number(cost) || 0;
-                const grand = Math.max(0, baseTotal + ongkir);
-                if (ongkirCell) ongkirCell.textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
-                if (grandCell) grandCell.textContent = 'Rp ' + grand.toLocaleString('id-ID');
-
-                currentShipping.cost = ongkir;
-                currentShipping.courier = courierSelect?.value || '';
-
-                // aktifkan tombol Pay hanya jika layanan sudah dipilih (cost > 0 atau layanan valid)
-                btnPay.disabled = !(currentShipping.service && (ongkir >= 0));
-            }
-            updateTotals(0);
-
-            async function loadServices(courier) {
-                if (!courier) return;
-
-                const formData = new FormData();
-                selectedItems.forEach(id => formData.append('selected_items[]', id));
-                formData.append('code_courier', courier);
-
-                svcBox.textContent = 'Menghitung ongkir...';
-                updateTotals(0);
-                currentShipping.service = ''; // reset
-                btnPay.disabled = true;
-
-                try {
-                    const res = await fetch('./rajaongkir/calc_ongkir.php', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const text = await res.text();
-                    let data;
-                    try {
-                        data = JSON.parse(text);
-                    } catch {
-                        throw new Error('Respon tidak valid dari RajaOngkir (bukan JSON).');
-                    }
-
-                    if (!data.success || !Array.isArray(data.services) || data.services.length === 0) {
-                        svcBox.innerHTML = `<div class="text-danger">Gagal: ${data.message || 'Tidak ada layanan.'}</div>`;
-                        updateTotals(0);
-                        return;
-                    }
-
-                    svcBox.innerHTML = `
-                    <label class="form-label">Pilih Layanan</label>
-                    <select id="serviceSelect" class="form-select">
-                        ${data.services.map(s => `
-                            <option value="${s.service}" data-cost="${s.cost}">
-                                ${(s.courier || courier).toUpperCase()} - ${s.service}
-                                ${s.etd ? `(ETD ${s.etd} hari)` : ''} - Rp ${Number(s.cost).toLocaleString('id-ID')}
-                            </option>
-                        `).join('')}
-                    </select>
-                    <small class="text-muted">Harga & ETD berdasarkan API.</small>
-                `;
-
-                    const svc = document.getElementById('serviceSelect');
-
-                    function applyCost() {
-                        const opt = svc.selectedOptions[0];
-                        const cost = parseInt(opt?.dataset.cost || '0', 10);
-                        currentShipping.service = svc.value || '';
-                        updateTotals(cost);
-
-                        // sync hidden inputs kalau form payment sudah dirender
-                        ensureShippingHiddenInputs(document.getElementById('formQRIS'));
-                        ensureShippingHiddenInputs(document.getElementById('formTransfer'));
-                    }
-                    applyCost();
-                    svc.addEventListener('change', applyCost);
-
-                } catch (err) {
-                    svcBox.innerHTML = `<div class="text-danger">Error koneksi: ${String(err.message || err)}</div>`;
-                    updateTotals(0);
-                }
-            }
-
-            courierSelect?.addEventListener('change', (e) => loadServices(e.target.value));
-
-            // ======================= PEMBAYARAN =======================
-            let qrTimer;
-            let qrContent = "";
-
-            function generateQRContent() {
-                const randomCode = Math.floor(Math.random() * 900) + 100;
-                return encodeURIComponent("STYRK_QRIS_" + Date.now() + "_" + randomCode);
-            }
-
-            function mulaiPembayaran() {
-                // wajib pilih layanan dulu
-                if (!currentShipping.service) {
-                    alert("Pilih kurir & layanan pengiriman dulu ya bro.");
-                    return;
-                }
-
-                const metode = document.querySelector('input[name="metode"]:checked');
-                const container = document.getElementById("paymentContainer");
-                if (!metode) {
-                    alert("Silakan pilih metode pembayaran terlebih dahulu.");
-                    return;
-                }
-
-                let html = "";
-                if (metode.value === "QRIS") {
-                    qrContent = generateQRContent();
-                    html = `
-                    <div class="payment-box">
-                        <h5>QRIS</h5>
-                        <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
-                        <div class="qris-timer" id="timer">02:00</div>
-                        <form id="formQRIS" action="checkout.php" method="post">
-                            <input type="hidden" name="metode" value="QRIS">
-                            <input type="hidden" name="kode_transaksi" value="${qrContent}">
-                            <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
-                        </form>
-                    </div>
-                `;
-                    container.innerHTML = html;
-                    ensureShippingHiddenInputs(document.getElementById('formQRIS'));
-                    startQRISTimer();
-                } else {
-                    html = `
-                    <div class="payment-box">
-                        <h5>Transfer Bank</h5>
-                        <p>Silakan transfer ke rekening:</p>
-                        <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
-                        <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
-                            <input type="hidden" name="metode" value="Transfer">
-                            <div class="mb-3">
-                                <label for="bukti" class="form-label">Upload Bukti Transfer</label>
-                                <input type="file" name="bukti" class="form-control" required accept="image/*">
-                                <div class="form-text">Format: JPG, PNG (max 2MB)</div>
-                            </div>
-                            <button type="submit" name="pay_bank" class="btn btn-success w-100">
-                                <i class="fas fa-upload me-2"></i> Upload & Cek Pembayaran
-                            </button>
-                        </form>
-                    </div>
-                `;
-                    container.innerHTML = html;
-                    ensureShippingHiddenInputs(document.getElementById('formTransfer'));
-                }
-            }
-
-            function startQRISTimer() {
-                clearInterval(qrTimer);
-                let duration = 120; // 2 menit
-                const timerDisplay = document.getElementById("timer");
-                qrTimer = setInterval(() => {
-                    const minutes = Math.floor(duration / 60);
-                    const seconds = duration % 60;
-                    if (timerDisplay) {
-                        timerDisplay.textContent =
-                            (minutes < 10 ? "0" : "") + minutes + ":" +
-                            (seconds < 10 ? "0" : "") + seconds;
-                    }
-                    if (--duration < 0) {
-                        clearInterval(qrTimer);
-                        // regenerate QR
-                        qrContent = generateQRContent();
-                        const qrImg = document.getElementById("qrImage");
-                        if (qrImg) qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
-                        const kodeTransaksiInput = document.querySelector("#formQRIS input[name='kode_transaksi']");
-                        if (kodeTransaksiInput) kodeTransaksiInput.value = qrContent;
-                        startQRISTimer();
-                        alert("QR baru telah digenerate karena timeout.");
-                    }
-                }, 1000);
-            }
-        </script>
-
 
     </div>
     <?php include 'footer.php'; ?>
+
+
+    <script>
+        // ====== DATA DARI PHP ======
+        const selectedItems = <?= json_encode($selected_cart_ids) ?>;
+        const baseSubtotal = <?= (int)$subtotal ?>;
+        const voucherDiscount = <?= (int)$voucher_discount ?>;
+        const baseTotal = Math.max(0, baseSubtotal - voucherDiscount);
+
+        const profileAddress = {
+            nama: <?= json_encode($profil_nama) ?>,
+            provinsi: <?= json_encode($profil_prov) ?>,
+            kota: <?= json_encode($profil_kota) ?>,
+            alamat: <?= json_encode($profil_alamat) ?>
+        };
+
+        // ====== ELEMEN YG DIPAKAI ======
+        const courierSelect = document.getElementById('code_courier');
+        const svcBox = document.getElementById('shippingServices');
+        const ongkirCell = document.getElementById('ongkirCell');
+        const grandCell = document.getElementById('grandTotalCell');
+        const btnPay = document.getElementById('btnPay');
+
+        const rProfil = document.getElementById('alamatProfil');
+        const rLain = document.getElementById('alamatLain');
+        const panelProfil = document.getElementById('cardAlamatProfil');
+        const panelLain = document.getElementById('formAlamatLain');
+
+        const provinsiLainSel = document.getElementById('provinsi_lain');
+        const kotaLainSel = document.getElementById('kota_lain');
+        const alamatLainTextarea = document.getElementById('alamat_lain');
+
+        // ====== STATE ======
+        let currentShipping = {
+            cost: 0,
+            courier: '',
+            service: ''
+        };
+
+        let shippingAddress = {
+            mode: '', // '' | 'profil' | 'custom'
+            provinsi: '',
+            kota: '',
+            alamat: ''
+        };
+
+        // ====== UTIL ======
+        const show = el => {
+            if (el) el.style.display = 'block';
+        };
+        const hide = el => {
+            if (el) el.style.display = 'none';
+        };
+
+        function isAddressValid() {
+            return !!(shippingAddress.provinsi && shippingAddress.kota && shippingAddress.alamat);
+        }
+
+        function updateTotals(cost = 0) {
+            const ongkir = Number(cost) || 0;
+            const grand = Math.max(0, baseTotal + ongkir);
+            if (ongkirCell) ongkirCell.textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
+            if (grandCell) grandCell.textContent = 'Rp ' + grand.toLocaleString('id-ID');
+            currentShipping.cost = ongkir;
+            currentShipping.courier = courierSelect?.value || '';
+            btnPay.disabled = !(currentShipping.service && isAddressValid());
+        }
+        updateTotals(0);
+
+        function ensureHiddenInputs(formEl) {
+            if (!formEl) return;
+            const put = (name, val) => {
+                let el = formEl.querySelector(`input[name="${name}"]`);
+                if (!el) {
+                    el = document.createElement('input');
+                    el.type = 'hidden';
+                    el.name = name;
+                    formEl.appendChild(el);
+                }
+                el.value = val ?? '';
+            };
+            // alamat
+            put('alamat_mode', shippingAddress.mode || '');
+            put('provinsi', shippingAddress.provinsi || '');
+            put('kota', shippingAddress.kota || '');
+            put('alamat', shippingAddress.alamat || '');
+
+            // id kalau custom
+            put('provinsi_id', provinsiLainSel ? (provinsiLainSel.value || '') : '');
+            put('kota_id', kotaLainSel ? (kotaLainSel.value || '') : '');
+
+            // ongkir
+            put('shipping_cost', String(currentShipping.cost || 0));
+            put('shipping_courier', currentShipping.courier || '');
+            put('shipping_service', currentShipping.service || '');
+
+            // cart
+            (selectedItems || []).forEach(id => {
+                const i = document.createElement('input');
+                i.type = 'hidden';
+                i.name = 'selected_items[]';
+                i.value = String(id);
+                formEl.appendChild(i);
+            });
+        }
+
+        function resetOngkir(reload = false) {
+            currentShipping.service = '';
+            updateTotals(0);
+            btnPay.disabled = true;
+            if (svcBox) svcBox.innerHTML = '';
+            const cur = courierSelect?.value || '';
+            if (reload && cur) loadServices(cur);
+        }
+
+        // ====== ALAMAT: PROFIL / CUSTOM ======
+        let provinceLoaded = false;
+
+        async function loadProvinces() {
+            if (provinceLoaded) return;
+            if (provinsiLainSel) provinsiLainSel.innerHTML = '<option value="">Loading...</option>';
+            const res = await fetch('./rajaongkir/get-province.php?t=' + Date.now());
+            const txt = await res.text();
+            let data;
+            try {
+                data = JSON.parse(txt);
+            } catch {
+                console.error('Province parse error:', txt);
+                return;
+            }
+            const list = Array.isArray(data) ? data : (data.data || []);
+            const options = list.map(p => {
+                const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
+                const name = String(p.province ?? p.name ?? p.provinceName ?? '');
+                return (id && name) ? `<option value="${id}">${name}</option>` : '';
+            }).join('');
+            if (provinsiLainSel) {
+                provinsiLainSel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' + options;
+                provinceLoaded = true;
+            }
+        }
+
+        async function loadCities(provId) {
+            if (!kotaLainSel) return;
+            kotaLainSel.innerHTML = '<option value="">Loading...</option>';
+            kotaLainSel.disabled = true;
+            if (!provId) {
+                kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>';
+                return;
+            }
+            const res = await fetch('./rajaongkir/get-cities.php?province=' + encodeURIComponent(provId) + '&t=' + Date.now());
+            const txt = await res.text();
+            let data;
+            try {
+                data = JSON.parse(txt);
+            } catch {
+                console.error('City parse error:', txt);
+                return;
+            }
+            const list = Array.isArray(data) ? data : (data.data || []);
+            const options = list.map(c => {
+                const id = String(c.city_id ?? c.id ?? c.cityId ?? '');
+                const name = String(c.city_name ?? c.name ?? c.cityName ?? '').trim();
+                return (id && name) ? `<option value="${id}">${name}</option>` : '';
+            }).join('');
+            kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
+            kotaLainSel.disabled = false;
+        }
+
+        function applyAddressMode(mode) {
+            if (mode === 'profil') {
+                // tampil panel profil
+                show(panelProfil);
+                hide(panelLain);
+                shippingAddress.mode = 'profil';
+                shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
+                shippingAddress.kota = (profileAddress.kota || '').trim();
+                shippingAddress.alamat = (profileAddress.alamat || '').trim();
+                resetOngkir(true); // reload layanan untuk kurir terpilih
+            } else if (mode === 'custom') {
+                hide(panelProfil);
+                show(panelLain);
+                shippingAddress.mode = 'custom';
+                // muat provinsi (sekali)
+                if (!provinceLoaded) loadProvinces().catch(console.error);
+                // sinkron dari field yang ada
+                const pOpt = provinsiLainSel?.selectedOptions?.[0];
+                const cOpt = kotaLainSel?.selectedOptions?.[0];
+                shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
+                shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
+                shippingAddress.alamat = (alamatLainTextarea?.value || '');
+                resetOngkir(true);
+            } else {
+                // hide semua (awal)
+                hide(panelProfil);
+                hide(panelLain);
+                shippingAddress.mode = '';
+                resetOngkir(false);
+            }
+        }
+
+        // ====== INIT UI (AWAL: DUA PANEL HIDDEN) ======
+        (function init() {
+            hide(panelProfil);
+            hide(panelLain);
+            // pastikan radio tidak centang di awal
+            if (rProfil) rProfil.checked = false;
+            if (rLain) rLain.checked = false;
+            applyAddressMode(''); // sembunyikan semua
+        })();
+
+        // Delegation: listen ke radio by name (aman kalau DOM re-render)
+        document.addEventListener('change', (e) => {
+            const t = e.target;
+            if (t && t.name === 'alamat_mode') {
+                applyAddressMode(t.value === 'profil' ? 'profil' : 'custom');
+            }
+            if (t === provinsiLainSel) {
+                loadCities(provinsiLainSel.value).then(() => {
+                    // sinkron nilai custom + reset ongkir
+                    const pOpt = provinsiLainSel.selectedOptions[0];
+                    shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
+                    resetOngkir(true);
+                });
+            }
+            if (t === kotaLainSel) {
+                const cOpt = kotaLainSel.selectedOptions[0];
+                shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
+                resetOngkir(true);
+            }
+            if (t === alamatLainTextarea) {
+                shippingAddress.alamat = (alamatLainTextarea.value || '');
+                resetOngkir(true);
+            }
+        });
+
+        // Antisipasi beberapa browser hanya trigger "click" pada label
+        document.addEventListener('click', (e) => {
+            const t = e.target;
+            if (t && t.matches('label[for="alamatProfil"], #alamatProfil')) {
+                if (rProfil) rProfil.checked = true;
+                applyAddressMode('profil');
+            }
+            if (t && t.matches('label[for="alamatLain"], #alamatLain')) {
+                if (rLain) rLain.checked = true;
+                applyAddressMode('custom');
+            }
+        });
+
+        // ====== ONGKIR / LAYANAN ======
+        async function loadServices(courier) {
+            if (!courier) return;
+
+            // pastikan alamat lengkap (nama) biar UI jelas
+            if (!isAddressValid()) {
+                svcBox.innerHTML = '<div class="text-danger">Lengkapi alamat dulu ya bro.</div>';
+                updateTotals(0);
+                return;
+            }
+
+            const formData = new FormData();
+            selectedItems.forEach(id => formData.append('selected_items[]', id));
+            formData.append('code_courier', courier);
+
+            // kirim alamat (nama untuk tampilan)
+            formData.append('alamat_mode', shippingAddress.mode || '');
+            formData.append('provinsi', shippingAddress.provinsi || '');
+            formData.append('kota', shippingAddress.kota || '');
+            formData.append('alamat', shippingAddress.alamat || '');
+
+            // === KUNCI: city_id tujuan ===
+            let destCityId = '';
+            let destProvId = '';
+
+            if (shippingAddress.mode === 'custom') {
+                destCityId = (kotaLainSel && kotaLainSel.value) ? kotaLainSel.value : '';
+                destProvId = (provinsiLainSel && provinsiLainSel.value) ? provinsiLainSel.value : '';
+            } else if (shippingAddress.mode === 'profil') {
+                destCityId = (document.getElementById('profile_city_id')?.value || '');
+                destProvId = (document.getElementById('profile_province_id')?.value || '');
+            }
+
+            formData.append('dest_city_id', destCityId);
+            formData.append('dest_prov_id', destProvId);
+
+            // UI reset
+            svcBox.textContent = 'Menghitung ongkir...';
+            currentShipping.service = '';
+            updateTotals(0);
+            btnPay.disabled = true;
+
+            try {
+                const res = await fetch('./rajaongkir/calc_ongkir.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const txt = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(txt);
+                } catch {
+                    throw new Error('Respon tidak valid.');
+                }
+
+                if (!data.success || !Array.isArray(data.services) || data.services.length === 0) {
+                    svcBox.innerHTML = `<div class="text-danger">Gagal: ${data.message || 'Tidak ada layanan.'}</div>`;
+                    updateTotals(0);
+                    return;
+                }
+
+                svcBox.innerHTML = `
+                    <label class="form-label">Pilih Layanan</label>
+                    <select id="serviceSelect" class="form-select">
+                        ${data.services.map(s => `
+                        <option value="${s.service}" data-cost="${s.cost}">
+                        ${(s.courier || courier).toUpperCase()} - ${s.service}
+                        ${s.etd ? `(ETD ${s.etd} hari)` : ''} - Rp ${Number(s.cost).toLocaleString('id-ID')}
+                        </option>
+                        `).join('')}
+                    </select>
+                   <small class="text-muted">Harga & ETD .</small>`;
+
+                const svc = document.getElementById('serviceSelect');
+                const applyCost = () => {
+                    const cost = parseInt(svc.selectedOptions[0]?.dataset.cost || '0', 10);
+                    currentShipping.service = svc.value || '';
+                    updateTotals(cost);
+                    ensureHiddenInputs(document.getElementById('formQRIS'));
+                    ensureHiddenInputs(document.getElementById('formTransfer'));
+                };
+                applyCost();
+                svc.addEventListener('change', applyCost);
+            } catch (err) {
+                svcBox.innerHTML = `<div class="text-danger">Error koneksi: ${String(err.message || err)}</div>`;
+                updateTotals(0);
+            }
+        }
+
+        courierSelect?.addEventListener('change', (e) => {
+            // ganti kurir -> reset & hitung ulang (kalau alamat sudah valid)
+            resetOngkir(false);
+            loadServices(e.target.value);
+        });
+
+        // ====== PAYMENT (QRIS / TRANSFER) ======
+        let qrTimer;
+        let qrContent = "";
+
+        function generateQRContent() {
+            const rand = Math.floor(Math.random() * 900) + 100;
+            return encodeURIComponent("STYRK_QRIS_" + Date.now() + "_" + rand);
+        }
+
+        function mulaiPembayaran() {
+            if (!currentShipping.service) {
+                alert("Pilih kurir & layanan pengiriman dulu ya bro.");
+                return;
+            }
+            if (!isAddressValid()) {
+                alert("Alamat pengiriman belum lengkap.");
+                return;
+            }
+
+            const metode = document.querySelector('input[name="metode"]:checked');
+            const container = document.getElementById("paymentContainer");
+            if (!metode) {
+                alert("Silakan pilih metode pembayaran terlebih dahulu.");
+                return;
+            }
+
+            let html = "";
+            if (metode.value === "QRIS") {
+                qrContent = generateQRContent();
+                html = `
+                        <div class="payment-box">
+                            <h5>QRIS</h5>
+                            <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
+                            <div class="qris-timer" id="timer">02:00</div>
+                                <form id="formQRIS" action="checkout.php" method="post">
+                                    <input type="hidden" name="metode" value="QRIS">
+                                    <input type="hidden" name="kode_transaksi" value="${qrContent}">
+                                    <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
+                                </form>
+                        </div>`;
+                container.innerHTML = html;
+                ensureHiddenInputs(document.getElementById('formQRIS'));
+                startQRISTimer();
+            } else {
+                html = `
+                        <div class="payment-box">
+                            <h5>Transfer Bank</h5>
+                            <p>Silakan transfer ke rekening:</p>
+                            <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
+                            <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="metode" value="Transfer">
+                                <div class="mb-3">
+                                    <label for="bukti" class="form-label">Upload Bukti Transfer</label>
+                                    <input type="file" name="bukti" class="form-control" required accept="image/*">
+                                    <div class="form-text">Format: JPG, PNG (max 2MB)</div>
+                                </div>
+                                <button type="submit" name="pay_bank" class="btn btn-success w-100">
+                                <i class="fas fa-upload me-2"></i> Upload & Cek Pembayaran
+                                </button>
+                            </form>
+                        </div>`;
+                container.innerHTML = html;
+                ensureHiddenInputs(document.getElementById('formTransfer'));
+            }
+        }
+
+        function startQRISTimer() {
+            clearInterval(qrTimer);
+            let duration = 120;
+            const timerDisplay = document.getElementById("timer");
+            qrTimer = setInterval(() => {
+                const m = Math.floor(duration / 60);
+                const s = duration % 60;
+                if (timerDisplay) timerDisplay.textContent =
+                    (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+                if (--duration < 0) {
+                    clearInterval(qrTimer);
+                    qrContent = generateQRContent();
+                    const qrImg = document.getElementById("qrImage");
+                    if (qrImg) qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
+                    const kodeInput = document.querySelector("#formQRIS input[name='kode_transaksi']");
+                    if (kodeInput) kodeInput.value = qrContent;
+                    startQRISTimer();
+                    alert("QR baru telah digenerate karena timeout.");
+                }
+            }, 1000);
+        }
+    </script>
+
 </body>
 
 </html>
