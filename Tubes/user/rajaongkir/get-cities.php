@@ -2,7 +2,7 @@
 // get_cities.php
 header('Content-Type: application/json; charset=utf-8');
 
-$API_KEY = 'ejXkXmbn4b3eabbac6c8431b9WfcK0M3'; // ganti
+$API_KEY = 'j7mlOjpseb8ec09cadbb3a603ywK7H22'; // ganti
 $BASE    = 'https://rajaongkir.komerce.id/api/v1';
 
 $provinceId = $_GET['province'] ?? '';

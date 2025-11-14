@@ -1,7 +1,5 @@
 <?php
-
 declare(strict_types=1);
-session_start();
 include '../koneksi.php';
 
 // === Validasi item yang dipilih ===
@@ -16,7 +14,7 @@ $in_clause         = implode(',', $selected_cart_ids);
 // === Ambil data customer (alamat profil) ===
 if (!isset($_SESSION['kd_cs'])) {
     $_SESSION['message'] = 'Anda harus login terlebih dahulu.';
-    header('Location: ../user/Login/login.php');
+    header('Location: ../user/produk.php');
     exit();
 }
 $customer_id = (int)$_SESSION['kd_cs'];

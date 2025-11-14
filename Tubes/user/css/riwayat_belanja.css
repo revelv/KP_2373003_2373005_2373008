@@ -1,108 +1,175 @@
-/* General Styles */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #ffffff;
-    color: #333333;
+.section-bleed {
+    width: 100%;
     margin: 0;
-
+    padding: 0;
+    background: #111;
 }
 
-#status {
-    color: rgb(102, 175, 0);
+.section-bleed .inner {
+    /* kasih padding dikit biar konten nafas */
+    padding: 20px 18px;
+    background: #fff;
+    /* konten putih, tapi mepet ke edge */
 }
 
-h2 {
-    font-family: 'Playfair Display', serif;
+@media (min-width: 992px) {
+    .section-bleed .inner {
+        padding: 28px 28px;
+    }
+}
+
+/* ===== Judul halaman ===== */
+.page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 18px 0;
+}
+
+.page-title {
+    color: #121212;
     font-weight: 700;
-    color: #000000;
-    text-align: center;
-    margin-bottom: 30px;
-    margin-top: 30px;
-    font-size: 36px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: .5px;
+    position: relative;
+    padding-bottom: 10px;
+    margin: 0;
 }
 
-.order-card {
-    background-color: #ffffff;
-    border: 1px solid #d4af37;
-    /* Gold border */
-    border-radius: 12px;
-    padding: 20px;
-    margin: 30px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, box-shadow 0.3s;
+.page-title::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 72px;
+    height: 3px;
+    background: linear-gradient(90deg, #d4af37, transparent);
 }
 
-.order-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+/* ===== Kartu tabel edge-to-edge (tanpa gap kiri-kanan) ===== */
+.card-wrap {
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .08);
 }
 
-.order-header {
-    font-weight: 600;
-    color: #000000;
+/* ===== Tabel tema hitam-emas rapi ===== */
+.table-gold {
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-gold thead th {
+    background: #111;
+    color: #d4af37;
     border-bottom: 2px solid #d4af37;
-    /* Gold accent */
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-    font-size: 18px;
+    text-transform: uppercase;
+    font-size: .78rem;
+    letter-spacing: .06em;
+    vertical-align: middle;
+    padding: 12px 14px;
 }
 
-.product-item {
-    font-size: 16px;
-    color: #555555;
-    margin: 10px 0;
-    padding: 10px;
-    border-left: 4px solid #d4af37;
-    /* Gold accent */
-    background-color: #f9f9f9;
-    border-radius: 4px;
+.table-gold tbody td {
+    padding: 14px;
+    vertical-align: middle;
+    border-top: 1px solid #eee;
+    background: #fff;
 }
 
-.tracking-log {
-    margin-top: 20px;
-
+.table-gold tbody tr:nth-child(odd) td {
+    background: #fcfcfc;
 }
 
-.tracking-log h4 {
+.table-gold tbody tr:hover td {
+    background: #faf7ee;
+}
+
+/* gold-ish hover */
+.nowrap {
+    white-space: nowrap;
+}
+
+.text-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dest {
+    line-height: 1.35;
+}
+
+.dest .address {
     font-weight: 600;
-    color: #000000;
-    font-size: 18px;
-    margin-bottom: 10px;
-
+    color: #121212;
 }
 
-.tracking-log p {
-    font-size: 14px;
-    color: #777777;
-    margin: 5px 0;
-    color: rgb(102, 175, 0);
+.dest .cityprov {
+    color: #6c757d;
+    font-size: .93rem;
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
-    body {
-        padding: 20px;
-    }
+/* status badge */
+.badge-status {
+    text-transform: capitalize;
+}
 
-    h2 {
-        font-size: 28px;
-    }
+.badge-pending {
+    background: #ffe08a;
+    color: #111;
+}
 
-    .order-card {
-        padding: 15px;
-    }
+.badge-proses {
+    background: #0dcaf0;
+}
 
-    .order-header {
-        font-size: 16px;
-    }
+.badge-selesai {
+    background: #28a745;
+}
 
-    .product-item {
-        font-size: 14px;
-    }
+.badge-batal {
+    background: #dc3545;
+}
 
-    .tracking-log h4 {
-        font-size: 16px;
-    }
+/* tombol aksi di tengah */
+td.td-aksi {
+    text-align: center;
+}
+
+/* kolom lebar fix biar nggak acak2 */
+.col-date {
+    width: 160px;
+}
+
+.col-order {
+    width: 190px;
+}
+
+.col-courier {
+    width: 150px;
+}
+
+.col-ongkir {
+    width: 130px;
+}
+
+.col-total {
+    width: 150px;
+}
+
+.col-status {
+    width: 120px;
+}
+
+.col-action {
+    width: 120px;
+}
+
+/* perbaiki gap global bootstrap container dari header */
+.container,
+.container-fluid {
+    padding-left: 0;
+    padding-right: 0;
 }
