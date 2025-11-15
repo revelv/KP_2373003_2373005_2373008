@@ -249,10 +249,18 @@ if (isset($_SESSION['kd_cs'])) {
 
         $where_clause = count($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
+        $where_conditions = [];
+        if (count($where) > 0) {
+            $where_conditions[] = implode(' AND ', $where);
+        }
+        $where_conditions[] = "products.status_jual = 'dijual'"; 
+
+        $where_clause_final = 'WHERE ' . implode(' AND ', $where_conditions);
+
         $query = "SELECT products.*, category.category 
-                  FROM products 
-                  JOIN category ON products.category_id = category.category_id 
-                  $where_clause";
+          FROM products 
+          JOIN category ON products.category_id = category.category_id 
+          $where_clause_final";
 
         $result = mysqli_query($conn, $query);
 
