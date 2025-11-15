@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Waktu pembuatan: 13 Nov 2025 pada 17.17
--- Versi server: 8.4.3
--- Versi PHP: 8.3.16
+-- Generation Time: Nov 15, 2025 at 01:58 PM
+-- Server version: 8.0.30
+-- PHP Version: 8.1.10
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `admin`
+-- Table structure for table `admin`
 --
 
 CREATE TABLE `admin` (
@@ -34,7 +34,7 @@ CREATE TABLE `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `admin`
+-- Dumping data for table `admin`
 --
 
 INSERT INTO `admin` (`admin_id`, `username`, `password`) VALUES
@@ -43,34 +43,34 @@ INSERT INTO `admin` (`admin_id`, `username`, `password`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `auctions`
+-- Table structure for table `auctions`
 --
 
 CREATE TABLE `auctions` (
   `auction_id` int NOT NULL,
   `customer_id` int NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text COLLATE utf8mb4_general_ci,
-  `image_url` varchar(512) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `image_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `start_price` decimal(12,2) NOT NULL,
   `current_bid` decimal(12,2) NOT NULL,
   `current_winner_id` int DEFAULT NULL,
   `start_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `end_time` timestamp NOT NULL,
-  `status` enum('active','ended','paid') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active'
+  `status` enum('active','ended','paid') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `auctions`
+-- Dumping data for table `auctions`
 --
 
 INSERT INTO `auctions` (`auction_id`, `customer_id`, `title`, `description`, `image_url`, `start_price`, `current_bid`, `current_winner_id`, `start_time`, `end_time`, `status`) VALUES
-(1, 16, 'keycaps sammy', 'fgfg', 'https: suno ai', 122222.00, 122222.00, NULL, '2025-11-13 14:46:59', '2025-11-26 14:46:00', 'active');
+(1, 16, 'keycaps sammy', 'fgfg', 'https: suno ai', 122222.00, 122222.00, NULL, '2025-11-13 07:46:59', '2025-11-26 07:46:00', 'active');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `bids`
+-- Table structure for table `bids`
 --
 
 CREATE TABLE `bids` (
@@ -84,7 +84,7 @@ CREATE TABLE `bids` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `carts`
+-- Table structure for table `carts`
 --
 
 CREATE TABLE `carts` (
@@ -97,17 +97,17 @@ CREATE TABLE `carts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `carts`
+-- Dumping data for table `carts`
 --
 
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 1, '2025-10-19 12:07:07', NULL),
-(67, 18, 'SW001', 1, '2025-11-13 08:31:09', NULL);
+(70, 6, 'KC008', 1, '2025-11-13 12:48:30', NULL);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `category`
+-- Table structure for table `category`
 --
 
 CREATE TABLE `category` (
@@ -116,7 +116,7 @@ CREATE TABLE `category` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `category`
+-- Dumping data for table `category`
 --
 
 INSERT INTO `category` (`category_id`, `category`) VALUES
@@ -131,7 +131,7 @@ INSERT INTO `category` (`category_id`, `category`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `courier`
+-- Table structure for table `courier`
 --
 
 CREATE TABLE `courier` (
@@ -141,7 +141,7 @@ CREATE TABLE `courier` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data untuk tabel `courier`
+-- Dumping data for table `courier`
 --
 
 INSERT INTO `courier` (`code_courier`, `nama_kurir`, `avaibility`) VALUES
@@ -161,7 +161,7 @@ INSERT INTO `courier` (`code_courier`, `nama_kurir`, `avaibility`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `customer`
+-- Table structure for table `customer`
 --
 
 CREATE TABLE `customer` (
@@ -178,55 +178,60 @@ CREATE TABLE `customer` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `customer`
+-- Dumping data for table `customer`
 --
 
 INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`, `provinsi`, `kota`, `alamat`, `last_login`, `last_reengagement_sent`) VALUES
 (5, 'Jeremia', '$2y$10$fwucJezb3RQTmc5Gz2a56uyAjvXYyMdS/V38v913qqxpJtpMF5sRS', 'jeremiadylan80@gmail.com', '081312663058', '', '', 'Jalan kebenara 169', NULL, NULL),
-(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', '2', '25', 'Jalan asmi no 123', '2025-11-13 08:31:33', NULL),
+(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', '2', '25', 'Jalan asmi no 123', '2025-11-13 13:12:06', NULL),
 (7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', 'jalan tuhan kebenaran no. 100', NULL, NULL),
 (10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', 'rumahsammy 123', NULL, NULL),
-(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', 'gunung gede 123', '2025-11-13 14:10:55', '2025-10-26 08:32:45'),
+(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', 'gunung gede 123', '2025-06-26 08:30:06', '2025-10-26 08:32:45'),
 (17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', 'banjaran 120', NULL, NULL),
-(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', '5', '55', 'Taman Kopo Indah 69 Blok S', '2025-11-13 08:30:22', NULL),
+(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', '5', '55', 'Taman Kopo Indah 69 Blok S', '2025-11-15 13:49:00', NULL),
 (19, 'jeremiadylan', '$2y$12$iOWWC85uO2u7dOJuDEGG7eZiL.jRv2Or5fSYRgWAoLELkZMqHyS6a', 'jeremiadylan115@gmail.com', '081312663058', '5', '55', 'Taman Kopo Indah 69 Blok S', '2025-10-28 15:41:29', NULL);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `orders`
+-- Table structure for table `orders`
 --
 
 CREATE TABLE `orders` (
-  `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
+  `komship_order_no` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `komship_awb` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `komship_service` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `customer_id` int NOT NULL,
   `tgl_order` datetime NOT NULL,
-  `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `alamat` varchar(10000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `code_courier` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `provinsi` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `kota` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `alamat` varchar(10000) COLLATE utf8mb4_general_ci NOT NULL,
+  `komship_courier` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `ongkos_kirim` int NOT NULL,
   `total_harga` decimal(12,2) NOT NULL,
-  `status` enum('pending','proses','selesai','batal') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+  `komship_status` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `orders`
+-- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`, `alamat`, `code_courier`, `ongkos_kirim`, `total_harga`, `status`) VALUES
-('STYRK176303123943954', 6, '2025-11-13 10:53:59', '2', '25', 'Jalan asmi no 123', 'jne', 14000, 3714000.00, 'proses'),
-('STYRK176303199680232', 6, '2025-11-13 11:06:36', '2', '25', 'Jalan asmi no 123', 'jne', 14000, 2084000.00, 'proses');
+INSERT INTO `orders` (`order_id`, `komship_order_no`, `komship_awb`, `komship_service`, `customer_id`, `tgl_order`, `provinsi`, `kota`, `alamat`, `komship_courier`, `ongkos_kirim`, `total_harga`, `komship_status`) VALUES
+('STYRK176303123943954', '', '', '', 6, '2025-11-13 10:53:59', '2', '25', 'Jalan asmi no 123', 'jne', 14000, 3714000.00, 'proses'),
+('STYRK176303199680232', '', '', '', 6, '2025-11-13 11:06:36', '2', '25', 'Jalan asmi no 123', 'jne', 14000, 2084000.00, 'proses'),
+('STYRK176313714395660', NULL, NULL, 'CTC', 18, '2025-11-14 16:19:03', '5', '55', 'Taman Kopo Indah 69 Blok S', 'jne', 7000, 3707000.00, NULL),
+('STYRK176321455845019', NULL, NULL, 'CTC', 18, '2025-11-15 13:49:18', '5', '55', 'Taman Kopo Indah 69 Blok S', 'jne', 7000, 1257000.00, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `order_details`
+-- Table structure for table `order_details`
 --
 
 CREATE TABLE `order_details` (
   `detail_id` int NOT NULL,
-  `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `product_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `jumlah` int NOT NULL,
   `harga_satuan` int NOT NULL,
@@ -234,22 +239,24 @@ CREATE TABLE `order_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `order_details`
+-- Dumping data for table `order_details`
 --
 
 INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `harga_satuan`, `subtotal`) VALUES
 (49, 'STYRK176303123943954', 'CS001', 2, 1850000, 3700000),
-(50, 'STYRK176303199680232', 'KB017', 1, 2300000, 2300000);
+(50, 'STYRK176303199680232', 'KB017', 1, 2300000, 2300000),
+(51, 'STYRK176313714395660', 'SW001', 1, 3700000, 3700000),
+(52, 'STYRK176321455845019', 'KC001', 1, 1250000, 1250000);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `order_tracking`
+-- Table structure for table `order_tracking`
 --
 
 CREATE TABLE `order_tracking` (
   `tracking_id` int NOT NULL,
-  `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `timestamp` datetime DEFAULT CURRENT_TIMESTAMP
@@ -258,12 +265,12 @@ CREATE TABLE `order_tracking` (
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `payments`
+-- Table structure for table `payments`
 --
 
 CREATE TABLE `payments` (
   `payment_id` int NOT NULL,
-  `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `order_id` varchar(99) COLLATE utf8mb4_general_ci NOT NULL,
   `metode` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `jumlah_dibayar` decimal(12,2) NOT NULL,
   `tanggal_bayar` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -272,17 +279,19 @@ CREATE TABLE `payments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `payments`
+-- Dumping data for table `payments`
 --
 
 INSERT INTO `payments` (`payment_id`, `order_id`, `metode`, `jumlah_dibayar`, `tanggal_bayar`, `payment_proof`, `payment_status`) VALUES
 (28, 'STYRK176303123943954', 'QRIS', 3714000.00, '2025-11-13 10:53:59', 'STYRK_QRIS_1763031236970_979', 'proses'),
-(29, 'STYRK176303199680232', 'QRIS', 2084000.00, '2025-11-13 11:06:36', 'STYRK_QRIS_1763031991688_340', 'proses');
+(29, 'STYRK176303199680232', 'QRIS', 2084000.00, '2025-11-13 11:06:36', 'STYRK_QRIS_1763031991688_340', 'proses'),
+(30, 'STYRK176313714395660', 'QRIS', 3707000.00, '2025-11-14 16:19:03', 'STYRK_QRIS_1763137141326_957', 'proses'),
+(31, 'STYRK176321455845019', 'QRIS', 1257000.00, '2025-11-15 13:49:18', 'STYRK_QRIS_1763214555723_898', 'proses');
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `posts`
+-- Table structure for table `posts`
 --
 
 CREATE TABLE `posts` (
@@ -294,7 +303,7 @@ CREATE TABLE `posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `posts`
+-- Dumping data for table `posts`
 --
 
 INSERT INTO `posts` (`post_id`, `thread_id`, `customer_id`, `content`, `created_at`) VALUES
@@ -306,7 +315,7 @@ INSERT INTO `posts` (`post_id`, `thread_id`, `customer_id`, `content`, `created_
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `products`
+-- Table structure for table `products`
 --
 
 CREATE TABLE `products` (
@@ -321,7 +330,7 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `products`
+-- Dumping data for table `products`
 --
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`, `weight`) VALUES
@@ -352,7 +361,7 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 ('KB024', 'IDOBAO ID80', 'Gasket-mounted keyboard with a unique acrylic body.', 3000000.00, 10, 'https://i.postimg.cc/Zn716gNR/47.jpg', 2, 1000),
 ('KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 2100000.00, 10, 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 2, 1000),
 ('KB026', 'Royal Kludge RK61', 'Budget 60% wireless mechanical keyboard.', 800000.00, 10, 'https://i.postimg.cc/RCg5r3YB/51.jpg', 2, 1000),
-('KC001', 'Circus PGA Profile Keycaps', 'A vibrant and playful set of PGA profile keycaps inspired by circus aesthetics. Perfect for mechanical keyboard enthusiasts looking to add a burst of color and uniqueness to their setup.', 1250000.00, 10, 'https://i.postimg.cc/zBPyH2VD/1.jpg', 3, 1000),
+('KC001', 'Circus PGA Profile Keycaps', 'A vibrant and playful set of PGA profile keycaps inspired by circus aesthetics. Perfect for mechanical keyboard enthusiasts looking to add a burst of color and uniqueness to their setup.', 1250000.00, 9, 'https://i.postimg.cc/zBPyH2VD/1.jpg', 3, 1000),
 ('KC002', 'Dusk 67 with PBTfans Inkdrop', 'A beautifully themed 65% keyboard featuring the Dusk 67 case and PBTfans Inkdrop keycaps. This bundle is perfect for those who want a cohesive, stunning setup.', 3300000.00, 10, 'https://i.postimg.cc/WpC8JTFZ/13.jpg', 3, 1000),
 ('KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 4000000.00, 10, 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 3, 1000),
 ('KC004', 'KBD8X MKIII HE Gaming Keyboard with PBTfans Blush', 'A performance-focused version of the KBD8X MKIII featuring Hall Effect switches for rapid input and PBTfans Blush keycaps for soft, pastel aesthetics.', 4200000.00, 9, 'https://i.postimg.cc/HWXcBgvX/18.jpg', 3, 1000),
@@ -371,7 +380,7 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 ('KK009', 'KBD75 V3 Kit', '75% aluminum keyboard with refined layout and features.', 2950000.00, 10, 'https://i.postimg.cc/Kjv6kFRw/48.jpg', 4, 200),
 ('KP001', 'Taco Pad', 'A novelty macropad shaped like a taco. Fun, quirky, and useful for macros, shortcuts, or artisan display. A must-have desk companion for enthusiasts.', 1450000.00, 10, 'https://i.postimg.cc/C5BzGCqG/3.jpg', 5, 400),
 ('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 9, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6, 20),
-('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 3700000.00, 10, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7, 100),
+('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 3700000.00, 9, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7, 100),
 ('SW002', 'NovelKeys Cream Switches (70 pcs)', 'Smooth linear switches with self-lubricating POM housing.', 900000.00, 10, 'https://i.postimg.cc/jS5j00c8/29.jpg', 7, 100),
 ('SW003', 'Akko CS Jelly Purple (45 pcs)', 'Tactile mechanical switches with a unique jelly-like stem.', 320000.00, 10, 'https://i.postimg.cc/SKYNR6wC/30.jpg', 7, 100),
 ('SW004', 'Glorious Panda Switches (36 pcs)', 'Tactile switches with a strong bump and satisfying sound.', 550000.00, 9, 'https://i.postimg.cc/DfPfSyYj/32.jpg', 7, 100),
@@ -381,7 +390,7 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `threads`
+-- Table structure for table `threads`
 --
 
 CREATE TABLE `threads` (
@@ -392,7 +401,7 @@ CREATE TABLE `threads` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `threads`
+-- Dumping data for table `threads`
 --
 
 INSERT INTO `threads` (`thread_id`, `customer_id`, `title`, `created_at`) VALUES
@@ -402,7 +411,7 @@ INSERT INTO `threads` (`thread_id`, `customer_id`, `title`, `created_at`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `vouchers`
+-- Table structure for table `vouchers`
 --
 
 CREATE TABLE `vouchers` (
@@ -419,7 +428,7 @@ CREATE TABLE `vouchers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `vouchers`
+-- Dumping data for table `vouchers`
 --
 
 INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupiah`, `nilai_persen`, `tgl_dibuat`, `tgl_kadaluarsa`, `status`, `keterangan`, `tipe`) VALUES
@@ -436,29 +445,13 @@ INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupi
 --
 
 --
--- Indeks untuk tabel `admin`
+-- Indexes for table `admin`
 --
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`admin_id`);
 
 --
--- Indeks untuk tabel `auctions`
---
-ALTER TABLE `auctions`
-  ADD PRIMARY KEY (`auction_id`),
-  ADD KEY `customer_id` (`customer_id`),
-  ADD KEY `current_winner_id` (`current_winner_id`);
-
---
--- Indeks untuk tabel `bids`
---
-ALTER TABLE `bids`
-  ADD PRIMARY KEY (`bid_id`),
-  ADD KEY `auction_id` (`auction_id`),
-  ADD KEY `customer_id` (`customer_id`);
-
---
--- Indeks untuk tabel `carts`
+-- Indexes for table `carts`
 --
 ALTER TABLE `carts`
   ADD PRIMARY KEY (`cart_id`),
@@ -466,34 +459,34 @@ ALTER TABLE `carts`
   ADD KEY `FK_product_id_carts` (`product_id`);
 
 --
--- Indeks untuk tabel `category`
+-- Indexes for table `category`
 --
 ALTER TABLE `category`
   ADD PRIMARY KEY (`category_id`);
 
 --
--- Indeks untuk tabel `courier`
+-- Indexes for table `courier`
 --
 ALTER TABLE `courier`
   ADD PRIMARY KEY (`code_courier`),
   ADD UNIQUE KEY `code_courier` (`code_courier`);
 
 --
--- Indeks untuk tabel `customer`
+-- Indexes for table `customer`
 --
 ALTER TABLE `customer`
   ADD PRIMARY KEY (`customer_id`);
 
 --
--- Indeks untuk tabel `orders`
+-- Indexes for table `orders`
 --
 ALTER TABLE `orders`
   ADD PRIMARY KEY (`order_id`),
   ADD KEY `FK_customer_id` (`customer_id`),
-  ADD KEY `FK_KURIR` (`code_courier`);
+  ADD KEY `FK_KURIR` (`komship_courier`);
 
 --
--- Indeks untuk tabel `order_details`
+-- Indexes for table `order_details`
 --
 ALTER TABLE `order_details`
   ADD PRIMARY KEY (`detail_id`),
@@ -501,21 +494,22 @@ ALTER TABLE `order_details`
   ADD KEY `FK_product_id` (`product_id`);
 
 --
--- Indeks untuk tabel `order_tracking`
+-- Indexes for table `order_tracking`
 --
 ALTER TABLE `order_tracking`
   ADD PRIMARY KEY (`tracking_id`),
+  ADD UNIQUE KEY `uq_order_desc_ts` (`order_id`,`description`(120),`timestamp`),
   ADD KEY `FK_ORDER_ID_TRACK` (`order_id`);
 
 --
--- Indeks untuk tabel `payments`
+-- Indexes for table `payments`
 --
 ALTER TABLE `payments`
   ADD PRIMARY KEY (`payment_id`),
   ADD KEY `FK_order_id_payment` (`order_id`);
 
 --
--- Indeks untuk tabel `posts`
+-- Indexes for table `posts`
 --
 ALTER TABLE `posts`
   ADD PRIMARY KEY (`post_id`),
@@ -523,161 +517,135 @@ ALTER TABLE `posts`
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indeks untuk tabel `products`
+-- Indexes for table `products`
 --
 ALTER TABLE `products`
   ADD PRIMARY KEY (`product_id`),
   ADD KEY `FK_category_id_products` (`category_id`);
 
 --
--- Indeks untuk tabel `threads`
+-- Indexes for table `threads`
 --
 ALTER TABLE `threads`
   ADD PRIMARY KEY (`thread_id`),
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indeks untuk tabel `vouchers`
+-- Indexes for table `vouchers`
 --
 ALTER TABLE `vouchers`
   ADD PRIMARY KEY (`voucher_id`);
 
 --
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT untuk tabel `admin`
+-- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
   MODIFY `admin_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
 
 --
--- AUTO_INCREMENT untuk tabel `auctions`
---
-ALTER TABLE `auctions`
-  MODIFY `auction_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT untuk tabel `bids`
---
-ALTER TABLE `bids`
-  MODIFY `bid_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT untuk tabel `carts`
+-- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
 
 --
--- AUTO_INCREMENT untuk tabel `category`
+-- AUTO_INCREMENT for table `category`
 --
 ALTER TABLE `category`
   MODIFY `category_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT untuk tabel `customer`
+-- AUTO_INCREMENT for table `customer`
 --
 ALTER TABLE `customer`
   MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
--- AUTO_INCREMENT untuk tabel `order_details`
+-- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
--- AUTO_INCREMENT untuk tabel `order_tracking`
+-- AUTO_INCREMENT for table `order_tracking`
 --
 ALTER TABLE `order_tracking`
   MODIFY `tracking_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT untuk tabel `payments`
+-- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
--- AUTO_INCREMENT untuk tabel `posts`
+-- AUTO_INCREMENT for table `posts`
 --
 ALTER TABLE `posts`
   MODIFY `post_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT untuk tabel `threads`
+-- AUTO_INCREMENT for table `threads`
 --
 ALTER TABLE `threads`
   MODIFY `thread_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+-- Constraints for dumped tables
 --
 
 --
--- Ketidakleluasaan untuk tabel `auctions`
---
-ALTER TABLE `auctions`
-  ADD CONSTRAINT `fk_auction_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_auction_winner` FOREIGN KEY (`current_winner_id`) REFERENCES `customer` (`customer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Ketidakleluasaan untuk tabel `bids`
---
-ALTER TABLE `bids`
-  ADD CONSTRAINT `fk_bid_auction` FOREIGN KEY (`auction_id`) REFERENCES `auctions` (`auction_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_bid_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Ketidakleluasaan untuk tabel `carts`
+-- Constraints for table `carts`
 --
 ALTER TABLE `carts`
   ADD CONSTRAINT `FK_customer_id_carts` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id_carts` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `orders`
+-- Constraints for table `orders`
 --
 ALTER TABLE `orders`
   ADD CONSTRAINT `FK_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `FK_KURIR` FOREIGN KEY (`code_courier`) REFERENCES `courier` (`code_courier`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `FK_KURIR` FOREIGN KEY (`komship_courier`) REFERENCES `courier` (`code_courier`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `order_details`
+-- Constraints for table `order_details`
 --
 ALTER TABLE `order_details`
   ADD CONSTRAINT `FK_ORDER_ID` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `order_tracking`
+-- Constraints for table `order_tracking`
 --
 ALTER TABLE `order_tracking`
   ADD CONSTRAINT `FK_ODER_ID_TRACK` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `payments`
+-- Constraints for table `payments`
 --
 ALTER TABLE `payments`
   ADD CONSTRAINT `FK_ORDER_ID_PAYMENT` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `posts`
+-- Constraints for table `posts`
 --
 ALTER TABLE `posts`
   ADD CONSTRAINT `fk_post_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_post_thread` FOREIGN KEY (`thread_id`) REFERENCES `threads` (`thread_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `products`
+-- Constraints for table `products`
 --
 ALTER TABLE `products`
   ADD CONSTRAINT `FK_category_id_products` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Ketidakleluasaan untuk tabel `threads`
+-- Constraints for table `threads`
 --
 ALTER TABLE `threads`
   ADD CONSTRAINT `fk_thread_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-$API_KEY = 'nN6Mv6Areb8ec09cadbb3a60uWRzzahg';
+$API_KEY = 'j7mlOjpseb8ec09cadbb3a603ywK7H22';
 $BASE    = 'https://rajaongkir.komerce.id/api/v1';
 
 $ch = curl_init($BASE . '/destination/province');

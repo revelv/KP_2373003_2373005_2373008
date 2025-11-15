@@ -9,13 +9,19 @@ if (!isset($_SESSION['kd_cs'])) {
 }
 $customer_id = (int) $_SESSION['kd_cs'];
 
-$sql = "SELECT o.order_id, o.tgl_order, o.provinsi, o.kota, o.alamat,
-               o.code_courier, o.ongkos_kirim, o.total_harga, o.status,
-               COALESCE(c.nama_kurir, '') AS nama_kurir
+$sql = "SELECT o.order_id,
+               o.tgl_order,
+               o.total_harga,
+               o.ongkos_kirim,
+               o.komship_courier,
+               o.komship_service,
+               o.komship_status,
+               c.nama_kurir
         FROM orders o
-        LEFT JOIN courier c ON c.code_courier = o.code_courier
+        LEFT JOIN courier c ON c.code_courier = o.komship_courier
         WHERE o.customer_id = ?
         ORDER BY o.tgl_order DESC";
+
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $customer_id);
 $stmt->execute();
@@ -79,8 +85,7 @@ $stmt->close();
                                     if ($kurirNm === '') $kurirNm = ($o['code_courier'] ? strtoupper($o['code_courier']) : '-');
                                     $ongkir  = (int)$o['ongkos_kirim'];
                                     $total   = (float)$o['total_harga'];
-                                    $status  = strtolower((string)$o['status']);
-
+                                    $status  = strtolower((string)$o['komship_status']);
                                     $looksProvId = ctype_digit($provRaw);
                                     $looksCityId = ctype_digit($kotaRaw);
                                     $hasNames    = (!$looksProvId && !$looksCityId && $provRaw !== '' && $kotaRaw !== '');
@@ -109,6 +114,7 @@ $stmt->close();
                                         <td><span class="<?= $badgeClass ?> px-2 py-1 rounded-2"><?= htmlspecialchars($status) ?></span></td>
                                         
                                         <td class="td-aksi text-center">
+<<<<<<< HEAD
                                             <?php if ($status == 'pending'): ?>
                                                 <a href="payment.php?order_id=<?= htmlspecialchars($o['order_id']) ?>" class="btn btn-success btn-sm">
                                                     Bayar Sekarang
@@ -124,6 +130,17 @@ $stmt->close();
                                                     Lacak
                                                 </button>
                                             <?php endif; ?>
+=======
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalTrack"
+                                                data-order="<?= htmlspecialchars($o['order_id']) ?>"
+                                                data-courier="<?= htmlspecialchars($o['komship_courier']) ?>">
+                                                Lacak
+                                            </button>
+>>>>>>> 59ac23d8593116180ab2890272771c210bd174c3
                                         </td>
                                         </tr>
                                 <?php endforeach;
