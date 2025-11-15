@@ -181,9 +181,6 @@ $result_auctions = mysqli_query($conn, $query_auctions);
                 <a href="create_thread_form.php" class="btn btn-new-thread">
                     <i class="bi bi-plus-lg me-1"></i> Buat Topik
                 </a>
-                <a href="create_auction.php" class="btn btn-new-thread">
-                    <i class="bi bi-gavel me-1"></i> Mulai Lelang
-                </a>
             </div>
         </div>
         <ul class="nav nav-pills nav-fill mb-3" id="communityTab" role="tablist">
