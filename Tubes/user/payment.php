@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+session_start(); // <<< KOMSHIP/SESSION: wajib, karena pakai $_SESSION
 include '../koneksi.php';
 
 // === Validasi item yang dipilih ===
@@ -23,6 +24,9 @@ $profil_nama    = '';
 $profil_prov    = '';
 $profil_kota    = '';
 $profil_alamat  = '';
+// KOMSHIP: id provinsi & kota untuk ongkir/Komship (sementara sama dengan kolom di DB)
+$profil_prov_id = '';
+$profil_kota_id = '';
 
 $stmt = $conn->prepare("SELECT nama, provinsi, kota, alamat FROM customer WHERE customer_id = ?");
 if ($stmt) {
@@ -34,6 +38,10 @@ if ($stmt) {
         $profil_prov   = $rowCust['provinsi'] ?? '';
         $profil_kota   = $rowCust['kota'] ?? '';
         $profil_alamat = $rowCust['alamat'] ?? '';
+
+        // Kalau kolom provinsi/kota di DB udah berupa ID, kita pakai sebagai *_id
+        $profil_prov_id = $profil_prov;
+        $profil_kota_id = $profil_kota;
     }
     $stmt->close();
 }
@@ -106,8 +114,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             <h2 class="m-0">Checkout - Payment</h2>
             <a href="cart.php" class="btn btn-secondary">← Back to Cart</a>
         </div>
-
-
 
         <!-- ====================== BARANG YANG DIBAYAR ====================== -->
         <div class="mb-4">
@@ -239,9 +245,9 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             </table>
         </div>
 
+        <!-- KOMSHIP/ONGKIR: hidden id kota/prov dari profil -->
         <input type="hidden" id="profile_province_id" value="<?= htmlspecialchars($profil_prov_id ?? '') ?>">
         <input type="hidden" id="profile_city_id" value="<?= htmlspecialchars($profil_kota_id ?? '') ?>">
-
 
         <!-- ====================== METODE PEMBAYARAN ====================== -->
         <div class="mb-4">
@@ -357,15 +363,30 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 }
                 el.value = val ?? '';
             };
-            // alamat
+            // alamat (nama)
             put('alamat_mode', shippingAddress.mode || '');
             put('provinsi', shippingAddress.provinsi || '');
             put('kota', shippingAddress.kota || '');
             put('alamat', shippingAddress.alamat || '');
 
-            // id kalau custom
+            // id kalau custom (RajaOngkir/Komship destination id)
             put('provinsi_id', provinsiLainSel ? (provinsiLainSel.value || '') : '');
             put('kota_id', kotaLainSel ? (kotaLainSel.value || '') : '');
+
+            // KOMSHIP: dest_city_id / dest_prov_id ikut dikirim ke checkout.php
+            let destCityId = '';
+            let destProvId = '';
+            if (shippingAddress.mode === 'custom') {
+                destCityId = kotaLainSel ? (kotaLainSel.value || '') : '';
+                destProvId = provinsiLainSel ? (provinsiLainSel.value || '') : '';
+            } else if (shippingAddress.mode === 'profil') {
+                const profileCity = document.getElementById('profile_city_id');
+                const profileProv = document.getElementById('profile_province_id');
+                destCityId = profileCity ? (profileCity.value || '') : '';
+                destProvId = profileProv ? (profileProv.value || '') : '';
+            }
+            put('dest_city_id', destCityId);
+            put('dest_prov_id', destProvId);
 
             // ongkir
             put('shipping_cost', String(currentShipping.cost || 0));
@@ -447,21 +468,18 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         function applyAddressMode(mode) {
             if (mode === 'profil') {
-                // tampil panel profil
                 show(panelProfil);
                 hide(panelLain);
                 shippingAddress.mode = 'profil';
                 shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
                 shippingAddress.kota = (profileAddress.kota || '').trim();
                 shippingAddress.alamat = (profileAddress.alamat || '').trim();
-                resetOngkir(true); // reload layanan untuk kurir terpilih
+                resetOngkir(true);
             } else if (mode === 'custom') {
                 hide(panelProfil);
                 show(panelLain);
                 shippingAddress.mode = 'custom';
-                // muat provinsi (sekali)
                 if (!provinceLoaded) loadProvinces().catch(console.error);
-                // sinkron dari field yang ada
                 const pOpt = provinsiLainSel?.selectedOptions?.[0];
                 const cOpt = kotaLainSel?.selectedOptions?.[0];
                 shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
@@ -469,7 +487,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.alamat = (alamatLainTextarea?.value || '');
                 resetOngkir(true);
             } else {
-                // hide semua (awal)
                 hide(panelProfil);
                 hide(panelLain);
                 shippingAddress.mode = '';
@@ -481,13 +498,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         (function init() {
             hide(panelProfil);
             hide(panelLain);
-            // pastikan radio tidak centang di awal
             if (rProfil) rProfil.checked = false;
             if (rLain) rLain.checked = false;
-            applyAddressMode(''); // sembunyikan semua
+            applyAddressMode('');
         })();
 
-        // Delegation: listen ke radio by name (aman kalau DOM re-render)
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t && t.name === 'alamat_mode') {
@@ -495,7 +510,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
             if (t === provinsiLainSel) {
                 loadCities(provinsiLainSel.value).then(() => {
-                    // sinkron nilai custom + reset ongkir
                     const pOpt = provinsiLainSel.selectedOptions[0];
                     shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
                     resetOngkir(true);
@@ -512,7 +526,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         });
 
-        // Antisipasi beberapa browser hanya trigger "click" pada label
         document.addEventListener('click', (e) => {
             const t = e.target;
             if (t && t.matches('label[for="alamatProfil"], #alamatProfil')) {
@@ -529,7 +542,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         async function loadServices(courier) {
             if (!courier) return;
 
-            // pastikan alamat lengkap (nama) biar UI jelas
             if (!isAddressValid()) {
                 svcBox.innerHTML = '<div class="text-danger">Lengkapi alamat dulu ya bro.</div>';
                 updateTotals(0);
@@ -540,13 +552,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             selectedItems.forEach(id => formData.append('selected_items[]', id));
             formData.append('code_courier', courier);
 
-            // kirim alamat (nama untuk tampilan)
             formData.append('alamat_mode', shippingAddress.mode || '');
             formData.append('provinsi', shippingAddress.provinsi || '');
             formData.append('kota', shippingAddress.kota || '');
             formData.append('alamat', shippingAddress.alamat || '');
 
-            // === KUNCI: city_id tujuan ===
             let destCityId = '';
             let destProvId = '';
 
@@ -561,7 +571,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             formData.append('dest_city_id', destCityId);
             formData.append('dest_prov_id', destProvId);
 
-            // UI reset
             svcBox.textContent = 'Menghitung ongkir...';
             currentShipping.service = '';
             updateTotals(0);
@@ -615,7 +624,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         }
 
         courierSelect?.addEventListener('change', (e) => {
-            // ganti kurir -> reset & hitung ulang (kalau alamat sudah valid)
             resetOngkir(false);
             loadServices(e.target.value);
         });

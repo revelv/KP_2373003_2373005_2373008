@@ -3,6 +3,7 @@
 declare(strict_types=1);
 session_start();
 include '../koneksi.php';
+require_once __DIR__ . '/komship_api.php'; // <-- KOMSHIP HELPER
 
 if (!isset($_SESSION['kd_cs'])) die("Anda harus login terlebih dahulu.");
 $customer_id = (int)$_SESSION['kd_cs'];
@@ -21,8 +22,8 @@ $in_clause = implode(',', $selected_cart_ids);
 
 // ==== Ambil info pengiriman dari POST (dikirim dari payment page) ====
 $shipping_cost    = isset($_POST['shipping_cost']) ? max(0, (int)$_POST['shipping_cost']) : 0;
-$shipping_courier = trim((string)($_POST['shipping_courier'] ?? ''));
-$shipping_service = trim((string)($_POST['shipping_service'] ?? '')); // opsional, tidak disimpan di orders
+$shipping_courier = trim((string)($_POST['shipping_courier'] ?? ''));   // simpan ke komship_courier
+$shipping_service = trim((string)($_POST['shipping_service'] ?? ''));   // simpan ke komship_service
 
 $alamat_mode = $_POST['alamat_mode'] ?? ''; // 'profil'|'custom'
 $ship_prov   = trim((string)($_POST['provinsi'] ?? ''));
@@ -83,7 +84,7 @@ if ($voucher_code && $voucher_tipe === 'persen') {
 }
 if ($voucher_discount > $total_barang) $voucher_discount = $total_barang;
 
-// ==== Util: generate order_id (AWB) unik ====
+// ==== Util: generate order_id unik ====
 function generate_awb(mysqli $conn): string
 {
     do {
@@ -98,36 +99,37 @@ function generate_awb(mysqli $conn): string
 }
 
 $tanggal = date("Y-m-d H:i:s");
-$status  = ($payment_method === 'Transfer') ? 'pending' : 'proses';
 
-// ==== Transaksi ====
+// ==== Transaksi lokal (DB sendiri) ====
 $conn->begin_transaction();
 try {
-    // 1) Insert header orders (pakai struktur BARU)
+    // 1) Insert header orders
     $order_id    = generate_awb($conn);
     $grand_total = max(0.0, (float)$total_barang - (float)$voucher_discount + (float)$shipping_cost);
 
     $insOrder = $conn->prepare("
         INSERT INTO orders
-            (order_id, customer_id, tgl_order, provinsi, kota, alamat, code_courier, ongkos_kirim, total_harga, status)
+            (order_id, customer_id, tgl_order, provinsi, kota, alamat,
+             ongkos_kirim, total_harga, komship_courier, komship_service)
         VALUES
-            (?,        ?,           ?,         ?,        ?,    ?,      ?,            ?,            ?,           ?)
+            (?,        ?,           ?,         ?,        ?,    ?,
+             ?,            ?,           ?,              ?)
     ");
     if (!$insOrder) throw new Exception("Gagal prepare insert orders: " . $conn->error);
 
-    // types: s i s s s s s i d s
+    // types: s i s s s s i d s s
     $insOrder->bind_param(
-        'sisssssids',
+        'sissssidss',
         $order_id,
         $customer_id,
         $tanggal,
         $ship_prov,
         $ship_kota,
         $ship_alamat,
-        $shipping_courier,     // simpan kode kurir (contoh: jne, jnt, sicepat)
         $shipping_cost,
         $grand_total,
-        $status
+        $shipping_courier,   // komship_courier
+        $shipping_service    // komship_service
     );
 
     if (!$insOrder->execute()) throw new Exception("Gagal insert orders: " . $insOrder->error);
@@ -192,7 +194,12 @@ try {
         $v->execute();
         $v->close();
 
-        unset($_SESSION['voucher_code'], $_SESSION['voucher_tipe'], $_SESSION['voucher_nilai_rupiah'], $_SESSION['voucher_nilai_persen']);
+        unset(
+            $_SESSION['voucher_code'],
+            $_SESSION['voucher_tipe'],
+            $_SESSION['voucher_nilai_rupiah'],
+            $_SESSION['voucher_nilai_persen']
+        );
     }
 
     // 5) Hapus item dari cart user
@@ -201,7 +208,36 @@ try {
         throw new Exception("Gagal hapus cart: " . $conn->error);
     }
 
+    // Commit transaksi lokal
     $conn->commit();
+
+    // 6) Setelah commit: kirim ke Komship (non-fatal kalau gagal)
+    try {
+        if (function_exists('komship_create_order')) {
+            $kom = komship_create_order($conn, $order_id);
+            if ($kom && !empty($kom['order_no'])) {
+                $upd = $conn->prepare("
+                    UPDATE orders 
+                    SET komship_order_no = ?, 
+                        komship_awb      = ?, 
+                        komship_status   = ?
+                    WHERE order_id = ?
+                ");
+                if ($upd) {
+                    $awb   = $kom['awb']   ?? null;
+                    $stts  = $kom['status'] ?? null;
+                    $ordNo = $kom['order_no'];
+                    $upd->bind_param('ssss', $ordNo, $awb, $stts, $order_id);
+                    $upd->execute();
+                    $upd->close();
+                }
+            }
+        }
+    } catch (Throwable $eKom) {
+        // Bisa lu log ke file / tabel lain kalo mau, biar ga ganggu user
+        // error_log('Komship error: ' . $eKom->getMessage());
+    }
+
     echo "<script>
         alert('Order sukses! Nomor order: " . htmlspecialchars($order_id, ENT_QUOTES) . "');
         window.location.href = 'riwayat_belanja.php';
