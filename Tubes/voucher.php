@@ -9,58 +9,58 @@ use PHPMailer\PHPMailer\Exception;
 
 function buatVoucherDb($customerId, $nilai, $masaAktifHari, $keterangan)
 {
-    global $conn;
+  global $conn;
 
-    $kodeVoucher = 'STYRK' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+  $kodeVoucher = 'STYRK' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
 
-    // Tentukan tanggal kadaluarsa
-    $tglKadaluarsa = date('Y-m-d H:i:s', strtotime("+$masaAktifHari days"));
+  // Tentukan tanggal kadaluarsa
+  $tglKadaluarsa = date('Y-m-d H:i:s', strtotime("+$masaAktifHari days"));
 
-    $sql = "INSERT INTO vouchers (customer_id, kode_voucher, nilai_rupiah, tgl_kadaluarsa, keterangan) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    if ($stmt) {
-        $stmt->bind_param("isiss", $customerId, $kodeVoucher, $nilai, $tglKadaluarsa, $keterangan);
-        if ($stmt->execute()) {
-            return [
-                'kode' => $kodeVoucher,
-                'nilai' => $nilai,
-                'kadaluarsa' => $tglKadaluarsa
-            ];
-        }
+  $sql = "INSERT INTO vouchers (customer_id, kode_voucher, nilai_rupiah, tgl_kadaluarsa, keterangan) VALUES (?, ?, ?, ?, ?)";
+  $stmt = $conn->prepare($sql);
+  if ($stmt) {
+    $stmt->bind_param("isiss", $customerId, $kodeVoucher, $nilai, $tglKadaluarsa, $keterangan);
+    if ($stmt->execute()) {
+      return [
+        'kode' => $kodeVoucher,
+        'nilai' => $nilai,
+        'kadaluarsa' => $tglKadaluarsa
+      ];
     }
-    return null;
+  }
+  return null;
 }
 
 
 function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $voucherData)
 {
-    $mail = new PHPMailer(true);
+  $mail = new PHPMailer(true);
 
-    $nilaiFormatted = "Rp " . number_format($voucherData['nilai'], 0, ',', '.');
-    $kadaluarsaFormatted = date('d F Y', strtotime($voucherData['kadaluarsa']));
+  $nilaiFormatted = "Rp " . number_format($voucherData['nilai'], 0, ',', '.');
+  $kadaluarsaFormatted = date('d F Y', strtotime($voucherData['kadaluarsa']));
 
-    try {
-        // SMTP
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'styrk.industries@gmail.com';
-        $mail->Password   = 'cudw nbsm vxwo wfnm';
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        $mail->Port       = 465;
+  try {
+    // SMTP
+    $mail->isSMTP();
+    $mail->Host       = 'smtp.gmail.com';
+    $mail->SMTPAuth   = true;
+    $mail->Username   = 'styrk.industries@gmail.com';
+    $mail->Password   = 'cudw nbsm vxwo wfnm';
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = 465;
 
-        // From / To
-        $mail->setFrom('no-reply@styrkindustries.com', 'Styrk Industries');
-        $mail->addAddress($emailPenerima, $namaPenerima);
+    // From / To
+    $mail->setFrom('no-reply@styrkindustries.com', 'Styrk Industries');
+    $mail->addAddress($emailPenerima, $namaPenerima);
 
-        // CONTENT
-        $mail->isHTML(true);
+    // CONTENT
+    $mail->isHTML(true);
 
-        // SUBJECT (Inggris)
-        $mail->Subject = $subjek ?: 'A Thank-You Voucher Just for You — STYRK Industries';
+    // SUBJECT (Inggris)
+    $mail->Subject = $subjek ?: 'A Thank-You Voucher Just for You — STYRK Industries';
 
-        // BODY (HTML Indonesia + banner + kartu voucher)
-        $mail->Body = "
+    // BODY (HTML Indonesia + banner + kartu voucher)
+    $mail->Body = "
 <!DOCTYPE html>
 <html lang='id'>
 <head>
@@ -172,20 +172,20 @@ function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $
 </html>
 ";
 
-        // ALT BODY (plaintext fallback)
-        $mail->AltBody =
-            'Halo, ' . $namaPenerima . '!' . "\n" .
-            strip_tags($pesanBody) . "\n\n" .
-            'Kode Voucher: ' . $voucherData['kode'] . ' | Nilai: ' . $nilaiFormatted . ' | Berlaku hingga: ' . $kadaluarsaFormatted . "\n" .
-            'Belanja sekarang: http://localhost/Tubes/user/produk.php';
+    // ALT BODY (plaintext fallback)
+    $mail->AltBody =
+      'Halo, ' . $namaPenerima . '!' . "\n" .
+      strip_tags($pesanBody) . "\n\n" .
+      'Kode Voucher: ' . $voucherData['kode'] . ' | Nilai: ' . $nilaiFormatted . ' | Berlaku hingga: ' . $kadaluarsaFormatted . "\n" .
+      'Belanja sekarang: http://localhost/Tubes/user/produk.php';
 
-        // SEND
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        error_log("PHPMailer Error: {$mail->ErrorInfo}");
-        return false;
-    }
+    // SEND
+    $mail->send();
+    return true;
+  } catch (Exception $e) {
+    error_log("PHPMailer Error: {$mail->ErrorInfo}");
+    return false;
+  }
 }
 
 
@@ -196,34 +196,81 @@ function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $
    =============================================================== */
 function buatVoucherSTYRKIKUZO()
 {
-    global $conn;
+  global $conn;
 
-    $kodeVoucher = 'STYRKIKUZO';
-    $persen = 10;
-    $customerId = 0; // global, semua bisa pakai
-    $tglKadaluarsa = date('Y-m-d H:i:s', strtotime('+365 days')); // berlaku 1 tahun, bisa lo ubah
-    $keterangan = 'Voucher global diskon 10% - STYRKIKUZO';
+  $kodeVoucher = 'STYRKIKUZO';
+  $persen = 10;
+  $customerId = 0; // global, semua bisa pakai
+  $tglKadaluarsa = date('Y-m-d H:i:s', strtotime('+365 days')); // berlaku 1 tahun, bisa lo ubah
+  $keterangan = 'Voucher global diskon 10% - STYRKIKUZO';
 
-    // Cek dulu biar gak dobel
-    $cek = $conn->prepare("SELECT kode_voucher FROM vouchers WHERE kode_voucher = ?");
-    $cek->bind_param("s", $kodeVoucher);
-    $cek->execute();
-    $hasil = $cek->get_result();
+  // Cek dulu biar gak dobel
+  $cek = $conn->prepare("SELECT kode_voucher FROM vouchers WHERE kode_voucher = ?");
+  $cek->bind_param("s", $kodeVoucher);
+  $cek->execute();
+  $hasil = $cek->get_result();
 
-    if ($hasil && $hasil->num_rows > 0) {
-        return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
-    }
+  if ($hasil && $hasil->num_rows > 0) {
+    return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
+  }
 
-    // Insert baru kalau belum ada
-    $sql = "INSERT INTO vouchers (customer_id, kode_voucher, tipe, nilai_rupiah, nilai_persen, tgl_kadaluarsa, status, keterangan)
+  // Insert baru kalau belum ada
+  $sql = "INSERT INTO vouchers (customer_id, kode_voucher, tipe, nilai_rupiah, nilai_persen, tgl_kadaluarsa, status, keterangan)
             VALUES (?, ?, 'persen', 0, ?, ?, 'aktif', ?)";
-    $stmt = $conn->prepare($sql);
-    if ($stmt) {
-        $stmt->bind_param("isiss", $customerId, $kodeVoucher, $persen, $tglKadaluarsa, $keterangan);
-        if ($stmt->execute()) {
-            return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
-        }
+  $stmt = $conn->prepare($sql);
+  if ($stmt) {
+    $stmt->bind_param("isiss", $customerId, $kodeVoucher, $persen, $tglKadaluarsa, $keterangan);
+    if ($stmt->execute()) {
+      return ['kode' => $kodeVoucher, 'persen' => $persen, 'kadaluarsa' => $tglKadaluarsa];
     }
+  }
 
-    return null;
+  return null;
+}
+
+// --- TAMBAHKAN FUNGSI BARU INI DI voucher_manager.php ---
+
+function kirimEmailPemenangLelang($emailPenerima, $namaPenerima, $namaBarang, $totalTagihan, $order_id)
+{
+  $mail = new PHPMailer(true);
+
+  $totalFormatted = "Rp " . number_format($totalTagihan, 0, ',', '.');
+  // Ganti URL ini ke halaman riwayat belanja Anda
+  $linkPembayaran = "http://localhost/Tubes/riwayat_belanja.php";
+
+  try {
+    // Konfigurasi Server SMTP (sesuaikan dengan setting Anda)
+    $mail->isSMTP();
+    $mail->Host       = 'smtp.gmail.com';
+    $mail->SMTPAuth   = true;
+    $mail->Username   = 'styrk.industries@gmail.com';
+    $mail->Password   = 'cudw nbsm vxwo wfnm'; // App Password Anda
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port       = 465;
+
+    // Penerima & Pengirim
+    $mail->setFrom('no-reply@styrkindustries.com', 'Styrk Industries (Lelang)');
+    $mail->addAddress($emailPenerima, $namaPenerima);
+
+    // Konten Email
+    $mail->isHTML(true);
+    $mail->Subject = 'Selamat, Anda Memenangkan Lelang!';
+    $mail->Body    = "
+            <html><body>
+                <h2>Halo, " . htmlspecialchars($namaPenerima) . "!</h2>
+                <p>Selamat! Anda telah memenangkan lelang untuk barang:</p>
+                <h3 style='padding: 10px; background: #f0f0f0;'>" . htmlspecialchars($namaBarang) . "</h3>
+                <p>Total tagihan Anda adalah: <strong>{$totalFormatted}</strong></p>
+                <p>Pesanan dengan ID <strong>{$order_id}</strong> telah dibuatkan untuk Anda. Silakan segera selesaikan pembayaran melalui halaman Riwayat Belanja Anda.</p>
+                <br>
+                <a href='{$linkPembayaran}' style='background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px;'>Bayar Sekarang</a>
+            </body></html>
+        ";
+
+    $mail->send();
+    return true;
+  } catch (Exception $e) {
+    error_log("PHPMailer Error (Lelang): {$mail->ErrorInfo}");
+    return false;
+  }
 }

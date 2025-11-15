@@ -235,7 +235,6 @@ $result_auctions = mysqli_query($conn, $query_auctions);
                                 <img src="<?= htmlspecialchars($auction['image_url'] ?? 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>" class="auction-img" alt="<?= htmlspecialchars($auction['title']); ?>">
                                 <div class="card-body">
                                     <h5 class="thread-title mb-1"><a href="auction_detail.php?id=<?= $auction['auction_id']; ?>"><?= htmlspecialchars($auction['title']); ?></a></h5>
-                                    <p class="thread-meta mb-2"><small>Oleh: <?= htmlspecialchars($auction['seller_name']); ?></small></p>
                                     <h6 class="mb-1" style="font-size: 0.9rem;">Tawaran Saat Ini:</h6>
                                     <h4 class="fw-bold" style="color: #28a745;">Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?></h4>
                                 </div>
