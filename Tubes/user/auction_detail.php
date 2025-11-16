@@ -1,6 +1,6 @@
-
 <?php
 include 'header.php';
+
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die("ID lelang tidak valid.");
 }
@@ -23,6 +23,38 @@ if ($result_auc->num_rows === 0) {
 }
 $auction = $result_auc->fetch_assoc();
 $stmt_auc->close();
+
+// -------------------- INFO USER & ORDER PENDING --------------------
+$current_customer_id = isset($_SESSION['kd_cs']) ? (int)$_SESSION['kd_cs'] : 0;
+
+$now        = time();
+$isActive   = ($auction['status'] === 'active' && strtotime($auction['end_time']) > $now);
+$isFinished = !$isActive;
+$isWinner   = $current_customer_id > 0 && ((int)$auction['current_winner_id'] === $current_customer_id);
+
+// cari order lelang pending (kalau ada)
+$pendingOrder = null;
+if ($isFinished && $isWinner && $current_customer_id > 0) {
+    $qPending = "
+        SELECT order_id, status, tgl_order
+        FROM orders
+        WHERE customer_id = ?
+          AND order_id LIKE CONCAT('STYRK_AUC_', ?, '_%')
+        ORDER BY tgl_order DESC
+        LIMIT 1
+    ";
+    $stmtP = $conn->prepare($qPending);
+    if ($stmtP) {
+        $stmtP->bind_param('ii', $current_customer_id, $auction_id);
+        $stmtP->execute();
+        $resP = $stmtP->get_result();
+        if ($rowP = $resP->fetch_assoc()) {
+            // simpan order apa adanya, status dicek di bawah
+            $pendingOrder = $rowP;
+        }
+        $stmtP->close();
+    }
+}
 
 // Ambil data bid history
 $query_bids = "
@@ -82,7 +114,8 @@ $result_bids = $stmt_bids->get_result();
                 <hr>
 
                 <div class="bid-box">
-                    <?php if ($auction['status'] == 'active' && strtotime($auction['end_time']) > time()): ?>
+                    <?php if ($isActive): ?>
+                        <!-- ================== MODE: LELANG MASIH BERJALAN ================== -->
                         <h5 class="text-success">Tawaran Tertinggi Saat Ini:</h5>
                         <h3 class="fw-bold">Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?></h3>
                         <?php if ($auction['winner_name']): ?>
@@ -93,29 +126,105 @@ $result_bids = $stmt_bids->get_result();
                         <div class="countdown-timer-detail mb-3" data-endtime="<?= $auction['end_time']; ?>">Menghitung...</div>
 
                         <?php if (isset($_SESSION['alert'])): ?>
-                            <div class="alert alert-danger"><?= $_SESSION['alert'];
-                                                            unset($_SESSION['alert']); ?></div>
+                            <div class="alert alert-danger">
+                                <?= $_SESSION['alert'];
+                                unset($_SESSION['alert']); ?>
+                            </div>
                         <?php endif; ?>
 
                         <form action="proses_place_bid.php" method="POST">
                             <input type="hidden" name="auction_id" value="<?= $auction_id; ?>">
                             <div class="mb-3">
-                                <label for="bid_amount" class="form-label">Tawaran Anda (Minimal Rp <?= number_format($auction['current_bid'] + 1, 0, ',', '.'); ?>)</label>
-                                <input type="number" class="form-control" id="bid_amount" name="bid_amount"
+                                <label for="bid_amount" class="form-label">
+                                    Tawaran Anda (Minimal Rp <?= number_format($auction['current_bid'] + 1, 0, ',', '.'); ?>)
+                                </label>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="bid_amount"
+                                    name="bid_amount"
                                     min="<?= $auction['current_bid'] + 1; ?>"
-                                    placeholder="<?= number_format($auction['current_bid'] + 1, 0, ',', ''); ?>" required>
+                                    placeholder="<?= number_format($auction['current_bid'] + 1, 0, ',', ''); ?>"
+                                    required>
                             </div>
-                            <button type="submit" class="btn btn-lg w-100" style="background-color: var(--gold); color: var(--dark-gray);">Tawar Sekarang (Bid)</button>
+                            <button type="submit" class="btn btn-lg w-100"
+                                style="background-color: var(--gold); color: var(--dark-gray);">
+                                Tawar Sekarang (Bid)
+                            </button>
                         </form>
 
-                    <?php else: // Lelang berakhir 
-                    ?>
+                    <?php else: ?>
+                        <!-- ================== MODE: LELANG SUDAH BERAKHIR ================== -->
+                        <?php
+                        $customer_id = (int)($_SESSION['kd_cs'] ?? 0);
+                        $isWinner    = ($customer_id && (int)$auction['current_winner_id'] === $customer_id);
+
+                        $orderStatus = $pendingOrder ? strtolower((string)$pendingOrder['status']) : null;
+                        $hasPendingOrder = ($pendingOrder && $orderStatus === 'pending');
+
+                        $endedTime  = strtotime($auction['end_time']);
+                        $within1Day = ($endedTime !== false && $endedTime >= strtotime('-1 day'));
+
+                        // Kalau belum pernah bikin order lelang sama sekali
+                        $canCreateOrder   = $isWinner && !$hasPendingOrder && $within1Day;
+                        // Kalau SUDAH ada order lelang status pending (lanjutin bayar)
+                        $canContinuePay   = $isWinner && $hasPendingOrder && $within1Day;
+                        // Kalau sudah lewat 1 hari
+                        $paymentExpired   = $isWinner && !$within1Day;
+                        ?>
                         <h5 class="text-danger">Lelang Telah Berakhir</h5>
                         <h3 class="fw-bold">Dimenangkan oleh:</h3>
-                        <h4 class="text-success"><?= htmlspecialchars($auction['winner_name'] ?? 'Tidak ada pemenang'); ?></h4>
+                        <h4 class="text-success">
+                            <?= htmlspecialchars($auction['winner_name'] ?? 'Tidak ada pemenang'); ?>
+                        </h4>
                         <p>dengan tawaran akhir:</p>
                         <h4 class="fw-bold">Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?></h4>
+
+                        <?php if ($isWinner): ?>
+                            <hr>
+
+                            <?php if ($canContinuePay): ?>
+                                <!-- Sudah ada order pending → lanjutkan pembayaran -->
+                                <p class="mb-2">
+                                    Kamu sudah membuat order lelang dengan status <strong>pending</strong>.
+                                    Silakan lanjutkan pembayaran di bawah ini (batas 1×24 jam sejak lelang berakhir).
+                                </p>
+                                <form action="payment.php" method="get" class="mt-2">
+                                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($pendingOrder['order_id']); ?>">
+                                    <button type="submit" class="btn btn-lg w-100"
+                                        style="background-color: var(--gold); color: var(--dark-gray);">
+                                        Lanjutkan Pembayaran
+                                    </button>
+                                </form>
+
+                            <?php elseif ($canCreateOrder): ?>
+                                <!-- Belum ada order → bikin order baru via payment/checkout lelang -->
+                                <p class="mb-2">
+                                    Kamu adalah pemenang lelang ini. Segera selesaikan pembayaran dalam waktu
+                                    <strong>1×24 jam</strong> sejak lelang berakhir.
+                                </p>
+                                <form action="payment.php" method="get" class="mt-2">
+                                    <input type="hidden" name="auction_id" value="<?= $auction_id; ?>">
+                                    <button type="submit" class="btn btn-lg w-100"
+                                        style="background-color: var(--gold); color: var(--dark-gray);">
+                                        Process to Payment
+                                    </button>
+                                </form>
+
+                            <?php elseif ($paymentExpired): ?>
+                                <p class="mt-3 text-danger">
+                                    Batas waktu pembayaran (1×24 jam) sudah lewat. Order lelang ini tidak dapat diproses lagi.
+                                </p>
+
+                            <?php elseif ($pendingOrder && $orderStatus !== 'pending'): ?>
+                                <p class="mt-3 text-success">
+                                    Kamu sudah menyelesaikan pembayaran. Silakan cek di <a href="riwayat_belanja.php">Riwayat Belanja</a>.
+                                </p>
+                            <?php endif; ?>
+
+                        <?php endif; ?>
                     <?php endif; ?>
+
                 </div>
             </div>
         </div>
@@ -145,7 +254,7 @@ $result_bids = $stmt_bids->get_result();
     </div>
 
     <script>
-        // Script countdown yang sama dari auctions.php
+        // Script countdown
         document.querySelectorAll('.countdown-timer-detail').forEach(timer => {
             const endTime = new Date(timer.dataset.endtime).getTime();
             const x = setInterval(function() {
@@ -162,7 +271,7 @@ $result_bids = $stmt_bids->get_result();
                 if (distance < 0) {
                     clearInterval(x);
                     timer.innerHTML = "LELANG BERAKHIR";
-                    if (distance > -5000) location.reload(); // Auto refresh halaman setelah 5 detik lelang berakhir
+                    if (distance > -5000) location.reload();
                 }
             }, 1000);
         });

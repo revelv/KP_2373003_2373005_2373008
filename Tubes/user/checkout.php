@@ -10,17 +10,20 @@ $customer_id = (int)$_SESSION['kd_cs'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') die('Metode tidak valid.');
 
-// ===== Deteksi mode: bayar ulang order lama (order_id) vs checkout baru dari cart =====
+// ===== Deteksi mode: repay order lama vs checkout cart vs auction =====
 $existing_order_id = isset($_POST['order_id']) ? trim((string)$_POST['order_id']) : '';
-$is_repay          = ($existing_order_id !== '');
+$auction_id        = isset($_POST['auction_id']) ? (int)$_POST['auction_id'] : 0;
+
+$is_repay   = ($existing_order_id !== '');
+$is_auction = !$is_repay && $auction_id > 0;  // kalau sudah repay, abaikan auction_id
 
 $payment_method = $_POST['metode'] ?? '';
 if (!in_array($payment_method, ['Transfer', 'QRIS'], true)) die('Metode pembayaran tidak valid.');
 
-// ==== Ambil & validasi item yang dipilih (mode cart saja) ====
+// ==== Ambil & validasi item yang dipilih (mode cart saja, bukan repay / auction) ====
 $selected_cart_ids = [];
-$in_clause        = '';
-if (!$is_repay) {
+$in_clause         = '';
+if (!$is_repay && !$is_auction) {
     if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) die('Tidak ada item dipilih.');
     $selected_cart_ids = array_map('intval', (array)$_POST['selected_items']);
     $selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
@@ -30,71 +33,128 @@ if (!$is_repay) {
 
 // ==== Ambil info pengiriman dari POST (dikirim dari payment page) ====
 $shipping_cost    = isset($_POST['shipping_cost']) ? max(0, (int)$_POST['shipping_cost']) : 0;
-$shipping_courier = trim((string)($_POST['shipping_courier'] ?? ''));   // simpan ke komship_courier / code_courier
-$shipping_service = trim((string)($_POST['shipping_service'] ?? ''));   // simpan ke komship_service (jika ada)
+$shipping_courier = trim((string)($_POST['shipping_courier'] ?? ''));   // komship_courier / code_courier
+$shipping_service = trim((string)($_POST['shipping_service'] ?? ''));   // komship_service
 
 $alamat_mode = $_POST['alamat_mode'] ?? ''; // 'profil'|'custom'
 $ship_prov   = trim((string)($_POST['provinsi'] ?? ''));
 $ship_kota   = trim((string)($_POST['kota'] ?? ''));
 $ship_alamat = trim((string)($_POST['alamat'] ?? ''));
 
-// Validasi minimal alamat & kurir hanya untuk checkout baru (bukan repay)
+// Validasi minimal alamat & kurir untuk checkout baru (cart + auction), bukan repay
 if (!$is_repay) {
     if ($shipping_courier === '') die('Kurir belum dipilih.');
     if ($ship_prov === '' || $ship_kota === '' || $ship_alamat === '') die('Alamat pengiriman belum lengkap.');
-    // Simpan biaya kirim ke session (sinkronisasi, optional)
     $_SESSION['shipping_cost'] = $shipping_cost;
 }
 
 // ==== Voucher (guard backend) ====
+// Lelang tidak pakai voucher
 $voucher_code = null;
 $voucher_tipe = null; // 'persen'|'rupiah'
 $voucher_rp   = 0;
 $voucher_pct  = 0;
-if (!$is_repay) {
+if (!$is_repay && !$is_auction) {
     $voucher_code = $_SESSION['voucher_code'] ?? null;
     $voucher_tipe = $_SESSION['voucher_tipe'] ?? null;
     $voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
     $voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
 }
 
-// ==== Ambil item keranjang & hitung subtotal (mode cart) ====
+// ==== Ambil item & hitung subtotal ====
+//  - mode cart: dari carts
+//  - mode auction: dari auctions + products (1 item, qty 1, harga = current_bid)
 $items        = [];
 $total_barang = 0;
-if (!$is_repay) {
-    $sql = "SELECT c.cart_id, c.product_id, c.jumlah_barang, p.harga, p.stok, p.nama_produk
-            FROM carts c
-            JOIN products p ON p.product_id = c.product_id
-            WHERE c.customer_id=? AND c.cart_id IN ($in_clause)";
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) die('Gagal prepare cart: ' . $conn->error);
-    $stmt->bind_param('i', $customer_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
 
-    while ($r = $res->fetch_assoc()) {
-        if ((int)$r['stok'] < (int)$r['jumlah_barang']) {
-            $stmt->close();
-            die('Stok produk ' . $r['nama_produk'] . ' tidak cukup.');
+if (!$is_repay) {
+    if ($is_auction) {
+        // ====== MODE AUCTION ======
+        $sql = "
+            SELECT 
+                a.auction_id,
+                a.current_bid,
+                a.current_winner_id,
+                a.end_time,
+                a.status,
+                a.title,
+                a.product_id,
+                p.nama_produk,
+                p.harga,
+                p.stok
+            FROM auctions a
+            JOIN products p ON p.product_id = a.product_id
+            WHERE a.auction_id = ?
+            LIMIT 1
+        ";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) die('Gagal load data lelang: ' . $conn->error);
+        $stmt->bind_param('i', $auction_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $auc = $res->fetch_assoc();
+        $stmt->close();
+
+        if (!$auc) die('Lelang tidak ditemukan.');
+        if ((int)$auc['current_winner_id'] !== $customer_id) die('Anda bukan pemenang lelang ini.');
+
+        $endedTime = strtotime($auc['end_time']);
+        if ($endedTime === false || $endedTime < strtotime('-1 day')) {
+            die('Batas waktu pembayaran lelang (1×24 jam) sudah berakhir.');
         }
-        $jumlah = (int)$r['jumlah_barang'];
-        $harga  = (int)$r['harga'];
-        $sub    = $jumlah * $harga;
+
+        // qty = 1, harga = current_bid (bukan harga katalog produk)
+        $jumlah = 1;
+        $harga  = (int)$auc['current_bid'];
+        if ((int)$auc['stok'] < $jumlah) {
+            die('Stok produk lelang tidak cukup.');
+        }
+
+        $sub = $jumlah * $harga;
         $items[] = [
-            'product_id' => (string)$r['product_id'],
+            'product_id' => (string)$auc['product_id'],
             'jumlah'     => $jumlah,
             'harga'      => $harga,
             'subtotal'   => $sub
         ];
-        $total_barang += $sub;
+        $total_barang = $sub;
+
+    } else {
+        // ====== MODE CART NORMAL ======
+        $sql = "SELECT c.cart_id, c.product_id, c.jumlah_barang, p.harga, p.stok, p.nama_produk
+                FROM carts c
+                JOIN products p ON p.product_id = c.product_id
+                WHERE c.customer_id=? AND c.cart_id IN ($in_clause)";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) die('Gagal prepare cart: ' . $conn->error);
+        $stmt->bind_param('i', $customer_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        while ($r = $res->fetch_assoc()) {
+            if ((int)$r['stok'] < (int)$r['jumlah_barang']) {
+                $stmt->close();
+                die('Stok produk ' . $r['nama_produk'] . ' tidak cukup.');
+            }
+            $jumlah = (int)$r['jumlah_barang'];
+            $harga  = (int)$r['harga'];
+            $sub    = $jumlah * $harga;
+            $items[] = [
+                'product_id' => (string)$r['product_id'],
+                'jumlah'     => $jumlah,
+                'harga'      => $harga,
+                'subtotal'   => $sub
+            ];
+            $total_barang += $sub;
+        }
+        $stmt->close();
+        if (!$items) die('Keranjang kosong / tidak ditemukan.');
     }
-    $stmt->close();
-    if (!$items) die('Keranjang kosong / tidak ditemukan.');
 }
 
-// ==== Hitung diskon (mode cart) ====
+// ==== Hitung diskon (hanya cart) ====
 $voucher_discount = 0;
-if (!$is_repay && $total_barang > 0) {
+if (!$is_repay && !$is_auction && $total_barang > 0) {
     if ($voucher_code && $voucher_tipe === 'persen') {
         $voucher_discount = (int) round($total_barang * ($voucher_pct / 100));
     } elseif ($voucher_code && $voucher_tipe === 'rupiah') {
@@ -104,11 +164,27 @@ if (!$is_repay && $total_barang > 0) {
 }
 
 // ==== Util: generate order_id unik ====
-function generate_awb(mysqli $conn): string
+//  - normal: STYRK{timestamp}{rand}
+//  - auction: STYRK_AUC_{auction_id}_{rand}
+function generate_awb_normal(mysqli $conn): string
 {
     do {
         $awb = 'STYRK' . time() . str_pad((string)mt_rand(0, 99999), 5, '0', STR_PAD_LEFT);
         $q = $conn->prepare('SELECT 1 FROM orders WHERE order_id=? LIMIT 1');
+        $q->bind_param('s', $awb);
+        $q->execute();
+        $exists = (bool)$q->get_result()->fetch_row();
+        $q->close();
+    } while ($exists);
+    return $awb;
+}
+
+function generate_awb_auction(mysqli $conn, int $auction_id): string
+{
+    do {
+        $rand = str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $awb  = 'STYRK_AUC_' . $auction_id . '_' . $rand;
+        $q    = $conn->prepare('SELECT 1 FROM orders WHERE order_id=? LIMIT 1');
         $q->bind_param('s', $awb);
         $q->execute();
         $exists = (bool)$q->get_result()->fetch_row();
@@ -122,6 +198,7 @@ $tanggal = date('Y-m-d H:i:s');
 // ==== Jika mode REPAY: ambil data order lama ==== 
 $order_id    = '';
 $grand_total = 0.0;
+
 if ($is_repay) {
     $stmt = $conn->prepare('SELECT customer_id, total_harga FROM orders WHERE order_id=? LIMIT 1');
     if (!$stmt) die('Gagal memuat order: ' . $conn->error);
@@ -135,9 +212,14 @@ if ($is_repay) {
 
     $order_id    = $existing_order_id;
     $grand_total = (float)$ord['total_harga'];
+
 } else {
-    // Mode checkout baru: hitung grand_total dari subtotal + ongkir - diskon
-    $order_id    = generate_awb($conn);
+    // Mode checkout baru: cart atau auction
+    if ($is_auction) {
+        $order_id = generate_awb_auction($conn, $auction_id);
+    } else {
+        $order_id = generate_awb_normal($conn);
+    }
     $grand_total = max(0.0, (float)$total_barang - (float)$voucher_discount + (float)$shipping_cost);
 }
 
@@ -156,7 +238,6 @@ try {
         ");
         if (!$insOrder) throw new Exception('Gagal prepare insert orders: ' . $conn->error);
 
-        // types: s i s s s s i d s s
         $insOrder->bind_param(
             'sissssidss',
             $order_id,
@@ -167,14 +248,14 @@ try {
             $ship_alamat,
             $shipping_cost,
             $grand_total,
-            $shipping_courier,   // komship_courier
-            $shipping_service    // komship_service
+            $shipping_courier,
+            $shipping_service
         );
 
         if (!$insOrder->execute()) throw new Exception('Gagal insert orders: ' . $insOrder->error);
         $insOrder->close();
 
-        // 2) Insert order_details & update stok
+        // 2) Insert order_details & update stok (cart & auction sama-sama lewat sini)
         $insDet   = $conn->prepare('INSERT INTO order_details (order_id, product_id, jumlah, harga_satuan, subtotal)
                                     VALUES (?, ?, ?, ?, ?)');
         $updStock = $conn->prepare('UPDATE products SET stok = stok - ? WHERE product_id = ?');
@@ -227,8 +308,8 @@ try {
         $pay->close();
     }
 
-    // 4) Tandai voucher terpakai (hanya checkout baru, bukan repay)
-    if (!$is_repay && !empty($voucher_code)) {
+    // 4) Tandai voucher terpakai (hanya checkout cart baru, bukan repay & bukan auction)
+    if (!$is_repay && !$is_auction && !empty($voucher_code)) {
         $v = $conn->prepare('UPDATE vouchers SET status="terpakai" WHERE kode_voucher=?');
         $v->bind_param('s', $voucher_code);
         $v->execute();
@@ -242,8 +323,8 @@ try {
         );
     }
 
-    // 5) Hapus item dari cart user (mode cart saja)
-    if (!$is_repay && $in_clause !== '') {
+    // 5) Hapus item dari cart user (mode cart saja, bukan repay / auction)
+    if (!$is_repay && !$is_auction && $in_clause !== '') {
         $esc_customer = mysqli_real_escape_string($conn, (string)$customer_id);
         if (!$conn->query("DELETE FROM carts WHERE customer_id='{$esc_customer}' AND cart_id IN ($in_clause)")) {
             throw new Exception('Gagal hapus cart: ' . $conn->error);
@@ -277,8 +358,7 @@ try {
                 }
             }
         } catch (Throwable $eKom) {
-            // Bisa lu log ke file / tabel lain kalo mau, biar ga ganggu user
-            // error_log('Komship error: ' . $eKom->getMessage());
+            // optional: log error
         }
     }
 

@@ -10,15 +10,14 @@ if (!isset($_SESSION['kd_cs'])) {
 $customer_id = (int) $_SESSION['kd_cs'];
 
 $sql = "SELECT 
-            o.order_id, 
-            o.tgl_order, 
-            o.total_harga, 
-            o.status,
+            o.order_id, o.tgl_order, o.total_harga, o.status,
             GROUP_CONCAT(CONCAT(p.nama_produk, ' (x', od.jumlah, ')') SEPARATOR '||') AS items
         FROM orders o
         JOIN order_details od ON od.order_id = o.order_id
         JOIN products p ON p.product_id = od.product_id
         WHERE o.customer_id = ?
+          -- SELESAI: sembunyikan order lelang yg masih pending
+          AND NOT (o.status = 'pending' AND o.order_id LIKE 'STYRK_AUC_%')
         GROUP BY o.order_id
         ORDER BY o.tgl_order DESC";
 
@@ -74,7 +73,7 @@ $stmt->close();
                                     <td colspan="6" class="text-center text-muted py-4">Belum ada transaksi.</td>
                                 </tr>
 
-                            <?php else:
+                                <?php else:
                                 foreach ($orders as $o):
                                     $tgl     = date('d M Y H:i', strtotime($o['tgl_order']));
                                     $total   = (float)$o['total_harga'];
@@ -101,50 +100,50 @@ $stmt->close();
                                         'batal'   => 'badge-batal',
                                         default   => 'bg-secondary'
                                     };
-                            ?>
-                                <tr>
-                                    <td class="nowrap"><?= htmlspecialchars($tgl) ?></td>
-                                    <td class="text-mono nowrap"><?= htmlspecialchars($o['order_id']) ?></td>
+                                ?>
+                                    <tr>
+                                        <td class="nowrap"><?= htmlspecialchars($tgl) ?></td>
+                                        <td class="text-mono nowrap"><?= htmlspecialchars($o['order_id']) ?></td>
 
-                                    <!-- Kolom Barang -->
-                                    <td>
-                                        <div><?= htmlspecialchars($firstItem) ?></div>
-                                        <?php if ($otherCount > 0): ?>
-                                            <small class="text-muted">
-                                                + <?= $otherCount ?> barang lainnya
-                                            </small>
-                                        <?php endif; ?>
-                                    </td>
+                                        <!-- Kolom Barang -->
+                                        <td>
+                                            <div><?= htmlspecialchars($firstItem) ?></div>
+                                            <?php if ($otherCount > 0): ?>
+                                                <small class="text-muted">
+                                                    + <?= $otherCount ?> barang lainnya
+                                                </small>
+                                            <?php endif; ?>
+                                        </td>
 
-                                    <!-- Total -->
-                                    <td>
-                                        <strong>Rp <?= number_format((int)round($total), 0, ',', '.') ?></strong>
-                                    </td>
+                                        <!-- Total -->
+                                        <td>
+                                            <strong>Rp <?= number_format((int)round($total), 0, ',', '.') ?></strong>
+                                        </td>
 
-                                    <!-- Status -->
-                                    <td>
-                                        <span class="<?= $badgeClass ?> px-2 py-1 rounded-2">
-                                            <?= htmlspecialchars($status) ?>
-                                        </span>
-                                    </td>
+                                        <!-- Status -->
+                                        <td>
+                                            <span class="<?= $badgeClass ?> px-2 py-1 rounded-2">
+                                                <?= htmlspecialchars($status) ?>
+                                            </span>
+                                        </td>
 
-                                    <!-- Aksi -->
-                                    <td class="td-aksi text-center">
-                                        <?php if ($status == 'pending'): ?>
-                                            <!-- Tidak ada tombol apa-apa untuk pending -->
-                                        <?php else: ?>
-                                            <!-- Tombol Lacak (status selain pending) -->
-                                            <button
-                                                type="button"
-                                                class="btn btn-outline-secondary btn-sm"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalTrack"
-                                                data-order="<?= htmlspecialchars($o['order_id']) ?>">
-                                                Lacak
-                                            </button>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
+                                        <!-- Aksi -->
+                                        <td class="td-aksi text-center">
+                                            <?php if ($status == 'pending'): ?>
+                                                <!-- Tidak ada tombol apa-apa untuk pending -->
+                                            <?php else: ?>
+                                                <!-- Tombol Lacak (status selain pending) -->
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-outline-secondary btn-sm"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalTrack"
+                                                    data-order="<?= htmlspecialchars($o['order_id']) ?>">
+                                                    Lacak
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
                             <?php endforeach;
                             endif; ?>
                         </tbody>
