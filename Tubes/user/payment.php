@@ -1,33 +1,41 @@
 <?php
 declare(strict_types=1);
-session_start(); // <<< KOMSHIP/SESSION: wajib, karena pakai $_SESSION
+session_start();
 include '../koneksi.php';
 
-// === Validasi item yang dipilih ===
-if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
-    $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
-    header('Location: cart.php');
-    exit();
-}
-$selected_cart_ids = array_map('intval', $_POST['selected_items']);
-$in_clause         = implode(',', $selected_cart_ids);
-
-// === Ambil data customer (alamat profil) ===
+// ====================== CEK LOGIN ======================
 if (!isset($_SESSION['kd_cs'])) {
     $_SESSION['message'] = 'Anda harus login terlebih dahulu.';
     header('Location: ../user/produk.php');
     exit();
 }
-$customer_id = (int)$_SESSION['kd_cs'];
+$customer_id = (int) $_SESSION['kd_cs'];
 
-$profil_nama    = '';
-$profil_prov    = '';
-$profil_kota    = '';
-$profil_alamat  = '';
-// KOMSHIP: id provinsi & kota untuk ongkir/Komship (sementara sama dengan kolom di DB)
-$profil_prov_id = '';
-$profil_kota_id = '';
+// ====================== DETEK MODE: CART vs ORDER ======================
+$order_id_php = isset($_GET['order_id']) ? trim((string)$_GET['order_id']) : '';
+$is_repay     = ($order_id_php !== '');
 
+// Inisialisasi umum
+$selected_cart_ids = [];
+$rows              = [];
+$subtotal          = 0;
+$voucher_code      = null;
+$voucher_tipe      = null;
+$voucher_rp        = 0;
+$voucher_pct       = 0;
+$voucher_discount  = 0;
+$base_total        = 0;
+$init_ongkir       = 0;
+$grand_total       = 0;
+$current_courier   = '';
+$profil_nama       = '';
+$profil_prov       = '';
+$profil_kota       = '';
+$profil_alamat     = '';
+$profil_prov_id    = '';
+$profil_kota_id    = '';
+
+// ====================== AMBIL DATA CUSTOMER (NAMA & PROFIL) ======================
 $stmt = $conn->prepare("SELECT nama, provinsi, kota, alamat FROM customer WHERE customer_id = ?");
 if ($stmt) {
     $stmt->bind_param("i", $customer_id);
@@ -38,61 +46,147 @@ if ($stmt) {
         $profil_prov   = $rowCust['provinsi'] ?? '';
         $profil_kota   = $rowCust['kota'] ?? '';
         $profil_alamat = $rowCust['alamat'] ?? '';
-
-        // Kalau kolom provinsi/kota di DB udah berupa ID, kita pakai sebagai *_id
-        $profil_prov_id = $profil_prov;
-        $profil_kota_id = $profil_kota;
     }
     $stmt->close();
 }
 
-// === Ambil item yang dipilih ===
-$query = "
-    SELECT c.cart_id, c.product_id, c.jumlah_barang,
-           p.nama_produk, p.harga, p.link_gambar, p.stok
-    FROM carts c
-    JOIN products p ON c.product_id = p.product_id
-    WHERE c.customer_id = '" . mysqli_real_escape_string($conn, (string)$customer_id) . "'
-      AND c.cart_id IN ($in_clause)
-";
-$result = mysqli_query($conn, $query);
-
-$rows     = [];
-$subtotal = 0;
-while ($row = mysqli_fetch_assoc($result)) {
-    if ((int)$row['stok'] < (int)$row['jumlah_barang']) {
-        die("Stok produk {$row['nama_produk']} tidak cukup.");
+// ====================== MODE 1: BAYAR ULANG ORDER (DARI RIWAYAT) ======================
+if ($is_repay) {
+    // Ambil order pending milik customer ini
+    $stmt = $conn->prepare("
+        SELECT o.customer_id, o.provinsi, o.kota, o.alamat,
+               o.code_courier, o.ongkos_kirim, o.total_harga, o.status
+        FROM orders o
+        WHERE o.order_id = ? AND o.customer_id = ?
+        LIMIT 1
+    ");
+    if (!$stmt) {
+        $_SESSION['message'] = 'Gagal memuat order.';
+        header('Location: riwayat_belanja.php');
+        exit();
     }
-    $row['harga']         = (int)$row['harga'];
-    $row['jumlah_barang'] = (int)$row['jumlah_barang'];
-    $row['item_subtotal'] = $row['harga'] * $row['jumlah_barang'];
-    $subtotal            += $row['item_subtotal'];
-    $rows[]               = $row;
+    $stmt->bind_param('si', $order_id_php, $customer_id);
+    $stmt->execute();
+    $resOrder = $stmt->get_result();
+    $order    = $resOrder->fetch_assoc();
+    $stmt->close();
+
+    if (!$order) {
+        $_SESSION['message'] = 'Order tidak ditemukan.';
+        header('Location: riwayat_belanja.php');
+        exit();
+    }
+
+    if (strtolower((string)$order['status']) !== 'pending') {
+        $_SESSION['message'] = 'Order ini sudah tidak dapat dibayar.';
+        header('Location: riwayat_belanja.php');
+        exit();
+    }
+
+    // Prefill alamat dari order (tapi MASIH BISA DIUBAH di UI)
+    $profil_prov   = (string)($order['provinsi'] ?? $profil_prov);
+    $profil_kota   = (string)($order['kota'] ?? $profil_kota);
+    $profil_alamat = (string)($order['alamat'] ?? $profil_alamat);
+
+    // Ambil item order dari order_details
+    $stmt = $conn->prepare("
+        SELECT 
+            oi.product_id,
+            oi.jumlah AS jumlah_barang,
+            oi.harga_satuan AS harga_satuan,
+            oi.subtotal AS item_subtotal,
+            p.nama_produk,
+            p.link_gambar,
+            p.stok
+        FROM order_details oi
+        JOIN products p ON p.product_id = oi.product_id
+        WHERE oi.order_id = ?
+    ");
+    if ($stmt) {
+        $stmt->bind_param('s', $order_id_php);
+        $stmt->execute();
+        $resItems = $stmt->get_result();
+        $rows     = [];
+        $subtotal = 0;
+        while ($row = $resItems->fetch_assoc()) {
+            $row['harga']         = (int)$row['harga_satuan'];          // harga saat order
+            $row['jumlah_barang'] = (int)$row['jumlah_barang'];
+            $row['item_subtotal'] = (int)$row['item_subtotal'];
+            $subtotal             += $row['item_subtotal'];
+            $rows[]               = $row;
+        }
+        $stmt->close();
+    }
+
+    // Untuk mode repay: anggap tidak ada voucher (sudah include di total jika dulu pakai)
+    $voucher_code     = null;
+    $voucher_tipe     = null;
+    $voucher_discount = 0;
+    $base_total       = max(0, $subtotal - $voucher_discount);
+    $init_ongkir      = 0; // akan dihitung lagi
+    $grand_total      = $base_total + $init_ongkir;
+
+// ====================== MODE 2: DARI CART (CHECKOUT BARU) ======================
+} else {
+    // Validasi item yang dipilih dari cart
+    if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
+        $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
+        header('Location: cart.php');
+        exit();
+    }
+    $selected_cart_ids = array_map('intval', $_POST['selected_items']);
+    $in_clause         = implode(',', $selected_cart_ids);
+
+    // Ambil item yang dipilih dari carts
+    $query = "
+        SELECT c.cart_id, c.product_id, c.jumlah_barang,
+               p.nama_produk, p.harga, p.link_gambar, p.stok
+        FROM carts c
+        JOIN products p ON c.product_id = p.product_id
+        WHERE c.customer_id = '" . mysqli_real_escape_string($conn, (string)$customer_id) . "'
+          AND c.cart_id IN ($in_clause)
+    ";
+    $result = mysqli_query($conn, $query);
+
+    $rows     = [];
+    $subtotal = 0;
+    while ($row = mysqli_fetch_assoc($result)) {
+        if ((int)$row['stok'] < (int)$row['jumlah_barang']) {
+            die("Stok produk {$row['nama_produk']} tidak cukup.");
+        }
+        $row['harga']         = (int)$row['harga'];
+        $row['jumlah_barang'] = (int)$row['jumlah_barang'];
+        $row['item_subtotal'] = $row['harga'] * $row['jumlah_barang'];
+        $subtotal            += $row['item_subtotal'];
+        $rows[]               = $row;
+    }
+
+    // Voucher (pakai session yang sudah ada)
+    $voucher_code = $_SESSION['voucher_code']         ?? null;
+    $voucher_tipe = $_SESSION['voucher_tipe']         ?? null;  // 'persen' | 'rupiah'
+    $voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
+    $voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
+
+    // Hitung diskon
+    $voucher_discount = 0;
+    if ($voucher_code && $voucher_tipe === 'persen') {
+        $voucher_discount = (int) round($subtotal * ($voucher_pct / 100));
+    } elseif ($voucher_code && $voucher_tipe === 'rupiah') {
+        $voucher_discount = $voucher_rp;
+    }
+    if ($voucher_discount > $subtotal) $voucher_discount = $subtotal;
+
+    // Total dasar (tanpa ongkir)
+    $base_total  = max(0, $subtotal - $voucher_discount);
+    $init_ongkir = 0;
+    $grand_total = $base_total + $init_ongkir;
+
+    // Daftar kurir
+    $current_courier = $_REQUEST['code_courier'] ?? ($_SESSION['checkout_courier'] ?? '');
+    if (!preg_match('/^[a-z0-9_\-]*$/i', $current_courier)) $current_courier = '';
 }
 
-// === Voucher (pakai session yang sudah ada) ===
-$voucher_code = $_SESSION['voucher_code']         ?? null;
-$voucher_tipe = $_SESSION['voucher_tipe']         ?? null;  // 'persen' | 'rupiah'
-$voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah']  ?? 0);
-$voucher_pct  = (int)($_SESSION['voucher_nilai_persen']  ?? 0);
-
-// hitung diskon tampilan 
-$voucher_discount = 0;
-if ($voucher_code && $voucher_tipe === 'persen') {
-    $voucher_discount = (int) round($subtotal * ($voucher_pct / 100));
-} elseif ($voucher_code && $voucher_tipe === 'rupiah') {
-    $voucher_discount = $voucher_rp;
-}
-if ($voucher_discount > $subtotal) $voucher_discount = $subtotal;
-
-// === Total dasar (tanpa ongkir) ===
-$base_total  = max(0, $subtotal - $voucher_discount);
-$init_ongkir = 0;
-$grand_total = $base_total + $init_ongkir;
-
-// === Daftar kurir ===
-$current_courier = $_REQUEST['code_courier'] ?? ($_SESSION['checkout_courier'] ?? '');
-if (!preg_match('/^[a-z0-9_\-]*$/i', $current_courier)) $current_courier = '';
+// == Daftar kurir (SELALU, baik cart maupun repay) ==
 $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier ORDER BY code_courier ASC");
 ?>
 
@@ -101,7 +195,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
 <head>
     <meta charset="UTF-8">
-    <title>Checkout - Payment</title>
+    <title><?= $is_repay ? 'Pembayaran Order #' . htmlspecialchars($order_id_php) : 'Checkout - Payment' ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="./css/payment.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -111,8 +205,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 <body class="mt-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="m-0">Checkout - Payment</h2>
-            <a href="cart.php" class="btn btn-secondary">← Back to Cart</a>
+            <h2 class="m-0">
+                <?= $is_repay ? 'Pembayaran Order #' . htmlspecialchars($order_id_php) : 'Checkout - Payment' ?>
+            </h2>
+            <a href="<?= $is_repay ? 'riwayat_belanja.php' : 'cart.php' ?>" class="btn btn-secondary">← Kembali</a>
         </div>
 
         <!-- ====================== BARANG YANG DIBAYAR ====================== -->
@@ -151,13 +247,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         </tr>
                     <?php endif; ?>
 
+                    <!-- ALAMAT: SELALU BISA DIUBAH -->
                     <tr>
                         <td>Alamat Pengiriman</td>
                         <td colspan="1">
-                            <!-- ====================== ALAMAT PENGIRIMAN ====================== -->
                             <div class="mb-4">
-
-                                <!-- Pilih mode alamat -->
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="alamat_mode" id="alamatProfil"
                                         value="profil" required>
@@ -168,7 +262,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                         value="custom">
                                     <label class="form-check-label" for="alamatLain">Gunakan alamat lain</label>
                                 </div>
-
                             </div>
                         </td>
                         <td colspan="3">
@@ -199,11 +292,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                         placeholder="Jalan, No, RT/RW, patokan, dll"></textarea>
                                 </div>
                             </div>
-
                         </td>
                     </tr>
 
-                    <!-- Pilih Kurir -->
+                    <!-- PILIH KURIR: SELALU BISA DIUBAH -->
                     <tr>
                         <td colspan="1">Pilih Courier</td>
                         <td colspan="4">
@@ -245,7 +337,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             </table>
         </div>
 
-        <!-- KOMSHIP/ONGKIR: hidden id kota/prov dari profil -->
         <input type="hidden" id="profile_province_id" value="<?= htmlspecialchars($profil_prov_id ?? '') ?>">
         <input type="hidden" id="profile_city_id" value="<?= htmlspecialchars($profil_kota_id ?? '') ?>">
 
@@ -285,7 +376,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
 
     <script>
-        // ====== DATA DARI PHP ======
+        const isRepay = <?= $is_repay ? 'true' : 'false' ?>;
+        const orderIdPHP = <?= json_encode($order_id_php) ?>;
+
+        // DATA DARI PHP
         const selectedItems = <?= json_encode($selected_cart_ids) ?>;
         const baseSubtotal = <?= (int)$subtotal ?>;
         const voucherDiscount = <?= (int)$voucher_discount ?>;
@@ -298,7 +392,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             alamat: <?= json_encode($profil_alamat) ?>
         };
 
-        // ====== ELEMEN YG DIPAKAI ======
+        // ELEMEN
         const courierSelect = document.getElementById('code_courier');
         const svcBox = document.getElementById('shippingServices');
         const ongkirCell = document.getElementById('ongkirCell');
@@ -314,7 +408,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         const kotaLainSel = document.getElementById('kota_lain');
         const alamatLainTextarea = document.getElementById('alamat_lain');
 
-        // ====== STATE ======
+        // STATE
         let currentShipping = {
             cost: 0,
             courier: '',
@@ -328,13 +422,9 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             alamat: ''
         };
 
-        // ====== UTIL ======
-        const show = el => {
-            if (el) el.style.display = 'block';
-        };
-        const hide = el => {
-            if (el) el.style.display = 'none';
-        };
+        // UTIL
+        const show = el => { if (el) el.style.display = 'block'; };
+        const hide = el => { if (el) el.style.display = 'none'; };
 
         function isAddressValid() {
             return !!(shippingAddress.provinsi && shippingAddress.kota && shippingAddress.alamat);
@@ -349,6 +439,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             currentShipping.courier = courierSelect?.value || '';
             btnPay.disabled = !(currentShipping.service && isAddressValid());
         }
+
         updateTotals(0);
 
         function ensureHiddenInputs(formEl) {
@@ -363,37 +454,28 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 }
                 el.value = val ?? '';
             };
-            // alamat (nama)
+
+            // Kalau datang dari riwayat, kirim order_id
+            if (isRepay && orderIdPHP) {
+                put('order_id', orderIdPHP);
+            }
+
+            // alamat
             put('alamat_mode', shippingAddress.mode || '');
             put('provinsi', shippingAddress.provinsi || '');
             put('kota', shippingAddress.kota || '');
             put('alamat', shippingAddress.alamat || '');
 
-            // id kalau custom (RajaOngkir/Komship destination id)
+            // id kalau custom
             put('provinsi_id', provinsiLainSel ? (provinsiLainSel.value || '') : '');
             put('kota_id', kotaLainSel ? (kotaLainSel.value || '') : '');
-
-            // KOMSHIP: dest_city_id / dest_prov_id ikut dikirim ke checkout.php
-            let destCityId = '';
-            let destProvId = '';
-            if (shippingAddress.mode === 'custom') {
-                destCityId = kotaLainSel ? (kotaLainSel.value || '') : '';
-                destProvId = provinsiLainSel ? (provinsiLainSel.value || '') : '';
-            } else if (shippingAddress.mode === 'profil') {
-                const profileCity = document.getElementById('profile_city_id');
-                const profileProv = document.getElementById('profile_province_id');
-                destCityId = profileCity ? (profileCity.value || '') : '';
-                destProvId = profileProv ? (profileProv.value || '') : '';
-            }
-            put('dest_city_id', destCityId);
-            put('dest_prov_id', destProvId);
 
             // ongkir
             put('shipping_cost', String(currentShipping.cost || 0));
             put('shipping_courier', currentShipping.courier || '');
             put('shipping_service', currentShipping.service || '');
 
-            // cart
+            // cart items (mode cart)
             (selectedItems || []).forEach(id => {
                 const i = document.createElement('input');
                 i.type = 'hidden';
@@ -412,7 +494,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (reload && cur) loadServices(cur);
         }
 
-        // ====== ALAMAT: PROFIL / CUSTOM ======
+        // ALAMAT: PROFIL / CUSTOM
         let provinceLoaded = false;
 
         async function loadProvinces() {
@@ -494,7 +576,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         }
 
-        // ====== INIT UI (AWAL: DUA PANEL HIDDEN) ======
+        // INIT UI
         (function init() {
             hide(panelProfil);
             hide(panelLain);
@@ -503,6 +585,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             applyAddressMode('');
         })();
 
+        // EVENT: alamat & prov/kota
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t && t.name === 'alamat_mode') {
@@ -538,7 +621,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         });
 
-        // ====== ONGKIR / LAYANAN ======
+        // ONGKIR / LAYANAN
         async function loadServices(courier) {
             if (!courier) return;
 
@@ -549,8 +632,14 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
 
             const formData = new FormData();
-            selectedItems.forEach(id => formData.append('selected_items[]', id));
+            // cart-mode items
+            (selectedItems || []).forEach(id => formData.append('selected_items[]', id));
             formData.append('code_courier', courier);
+
+            // kalau repay, kirim order_id juga biar bisa dipakai di calc_ongkir.php
+            if (isRepay && orderIdPHP) {
+                formData.append('order_id', orderIdPHP);
+            }
 
             formData.append('alamat_mode', shippingAddress.mode || '');
             formData.append('provinsi', shippingAddress.provinsi || '');
@@ -605,7 +694,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         </option>
                         `).join('')}
                     </select>
-                   <small class="text-muted">Harga & ETD .</small>`;
+                   <small class="text-muted">Harga & ETD dapat berubah sewaktu-waktu.</small>`;
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
@@ -628,7 +717,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             loadServices(e.target.value);
         });
 
-        // ====== PAYMENT (QRIS / TRANSFER) ======
+        // PAYMENT (QRIS / TRANSFER)
         let qrTimer;
         let qrContent = "";
 

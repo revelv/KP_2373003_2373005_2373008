@@ -10,7 +10,6 @@ require_once __DIR__ . '/../koneksi.php';
  * ===== KONFIG =====
  * NOTE: Banyak kasus harga “sama” terjadi karena origin/destination salah.
  * Pastikan ORIGIN_LOCATION_ID = CITY_ID Bandung versi API Komerce kamu.
- * Kalau ragu, sementara isi dengan city_id Bandung yang valid di lingkunganmu.
  */
 const RO_API_KEY         = 'KlJTvKcb3e00fb2d23c692a6dYH8Lv1z';
 const ORIGIN_LOCATION_ID = 55; // <- ganti kalau perlu (CITY_ID Bandung di Komerce/RajaOngkir-mu)
@@ -33,21 +32,36 @@ if (!preg_match('/^[a-z0-9_\-]{2,20}$/i', $codeCourier)) {
 }
 $courier = strtolower($codeCourier);
 
+/**
+ * Sekarang kita dukung 2 mode:
+ *  - MODE CART      : pakai selected_items[] -> carts
+ *  - MODE BAYAR ULANG: pakai order_id -> order_details
+ */
 $rawItems = $_POST['selected_items'] ?? [];
-if (!is_array($rawItems) || !$rawItems) json_fail('Item tidak dikirim.');
+$orderId  = isset($_POST['order_id']) ? trim((string)$_POST['order_id']) : '';
+
+if (!is_array($rawItems)) {
+  $rawItems = [];
+}
+
 $cartIds = array_values(array_unique(array_map('intval', $rawItems)));
 $cartIds = array_filter($cartIds, fn($v) => $v > 0);
-if (!$cartIds) json_fail('Daftar item tidak valid.');
 
-$_SESSION['checkout_courier'] = $courier;
+// kalau cart kosong DAN tidak ada order_id -> error
+if (!$cartIds && $orderId === '') {
+  json_fail('Item tidak dikirim.');
+}
 
 if (!isset($_SESSION['kd_cs'])) json_fail('Silakan login dulu.');
 $customerId = (int)$_SESSION['kd_cs'];
 
+// simpan kurir terakhir dipilih
+$_SESSION['checkout_courier'] = $courier;
+
 /* ========== Tentukan DESTINATION CITY_ID dengan prioritas:
  * 1) dest_city_id dari FE (alamat custom/profil yang punya ID),
  * 2) kota (city_id) dari tabel customer
- * 3) (opsional) kalau tetap kosong => gagal (jangan fallback sembarangan)
+ * 3) Kalau tetap kosong => gagal
  * =============================================== */
 $destCityId = trim((string)($_POST['dest_city_id'] ?? '')); // dari FE
 if ($destCityId !== '' && !ctype_digit($destCityId)) {
@@ -73,24 +87,58 @@ if ($destCityId === '' || (int)$destCityId <= 0) {
   json_fail('ID tujuan (kota) tidak ditemukan / tidak valid. Lengkapi alamat dulu.');
 }
 
-/* ========== Hitung total berat (gram) dari cart ========== */
-$idsIn = implode(',', $cartIds);
-$sql = "
-  SELECT c.jumlah_barang AS qty, p.weight
-  FROM carts c
-  JOIN products p ON p.product_id = c.product_id
-  WHERE c.cart_id IN ($idsIn)
-";
-$res = mysqli_query($conn, $sql);
-if (!$res) json_fail('Gagal ambil data keranjang: ' . mysqli_error($conn));
-
+/* ========== Hitung total berat (gram)
+ * MODE CART      : dari carts
+ * MODE BAYAR ULANG: dari order_details
+ * ============================================ */
 $totalWeight = 0;
-while ($row = mysqli_fetch_assoc($res)) {
-  $qty = max(1, (int)$row['qty']);
-  $w   = max(0, (int)$row['weight']); // gram
-  $totalWeight += ($w * $qty);
+
+if ($cartIds) {
+  // === MODE CART ===
+  $idsIn = implode(',', $cartIds);
+  $sql = "
+    SELECT c.jumlah_barang AS qty, p.weight
+    FROM carts c
+    JOIN products p ON p.product_id = c.product_id
+    WHERE c.cart_id IN ($idsIn)
+  ";
+  $res = mysqli_query($conn, $sql);
+  if (!$res) json_fail('Gagal ambil data keranjang: ' . mysqli_error($conn));
+
+  while ($row = mysqli_fetch_assoc($res)) {
+    $qty = max(1, (int)$row['qty']);
+    $w   = max(0, (int)$row['weight']); // gram
+    $totalWeight += ($w * $qty);
+  }
+  mysqli_free_result($res);
+
+} elseif ($orderId !== '') {
+  // === MODE BAYAR ULANG ===
+  // ambil barang dari order_details (jumlah) + products.weight
+  $stmt = $conn->prepare("
+    SELECT od.jumlah AS qty, p.weight
+    FROM order_details od
+    JOIN products p ON p.product_id = od.product_id
+    WHERE od.order_id = ?
+  ");
+  if (!$stmt) {
+    json_fail('Gagal menyiapkan query order_items: ' . mysqli_error($conn));
+  }
+  $stmt->bind_param('s', $orderId);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  if (!$res || $res->num_rows === 0) {
+    $stmt->close();
+    json_fail('Item order tidak ditemukan.');
+  }
+  while ($row = $res->fetch_assoc()) {
+    $qty = max(1, (int)$row['qty']);
+    $w   = max(0, (int)$row['weight']); // gram
+    $totalWeight += ($w * $qty);
+  }
+  $stmt->close();
 }
-mysqli_free_result($res);
+
 /* Minimal 1 gram supaya nggak 0 */
 $totalWeight = max(1, $totalWeight);
 
@@ -98,17 +146,15 @@ $totalWeight = max(1, $totalWeight);
 $endpoint = 'https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost';
 
 /**
- * PENTING:
- * - origin/destination adalah CITY_ID versi Komerce
- * - weight = gram
- * - courier = kode kurir (jne, jnt, sicepat, pos, tiki, anteraja, dll)
+ * origin/destination = CITY_ID
+ * weight = gram
+ * courier = kode kurir (jne, ninja, jnt, dll)
  */
 $postBody = http_build_query([
   'origin'      => (int)ORIGIN_LOCATION_ID,
   'destination' => (int)$destCityId,
   'weight'      => (int)$totalWeight,
   'courier'     => $courier,
-  // 'price'    => 'lowest', // opsional
 ], '', '&', PHP_QUERY_RFC3986);
 
 $ch = curl_init($endpoint);
@@ -144,7 +190,6 @@ if ($resp === false) {
 }
 
 $body = json_decode($resp, true);
-/* Kadang server balikin HTML (error gateway) -> bikin harga sama sebelumnya */
 if (!is_array($body)) {
   json_fail('Respon tidak valid dari RajaOngkir (bukan JSON).', [
     'http'  => $http,
@@ -165,10 +210,7 @@ if ($http >= 400 || ($metaStatus !== null && (int)$metaStatus >= 400)) {
   json_fail('API error: ' . ($metaMessage ?: 'HTTP ' . $http), ['raw' => $body]);
 }
 
-/* ===== Normalisasi bentuk data layanan =====
- * Komerce biasanya: data[] => { code, service, cost, etd }
- * Tapi jaga-jaga: key bisa beda (courier, price/value, service_name)
- */
+/* ===== Normalisasi bentuk data layanan ===== */
 $services = [];
 if (isset($body['data']) && is_array($body['data'])) {
   foreach ($body['data'] as $row) {

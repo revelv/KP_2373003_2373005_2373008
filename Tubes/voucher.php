@@ -228,7 +228,6 @@ function buatVoucherSTYRKIKUZO()
   return null;
 }
 
-// --- TAMBAHKAN FUNGSI BARU INI DI voucher_manager.php ---
 
 function kirimEmailPemenangLelang($emailPenerima, $namaPenerima, $namaBarang, $totalTagihan, $order_id)
 {

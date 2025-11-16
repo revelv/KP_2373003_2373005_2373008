@@ -9,13 +9,19 @@ if (!isset($_SESSION['kd_cs'])) {
 }
 $customer_id = (int) $_SESSION['kd_cs'];
 
-$sql = "SELECT o.order_id, o.tgl_order, o.provinsi, o.kota, o.alamat,
-               o.code_courier, o.ongkos_kirim, o.total_harga, o.status,
-               COALESCE(c.nama_kurir, '') AS nama_kurir
+$sql = "SELECT 
+            o.order_id, 
+            o.tgl_order, 
+            o.total_harga, 
+            o.status,
+            GROUP_CONCAT(CONCAT(p.nama_produk, ' (x', od.jumlah, ')') SEPARATOR '||') AS items
         FROM orders o
-        LEFT JOIN courier c ON c.code_courier = o.code_courier
+        JOIN order_details od ON od.order_id = o.order_id
+        JOIN products p ON p.product_id = od.product_id
         WHERE o.customer_id = ?
+        GROUP BY o.order_id
         ORDER BY o.tgl_order DESC";
+
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('i', $customer_id);
 $stmt->execute();
@@ -47,8 +53,7 @@ $stmt->close();
                         <colgroup>
                             <col class="col-date">
                             <col class="col-order">
-                            <col> <col class="col-courier">
-                            <col class="col-ongkir">
+                            <col class="col-barang">
                             <col class="col-total">
                             <col class="col-status">
                             <col class="col-action">
@@ -57,9 +62,7 @@ $stmt->close();
                             <tr>
                                 <th>Tanggal</th>
                                 <th>Order ID</th>
-                                <th>Tujuan</th>
-                                <th>Kurir</th>
-                                <th>Ongkir</th>
+                                <th>Barang</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th class="text-center">Aksi</th>
@@ -68,66 +71,82 @@ $stmt->close();
                         <tbody>
                             <?php if (!$orders): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Belum ada transaksi.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">Belum ada transaksi.</td>
                                 </tr>
-                                <?php else: foreach ($orders as $o):
+
+                            <?php else:
+                                foreach ($orders as $o):
                                     $tgl     = date('d M Y H:i', strtotime($o['tgl_order']));
-                                    $alamat  = trim((string)($o['alamat'] ?? ''));
-                                    $provRaw = (string)($o['provinsi'] ?? '');
-                                    $kotaRaw = (string)($o['kota'] ?? '');
-                                    $kurirNm = trim((string)$o['nama_kurir']);
-                                    if ($kurirNm === '') $kurirNm = ($o['code_courier'] ? strtoupper($o['code_courier']) : '-');
-                                    $ongkir  = (int)$o['ongkos_kirim'];
                                     $total   = (float)$o['total_harga'];
                                     $status  = strtolower((string)$o['status']);
 
-                                    $looksProvId = ctype_digit($provRaw);
-                                    $looksCityId = ctype_digit($kotaRaw);
-                                    $hasNames    = (!$looksProvId && !$looksCityId && $provRaw !== '' && $kotaRaw !== '');
-                                    $cityProvTxt = $hasNames ? ($kotaRaw . ' - ' . $provRaw) : 'Memuat…';
-                                    $addrShown   = $alamat !== '' ? htmlspecialchars($alamat) : '—';
+                                    // olah list barang
+                                    $itemsRaw   = (string)($o['items'] ?? '');
+                                    $firstItem  = '—';
+                                    $otherCount = 0;
+
+                                    if ($itemsRaw !== '') {
+                                        $barangList = explode('||', $itemsRaw);
+                                        $barangList = array_filter($barangList, fn($v) => trim($v) !== '');
+                                        if ($barangList) {
+                                            $firstItem  = $barangList[0];
+                                            $otherCount = count($barangList) - 1;
+                                        }
+                                    }
+
                                     $badgeClass  = 'badge-status ' . match ($status) {
                                         'pending' => 'badge-pending',
-                                        'proses' => 'badge-proses',
+                                        'proses'  => 'badge-proses',
                                         'selesai' => 'badge-selesai',
-                                        'batal' => 'badge-batal',
-                                        default => 'bg-secondary'
+                                        'batal'   => 'badge-batal',
+                                        default   => 'bg-secondary'
                                     };
-                                ?>
-                                    <tr>
-                                        <td class="nowrap"><?= htmlspecialchars($tgl) ?></td>
-                                        <td class="text-mono nowrap"><?= htmlspecialchars($o['order_id']) ?></td>
-                                        <td>
-                                            <div class="dest" data-prov="<?= htmlspecialchars($provRaw) ?>" data-city="<?= htmlspecialchars($kotaRaw) ?>">
-                                                <div class="address"><?= $addrShown ?></div>
-                                                <div class="cityprov js-cityprov"><?= htmlspecialchars($cityProvTxt) ?></div>
-                                            </div>
-                                        </td>
-                                        <td><?= htmlspecialchars($kurirNm) ?></td>
-                                        <td>Rp <?= number_format($ongkir, 0, ',', '.') ?></td>
-                                        <td><strong>Rp <?= number_format((int)round($total), 0, ',', '.') ?></strong></td>
-                                        <td><span class="<?= $badgeClass ?> px-2 py-1 rounded-2"><?= htmlspecialchars($status) ?></span></td>
-                                        
-                                        <td class="td-aksi text-center">
-                                            <?php if ($status == 'pending'): ?>
-                                                <a href="payment.php?order_id=<?= htmlspecialchars($o['order_id']) ?>" class="btn btn-success btn-sm">
-                                                    Bayar Sekarang
-                                                </a>
-                                            <?php else: ?>
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-outline-secondary btn-sm"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#modalTrack"
-                                                    data-order="<?= htmlspecialchars($o['order_id']) ?>"
-                                                    data-courier="<?= htmlspecialchars($o['code_courier']) ?>">
-                                                    Lacak
-                                                </button>
-                                            <?php endif; ?>
-                                        </td>
-                                        </tr>
-                                <?php endforeach;
-                                endif; ?>
+                            ?>
+                                <tr>
+                                    <td class="nowrap"><?= htmlspecialchars($tgl) ?></td>
+                                    <td class="text-mono nowrap"><?= htmlspecialchars($o['order_id']) ?></td>
+
+                                    <!-- Kolom Barang -->
+                                    <td>
+                                        <div><?= htmlspecialchars($firstItem) ?></div>
+                                        <?php if ($otherCount > 0): ?>
+                                            <small class="text-muted">
+                                                + <?= $otherCount ?> barang lainnya
+                                            </small>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <!-- Total -->
+                                    <td>
+                                        <strong>Rp <?= number_format((int)round($total), 0, ',', '.') ?></strong>
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td>
+                                        <span class="<?= $badgeClass ?> px-2 py-1 rounded-2">
+                                            <?= htmlspecialchars($status) ?>
+                                        </span>
+                                    </td>
+
+                                    <!-- Aksi -->
+                                    <td class="td-aksi text-center">
+                                        <?php if ($status == 'pending'): ?>
+                                            <!-- Tidak ada tombol apa-apa untuk pending -->
+                                        <?php else: ?>
+                                            <!-- Tombol Lacak (status selain pending) -->
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalTrack"
+                                                data-order="<?= htmlspecialchars($o['order_id']) ?>">
+                                                Lacak
+                                            </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach;
+                            endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -135,18 +154,11 @@ $stmt->close();
         </div>
     </section>
 
-    <div class="modal fade" id="modalTrack" tabindex="-1" aria-hidden="true">
-        </div>
+    <div class="modal fade" id="modalTrack" tabindex="-1" aria-hidden="true"></div>
 
-    <script>
-        (async function() {
-            // ... (kode JS Anda untuk resolve nama kota/provinsi) ...
-        })();
-
-        // ... (kode JS Anda untuk modal tracking) ...
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <?php include __DIR__ . '/footer.php'; ?>
 </body>
+
 </html>
