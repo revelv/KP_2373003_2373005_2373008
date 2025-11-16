@@ -12,11 +12,6 @@ if (!isset($_SESSION['kd_cs'])) {
 }
 $customer_id = (int) $_SESSION['kd_cs'];
 
-<<<<<<< HEAD
-// ====================== DETEK MODE: CART vs ORDER ======================
-$order_id_php = isset($_GET['order_id']) ? trim((string)$_GET['order_id']) : '';
-$is_repay     = ($order_id_php !== '');
-=======
 $profil_nama    = '';
 $profil_prov    = '';
 $profil_kota    = '';
@@ -24,7 +19,6 @@ $profil_alamat  = '';
 // KOMSHIP/RajaOngkir: id provinsi & kota untuk ongkir (sementara sama dengan kolom di DB)
 $profil_prov_id = '';
 $profil_kota_id = '';
->>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
 
 // Inisialisasi umum
 $selected_cart_ids = [];
