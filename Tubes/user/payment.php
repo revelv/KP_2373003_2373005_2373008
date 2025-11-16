@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 session_start();
 include '../koneksi.php';
@@ -11,9 +12,19 @@ if (!isset($_SESSION['kd_cs'])) {
 }
 $customer_id = (int) $_SESSION['kd_cs'];
 
+<<<<<<< HEAD
 // ====================== DETEK MODE: CART vs ORDER ======================
 $order_id_php = isset($_GET['order_id']) ? trim((string)$_GET['order_id']) : '';
 $is_repay     = ($order_id_php !== '');
+=======
+$profil_nama    = '';
+$profil_prov    = '';
+$profil_kota    = '';
+$profil_alamat  = '';
+// KOMSHIP/RajaOngkir: id provinsi & kota untuk ongkir (sementara sama dengan kolom di DB)
+$profil_prov_id = '';
+$profil_kota_id = '';
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
 
 // Inisialisasi umum
 $selected_cart_ids = [];
@@ -286,6 +297,13 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                         <option value="">-- Pilih Kota --</option>
                                     </select>
                                 </div>
+                                <!-- KECAMATAN ALAMAT LAIN -->
+                                <div class="mb-2">
+                                    <label for="kecamatan_lain" class="form-label">Kecamatan</label>
+                                    <select id="kecamatan_lain" class="form-select" disabled>
+                                        <option value="">-- Pilih Kecamatan --</option>
+                                    </select>
+                                </div>
                                 <div class="mb-2">
                                     <label for="alamat_lain" class="form-label">Alamat Lengkap</label>
                                     <textarea id="alamat_lain" class="form-control" rows="3"
@@ -337,6 +355,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             </table>
         </div>
 
+<<<<<<< HEAD
+=======
+        <!-- ID kota/prov dari profil (kalau di DB lo simpan ID) -->
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
         <input type="hidden" id="profile_province_id" value="<?= htmlspecialchars($profil_prov_id ?? '') ?>">
         <input type="hidden" id="profile_city_id" value="<?= htmlspecialchars($profil_kota_id ?? '') ?>">
 
@@ -406,6 +428,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         const provinsiLainSel = document.getElementById('provinsi_lain');
         const kotaLainSel = document.getElementById('kota_lain');
+        const kecLainSel = document.getElementById('kecamatan_lain');
         const alamatLainTextarea = document.getElementById('alamat_lain');
 
         // STATE
@@ -419,6 +442,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             mode: '', // '' | 'profil' | 'custom'
             provinsi: '',
             kota: '',
+            kecamatan: '',
             alamat: ''
         };
 
@@ -427,8 +451,25 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         const hide = el => { if (el) el.style.display = 'none'; };
 
         function isAddressValid() {
-            return !!(shippingAddress.provinsi && shippingAddress.kota && shippingAddress.alamat);
+            if (!shippingAddress.mode) return false;
+
+            if (!shippingAddress.provinsi || !shippingAddress.kota) {
+                return false;
+            }
+
+            if (shippingAddress.mode === 'custom') {
+                if (!shippingAddress.alamat) return false;
+                if (kecLainSel && !shippingAddress.kecamatan) return false;
+                return true;
+            }
+
+            if (shippingAddress.mode === 'profil') {
+                return true;
+            }
+
+            return false;
         }
+
 
         function updateTotals(cost = 0) {
             const ongkir = Number(cost) || 0;
@@ -455,21 +496,54 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 el.value = val ?? '';
             };
 
+<<<<<<< HEAD
             // Kalau datang dari riwayat, kirim order_id
             if (isRepay && orderIdPHP) {
                 put('order_id', orderIdPHP);
             }
 
             // alamat
+=======
+            // alamat (nama)
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
             put('alamat_mode', shippingAddress.mode || '');
             put('provinsi', shippingAddress.provinsi || '');
             put('kota', shippingAddress.kota || '');
+            put('kecamatan', shippingAddress.kecamatan || '');
             put('alamat', shippingAddress.alamat || '');
 
+<<<<<<< HEAD
             // id kalau custom
+=======
+            // id kalau custom (RajaOngkir destination)
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
             put('provinsi_id', provinsiLainSel ? (provinsiLainSel.value || '') : '');
             put('kota_id', kotaLainSel ? (kotaLainSel.value || '') : '');
+            put('kecamatan_id', kecLainSel ? (kecLainSel.value || '') : '');
 
+<<<<<<< HEAD
+=======
+            // untuk calc_ongkir.php & checkout.php
+            let destCityId = '';
+            let destProvId = '';
+            let destDistrictId = '';
+
+            if (shippingAddress.mode === 'custom') {
+                destCityId = kotaLainSel ? (kotaLainSel.value || '') : '';
+                destProvId = provinsiLainSel ? (provinsiLainSel.value || '') : '';
+                destDistrictId = kecLainSel ? (kecLainSel.value || '') : '';
+            } else if (shippingAddress.mode === 'profil') {
+                const profileCity = document.getElementById('profile_city_id');
+                const profileProv = document.getElementById('profile_province_id');
+                destCityId = profileCity ? (profileCity.value || '') : '';
+                destProvId = profileProv ? (profileProv.value || '') : '';
+                // destDistrictId boleh kosong kalau profil belum simpan kecamatan
+            }
+            put('dest_city_id', destCityId);
+            put('dest_prov_id', destProvId);
+            put('dest_district_id', destDistrictId);
+
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
             // ongkir
             put('shipping_cost', String(currentShipping.cost || 0));
             put('shipping_courier', currentShipping.courier || '');
@@ -509,12 +583,22 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 console.error('Province parse error:', txt);
                 return;
             }
-            const list = Array.isArray(data) ? data : (data.data || []);
+
+            let list = [];
+            if (Array.isArray(data)) {
+                list = data;
+            } else if (Array.isArray(data.data)) {
+                list = data.data;
+            } else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) {
+                list = data.rajaongkir.results;
+            }
+
             const options = list.map(p => {
                 const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
                 const name = String(p.province ?? p.name ?? p.provinceName ?? '');
                 return (id && name) ? `<option value="${id}">${name}</option>` : '';
             }).join('');
+
             if (provinsiLainSel) {
                 provinsiLainSel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' + options;
                 provinceLoaded = true;
@@ -525,6 +609,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (!kotaLainSel) return;
             kotaLainSel.innerHTML = '<option value="">Loading...</option>';
             kotaLainSel.disabled = true;
+
             if (!provId) {
                 kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>';
                 return;
@@ -538,14 +623,105 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 console.error('City parse error:', txt);
                 return;
             }
-            const list = Array.isArray(data) ? data : (data.data || []);
+
+            let list = [];
+            if (Array.isArray(data)) {
+                list = data;
+            } else if (Array.isArray(data.data)) {
+                list = data.data;
+            } else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) {
+                list = data.rajaongkir.results;
+            }
+
             const options = list.map(c => {
                 const id = String(c.city_id ?? c.id ?? c.cityId ?? '');
                 const name = String(c.city_name ?? c.name ?? c.cityName ?? '').trim();
                 return (id && name) ? `<option value="${id}">${name}</option>` : '';
             }).join('');
+
             kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
             kotaLainSel.disabled = false;
+
+            // reset kecamatan tiap ganti prov/kota
+            if (kecLainSel) {
+                kecLainSel.disabled = true;
+                kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+            }
+        }
+
+        // LOAD KECAMATAN (pure RajaOngkir)
+        async function loadDistricts(cityId) {
+            if (!kecLainSel) return;
+
+            kecLainSel.disabled = true;
+            kecLainSel.innerHTML = '<option value="">Loading...</option>';
+
+            if (!cityId) {
+                kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+                return;
+            }
+
+            try {
+                // PENTING: pakai file yg BENER, tanpa 's'
+                const res = await fetch('./rajaongkir/get-district.php?city=' + encodeURIComponent(cityId) + '&t=' + Date.now());
+                const txt = await res.text();
+                console.log('DISTRICT RAW:', txt);
+
+                let data;
+                try {
+                    data = JSON.parse(txt);
+                } catch (e) {
+                    console.error('District JSON parse error:', e);
+                    kecLainSel.innerHTML = '<option value="">Gagal baca data kecamatan</option>';
+                    return;
+                }
+
+                let list = [];
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (Array.isArray(data.data)) {
+                    list = data.data;
+                } else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) {
+                    list = data.rajaongkir.results;
+                }
+
+                if (!Array.isArray(list) || !list.length) {
+                    kecLainSel.innerHTML = '<option value="">(Tidak ada data kecamatan)</option>';
+                    return;
+                }
+
+                const options = list.map(d => {
+                    const id = String(
+                        d.subdistrict_id ??
+                        d.id ??
+                        d.subdistrictId ??
+                        d.district_id ??
+                        ''
+                    );
+                    const name = String(
+                        d.subdistrict_name ??
+                        d.name ??
+                        d.subdistrictName ??
+                        d.district_name ??
+                        ''
+                    ).trim();
+                    if (!id || !name) return '';
+                    return `<option value="${id}">${name}</option>`;
+                }).join('');
+
+                if (!options) {
+                    kecLainSel.innerHTML = '<option value="">(Data kecamatan kosong)</option>';
+                    return;
+                }
+
+                kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + options;
+                kecLainSel.disabled = false;
+
+            } catch (err) {
+                console.error('District fetch error:', err);
+                kecLainSel.innerHTML = '<option value="">Error load kecamatan</option>';
+                kecLainSel.disabled = true;
+            }
         }
 
         function applyAddressMode(mode) {
@@ -555,6 +731,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.mode = 'profil';
                 shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
                 shippingAddress.kota = (profileAddress.kota || '').trim();
+                shippingAddress.kecamatan = ''; // profil belum punya kecamatan
                 shippingAddress.alamat = (profileAddress.alamat || '').trim();
                 resetOngkir(true);
             } else if (mode === 'custom') {
@@ -564,14 +741,20 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 if (!provinceLoaded) loadProvinces().catch(console.error);
                 const pOpt = provinsiLainSel?.selectedOptions?.[0];
                 const cOpt = kotaLainSel?.selectedOptions?.[0];
+                const kOpt = kecLainSel?.selectedOptions?.[0];
                 shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
                 shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
+                shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
                 shippingAddress.alamat = (alamatLainTextarea?.value || '');
                 resetOngkir(true);
             } else {
                 hide(panelProfil);
                 hide(panelLain);
                 shippingAddress.mode = '';
+                shippingAddress.provinsi = '';
+                shippingAddress.kota = '';
+                shippingAddress.kecamatan = '';
+                shippingAddress.alamat = '';
                 resetOngkir(false);
             }
         }
@@ -595,12 +778,29 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 loadCities(provinsiLainSel.value).then(() => {
                     const pOpt = provinsiLainSel.selectedOptions[0];
                     shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
+                    shippingAddress.kecamatan = '';
+                    if (kecLainSel) {
+                        kecLainSel.disabled = true;
+                        kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+                    }
                     resetOngkir(true);
                 });
             }
             if (t === kotaLainSel) {
                 const cOpt = kotaLainSel.selectedOptions[0];
                 shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
+                // tiap ganti kota, load kecamatan baru (RajaOngkir)
+                loadDistricts(kotaLainSel.value).then(() => {
+                    const kOpt = kecLainSel?.selectedOptions?.[0];
+                    shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
+                    resetOngkir(true);
+                }).catch(() => {
+                    resetOngkir(true);
+                });
+            }
+            if (t === kecLainSel) {
+                const kOpt = kecLainSel.selectedOptions[0];
+                shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
                 resetOngkir(true);
             }
             if (t === alamatLainTextarea) {
@@ -621,7 +821,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         });
 
+<<<<<<< HEAD
         // ONGKIR / LAYANAN
+=======
+        // ====== ONGKIR / LAYANAN (PAKAI RAJAONGKIR calc_ongkir.php) ======
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
         async function loadServices(courier) {
             if (!courier) return;
 
@@ -644,21 +848,26 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             formData.append('alamat_mode', shippingAddress.mode || '');
             formData.append('provinsi', shippingAddress.provinsi || '');
             formData.append('kota', shippingAddress.kota || '');
+            formData.append('kecamatan', shippingAddress.kecamatan || '');
             formData.append('alamat', shippingAddress.alamat || '');
 
             let destCityId = '';
             let destProvId = '';
+            let destDistrictId = '';
 
             if (shippingAddress.mode === 'custom') {
                 destCityId = (kotaLainSel && kotaLainSel.value) ? kotaLainSel.value : '';
                 destProvId = (provinsiLainSel && provinsiLainSel.value) ? provinsiLainSel.value : '';
+                destDistrictId = (kecLainSel && kecLainSel.value) ? kecLainSel.value : '';
             } else if (shippingAddress.mode === 'profil') {
                 destCityId = (document.getElementById('profile_city_id')?.value || '');
                 destProvId = (document.getElementById('profile_province_id')?.value || '');
+                // destDistrictId biarin kosong kalau profil belum ada
             }
 
             formData.append('dest_city_id', destCityId);
             formData.append('dest_prov_id', destProvId);
+            formData.append('dest_district_id', destDistrictId);
 
             svcBox.textContent = 'Menghitung ongkir...';
             currentShipping.service = '';
@@ -675,7 +884,8 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 try {
                     data = JSON.parse(txt);
                 } catch {
-                    throw new Error('Respon tidak valid.');
+                    console.error('calc_ongkir RAW:', txt);
+                    throw new Error('Respon tidak valid dari calc_ongkir.php');
                 }
 
                 if (!data.success || !Array.isArray(data.services) || data.services.length === 0) {
@@ -688,13 +898,17 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                     <label class="form-label">Pilih Layanan</label>
                     <select id="serviceSelect" class="form-select">
                         ${data.services.map(s => `
-                        <option value="${s.service}" data-cost="${s.cost}">
-                        ${(s.courier || courier).toUpperCase()} - ${s.service}
-                        ${s.etd ? `(ETD ${s.etd} hari)` : ''} - Rp ${Number(s.cost).toLocaleString('id-ID')}
-                        </option>
+                            <option value="${s.service}" data-cost="${s.cost}">
+                                ${(s.courier || courier).toUpperCase()} - ${s.service}
+                                ${s.etd ? `(ETD ${s.etd} hari)` : ''} - Rp ${Number(s.cost).toLocaleString('id-ID')}
+                            </option>
                         `).join('')}
                     </select>
+<<<<<<< HEAD
                    <small class="text-muted">Harga & ETD dapat berubah sewaktu-waktu.</small>`;
+=======
+                    <small class="text-muted">Harga & ETD berdasarkan RajaOngkir.</small>`;
+>>>>>>> 86148d6ed046aaac6d42993d74a142b54eaa7e3e
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
@@ -747,37 +961,37 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (metode.value === "QRIS") {
                 qrContent = generateQRContent();
                 html = `
-                        <div class="payment-box">
-                            <h5>QRIS</h5>
-                            <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
-                            <div class="qris-timer" id="timer">02:00</div>
-                                <form id="formQRIS" action="checkout.php" method="post">
-                                    <input type="hidden" name="metode" value="QRIS">
-                                    <input type="hidden" name="kode_transaksi" value="${qrContent}">
-                                    <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
-                                </form>
-                        </div>`;
+                    <div class="payment-box">
+                        <h5>QRIS</h5>
+                        <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}" alt="QRIS"><br>
+                        <div class="qris-timer" id="timer">02:00</div>
+                        <form id="formQRIS" action="checkout.php" method="post">
+                            <input type="hidden" name="metode" value="QRIS">
+                            <input type="hidden" name="kode_transaksi" value="${qrContent}">
+                            <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
+                        </form>
+                    </div>`;
                 container.innerHTML = html;
                 ensureHiddenInputs(document.getElementById('formQRIS'));
                 startQRISTimer();
             } else {
                 html = `
-                        <div class="payment-box">
-                            <h5>Transfer Bank</h5>
-                            <p>Silakan transfer ke rekening:</p>
-                            <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
-                            <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="metode" value="Transfer">
-                                <div class="mb-3">
-                                    <label for="bukti" class="form-label">Upload Bukti Transfer</label>
-                                    <input type="file" name="bukti" class="form-control" required accept="image/*">
-                                    <div class="form-text">Format: JPG, PNG (max 2MB)</div>
-                                </div>
-                                <button type="submit" name="pay_bank" class="btn btn-success w-100">
+                    <div class="payment-box">
+                        <h5>Transfer Bank</h5>
+                        <p>Silakan transfer ke rekening:</p>
+                        <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
+                        <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="metode" value="Transfer">
+                            <div class="mb-3">
+                                <label for="bukti" class="form-label">Upload Bukti Transfer</label>
+                                <input type="file" name="bukti" class="form-control" required accept="image/*">
+                                <div class="form-text">Format: JPG, PNG (max 2MB)</div>
+                            </div>
+                            <button type="submit" name="pay_bank" class="btn btn-success w-100">
                                 <i class="fas fa-upload me-2"></i> Upload & Cek Pembayaran
-                                </button>
-                            </form>
-                        </div>`;
+                            </button>
+                        </form>
+                    </div>`;
                 container.innerHTML = html;
                 ensureHiddenInputs(document.getElementById('formTransfer'));
             }
