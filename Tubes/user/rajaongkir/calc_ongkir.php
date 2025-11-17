@@ -11,7 +11,7 @@ require_once __DIR__ . '/../koneksi.php';
  * NOTE: Banyak kasus harga “sama” terjadi karena origin/destination salah.
  * Pastikan ORIGIN_LOCATION_ID = CITY_ID Bandung versi API Komerce kamu.
  */
-const RO_API_KEY         = 'KlJTvKcb3e00fb2d23c692a6dYH8Lv1z';
+const RO_API_KEY         = 'j7mlOjpseb8ec09cadbb3a603ywK7H22';
 const ORIGIN_LOCATION_ID = 55; // <- ganti kalau perlu (CITY_ID Bandung di Komerce/RajaOngkir-mu)
 
 function json_fail(string $msg, array $extra = []): void
