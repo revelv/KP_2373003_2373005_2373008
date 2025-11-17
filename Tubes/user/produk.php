@@ -155,8 +155,7 @@ if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
 <?php endif; ?>
 
 <div class="container_produk mb-4">
-    <h2 id="judul">Our Products</h2>
-
+    <h2 id="judul"></h2>
     <div class="text-center">
         <?php if (!empty($recommendations_for_user)): ?>
             <div class="container_produk mb-4">
@@ -215,9 +214,11 @@ if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
             </div>
         <?php endif; ?>
     </div>
+
 </div>
 
 <div class="container_produk">
+    <h2 id="judul">Our Products</h2>
     <div class="row">
         <?php
         $where = [];
