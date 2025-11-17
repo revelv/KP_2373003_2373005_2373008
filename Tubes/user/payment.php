@@ -23,6 +23,7 @@ $is_auction     = (!$is_repay && $auction_id_php > 0);
 $profil_nama    = '';
 $profil_prov    = '';
 $profil_kota    = '';
+$profil_kec     = '';
 $profil_alamat  = '';
 $profil_prov_id = '';
 $profil_kota_id = '';
@@ -41,7 +42,7 @@ $grand_total       = 0;
 $current_courier   = '';
 
 // ====================== AMBIL DATA CUSTOMER (NAMA & PROFIL) ======================
-$stmt = $conn->prepare("SELECT nama, provinsi, kota, alamat FROM customer WHERE customer_id = ?");
+$stmt = $conn->prepare("SELECT nama, provinsi, kota, kecamatan, alamat FROM customer WHERE customer_id = ?");
 if ($stmt) {
     $stmt->bind_param("i", $customer_id);
     $stmt->execute();
@@ -50,6 +51,7 @@ if ($stmt) {
         $profil_nama   = $rowCust['nama'] ?? '';
         $profil_prov   = $rowCust['provinsi'] ?? '';
         $profil_kota   = $rowCust['kota'] ?? '';
+        $profil_kec    = $rowCust['kecamatan'] ?? '';
         $profil_alamat = $rowCust['alamat'] ?? '';
     }
     $stmt->close();
@@ -360,7 +362,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                             <div class="border rounded p-3 mb-3 address-panel" id="cardAlamatProfil">
                                 <strong><?= htmlspecialchars($profil_nama) ?></strong><br>
                                 <?= nl2br(htmlspecialchars($profil_alamat)) ?><br>
-                                <?= htmlspecialchars($profil_kota) ?> - <?= htmlspecialchars($profil_prov) ?>
+                                <?= htmlspecialchars($profil_kota) ?><?= $profil_kec ? ' - ' . htmlspecialchars($profil_kec) : '' ?> - <?= htmlspecialchars($profil_prov) ?>
                             </div>
 
                             <div class="border rounded p-3 mt-2 address-panel" id="formAlamatLain">
@@ -485,6 +487,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             nama: <?= json_encode($profil_nama) ?>,
             provinsi: <?= json_encode($profil_prov) ?>,
             kota: <?= json_encode($profil_kota) ?>,
+            kecamatan: <?= json_encode($profil_kec ?? '') ?>,
             alamat: <?= json_encode($profil_alamat) ?>
         };
 
@@ -622,6 +625,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         let provinceLoaded = false;
 
+        // ====== PROV/KOTA/KEC (masih pakai endpoint RajaOngkir yang lama) ======
         async function loadProvinces() {
             if (provinceLoaded) return;
             if (provinsiLainSel) provinsiLainSel.innerHTML = '<option value="">Loading...</option>';
@@ -765,7 +769,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.mode = 'profil';
                 shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
                 shippingAddress.kota = (profileAddress.kota || '').trim();
-                shippingAddress.kecamatan = '';
+                shippingAddress.kecamatan = (profileAddress.kecamatan || '').trim();
                 shippingAddress.alamat = (profileAddress.alamat || '').trim();
                 resetOngkir(true);
             } else if (mode === 'custom') {
@@ -852,7 +856,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         });
 
-        // ====================== ONGKIR / LAYANAN ======================
+        // ====================== ONGKIR / LAYANAN (KOMSHIP) ======================
         async function loadServices(courier) {
             if (!courier) return;
 
@@ -863,9 +867,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
 
             const formData = new FormData();
-            (selectedItems || []).forEach(id => formData.append('selected_items[]', id));
-            formData.append('code_courier', courier);
 
+            // Item yang dipilih (buat hitung berat di backend)
+            (selectedItems || []).forEach(id => formData.append('selected_items[]', id));
+
+            // Mode: repay / auction
             if (isRepay && orderIdPHP) {
                 formData.append('order_id', orderIdPHP);
             }
@@ -873,28 +879,28 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 formData.append('auction_id', auctionIdPHP);
             }
 
+            // Data alamat (NAMA, bukan ID)
             formData.append('alamat_mode', shippingAddress.mode || '');
             formData.append('provinsi', shippingAddress.provinsi || '');
             formData.append('kota', shippingAddress.kota || '');
             formData.append('kecamatan', shippingAddress.kecamatan || '');
             formData.append('alamat', shippingAddress.alamat || '');
 
+            // Kirim ID kota/kecamatan (optional, backend boleh abaikan)
             let destCityId = '';
-            let destProvId = '';
             let destDistrictId = '';
-
             if (shippingAddress.mode === 'custom') {
                 destCityId = (kotaLainSel && kotaLainSel.value) ? kotaLainSel.value : '';
-                destProvId = (provinsiLainSel && provinsiLainSel.value) ? provinsiLainSel.value : '';
                 destDistrictId = (kecLainSel && kecLainSel.value) ? kecLainSel.value : '';
             } else if (shippingAddress.mode === 'profil') {
                 destCityId = (document.getElementById('profile_city_id')?.value || '');
-                destProvId = (document.getElementById('profile_province_id')?.value || '');
             }
-
             formData.append('dest_city_id', destCityId);
-            formData.append('dest_prov_id', destProvId);
             formData.append('dest_district_id', destDistrictId);
+
+            // Data kurir & nilai barang (buat Komship)
+            formData.append('code_courier', courier);
+            formData.append('base_total', String(baseTotal)); // nilai barang total
 
             svcBox.textContent = 'Menghitung ongkir...';
             currentShipping.service = '';
@@ -927,11 +933,12 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         ${data.services.map(s => `
                             <option value="${s.service}" data-cost="${s.cost}">
                                 ${(s.courier || courier).toUpperCase()} - ${s.service}
-                                ${s.etd ? `(ETD ${s.etd} hari)` : ''} - Rp ${Number(s.cost).toLocaleString('id-ID')}
+                                ${s.etd ? `(ETD ${s.etd})` : ''}
+                                - Rp ${Number(s.cost).toLocaleString('id-ID')}
                             </option>
                         `).join('')}
                     </select>
-                    <small class="text-muted">Harga & ETD berdasarkan RajaOngkir.</small>`;
+                    <small class="text-muted">Harga & estimasi berdasarkan Komship.</small>`;
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
