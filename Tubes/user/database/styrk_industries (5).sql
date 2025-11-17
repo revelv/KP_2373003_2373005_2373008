@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Waktu pembuatan: 17 Nov 2025 pada 15.55
+-- Waktu pembuatan: 17 Nov 2025 pada 18.05
 -- Versi server: 8.4.3
 -- Versi PHP: 8.3.16
 
@@ -123,8 +123,8 @@ CREATE TABLE `carts` (
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 2, '2025-11-15 13:47:29', NULL),
 (70, 10, 'KB018', 1, '2025-11-15 13:47:33', NULL),
-(71, 16, 'KB018', 1, '2025-11-15 14:04:16', NULL),
-(77, 18, 'KK009', 1, '2025-11-17 08:49:05', NULL);
+(77, 18, 'KK009', 1, '2025-11-17 08:49:05', NULL),
+(79, 16, 'COMM-2', 1, '2025-11-17 17:12:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -165,15 +165,31 @@ CREATE TABLE `community_articles` (
   `product_id` varchar(50) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_published` tinyint(1) DEFAULT '1'
+  `is_published` tinyint(1) DEFAULT '1',
+  `linked_product_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data untuk tabel `community_articles`
 --
 
-INSERT INTO `community_articles` (`article_id`, `title`, `content`, `image_url`, `product_price`, `product_id`, `created_at`, `updated_at`, `is_published`) VALUES
-(1, 'Noir Timeless82 v2 x Nevertoolavish \"Type Out Loud\" - NTL Edition Wireless Mechanical Keyboard Gasket Mount', 'Noir Timeless82 v2 × Nevertoolavish “Type Out Loud” – NTL Edition\r\nKolaborasi eksklusif antara Noir Gear dan Nevertoolavish, hadir dengan desain unik dan estetika premium yang memadukan gaya, fungsi, dan pengalaman mengetik kelas atas.\r\n\r\nFitur Utama:\r\nWireless Tri-Mode: Bluetooth, 2.4GHz, dan USB-C kabel\r\nGasket Mount System dengan 3-layer foam + poron untuk suara halus & feel empuk\r\nHot-swappable (3-pin & 5-pin) – bebas ganti switch tanpa solder\r\nLayout 75% (81 tombol) compact & fungsional\r\nPlate Polycarbonate, PCB flex-cut untuk fleksibilitas mengetik lebih nyaman\r\nKeycaps PBT dye-sub, tahan aus dan tidak mudah mengilap', 'https://i.postimg.cc/RFVNNY11/4e30c0a6026d46a093d0aa226f5d24d1.jpg', 3500000, NULL, '2025-11-17 21:24:16', '2025-11-17 21:55:39', 1);
+INSERT INTO `community_articles` (`article_id`, `title`, `content`, `image_url`, `product_price`, `product_id`, `created_at`, `updated_at`, `is_published`, `linked_product_id`) VALUES
+(1, 'Noir Timeless82 v2 x Nevertoolavish \"Type Out Loud\" - NTL Edition Wireless Mechanical Keyboard Gasket Mount', 'Noir Timeless82 v2 × Nevertoolavish “Type Out Loud” – NTL Edition\r\nKolaborasi eksklusif antara Noir Gear dan Nevertoolavish, hadir dengan desain unik dan estetika premium yang memadukan gaya, fungsi, dan pengalaman mengetik kelas atas.\r\n\r\nFitur Utama:\r\nWireless Tri-Mode: Bluetooth, 2.4GHz, dan USB-C kabel\r\nGasket Mount System dengan 3-layer foam + poron untuk suara halus & feel empuk\r\nHot-swappable (3-pin & 5-pin) – bebas ganti switch tanpa solder\r\nLayout 75% (81 tombol) compact & fungsional\r\nPlate Polycarbonate, PCB flex-cut untuk fleksibilitas mengetik lebih nyaman\r\nKeycaps PBT dye-sub, tahan aus dan tidak mudah mengilap', 'https://i.postimg.cc/RFVNNY11/4e30c0a6026d46a093d0aa226f5d24d1.jpg', 3500000, NULL, '2025-11-17 21:24:16', '2025-11-17 21:55:39', 1, NULL),
+(2, '[Press Play x Demon Slayer] ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard', 'ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard\r\n\r\n\"I will fulfill my duty! I won\'t allow anyone here to die!\"\r\nESSENTIAL75 HE, hadir dengan tampilan dan keycaps eksklusif bertema Rengoku dari Demon Slayer.\r\n\r\nOnline software available here: ess75.pressplayid.com\r\n\r\n©Koyoharu Gotoge / SHUEISHA, Aniplex, ufotable', 'https://i.postimg.cc/Y0LscYqt/8abcdbe1-6c7c-442b-b9ca-81c3e7f04c9b.jpg', 4200000, NULL, '2025-11-18 00:12:05', '2025-11-18 00:12:05', 1, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `community_article_comments`
+--
+
+CREATE TABLE `community_article_comments` (
+  `comment_id` int NOT NULL,
+  `article_id` int NOT NULL,
+  `customer_id` int NOT NULL,
+  `comment_text` text NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -385,6 +401,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`, `weight`, `status_jual`) VALUES
+('COMM-2', '[Press Play x Demon Slayer] ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hal', 'ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard\r\n\r\n\"I will fulfill my duty! I won\'t allow anyone here to die!\"\r\nESSENTIAL75 HE, hadir dengan tampilan dan keycaps eksklusif bertema Rengoku dari Demon Slayer.\r\n\r\nOnline software available here: ess75.pressplayid.com\r\n\r\n©Koyoharu Gotoge / SHUEISHA, Aniplex, ufotable', 4200000.00, 1, 'https://i.postimg.cc/Y0LscYqt/8abcdbe1-6c7c-442b-b9ca-81c3e7f04c9b.jpg', 2, 1000, 'dijual'),
 ('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 4, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500, 'dijual'),
 ('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 3200000.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2, 1000, 'dijual'),
 ('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 7500000.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2, 1000, 'dijual'),
@@ -539,6 +556,14 @@ ALTER TABLE `community_articles`
   ADD PRIMARY KEY (`article_id`);
 
 --
+-- Indeks untuk tabel `community_article_comments`
+--
+ALTER TABLE `community_article_comments`
+  ADD PRIMARY KEY (`comment_id`),
+  ADD KEY `article_id` (`article_id`),
+  ADD KEY `customer_id` (`customer_id`);
+
+--
 -- Indeks untuk tabel `courier`
 --
 ALTER TABLE `courier`
@@ -635,7 +660,7 @@ ALTER TABLE `bids`
 -- AUTO_INCREMENT untuk tabel `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT untuk tabel `category`
@@ -647,7 +672,13 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT untuk tabel `community_articles`
 --
 ALTER TABLE `community_articles`
-  MODIFY `article_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `article_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT untuk tabel `community_article_comments`
+--
+ALTER TABLE `community_article_comments`
+  MODIFY `comment_id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT untuk tabel `customer`
@@ -716,6 +747,13 @@ ALTER TABLE `bids`
 ALTER TABLE `carts`
   ADD CONSTRAINT `FK_customer_id_carts` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id_carts` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `community_article_comments`
+--
+ALTER TABLE `community_article_comments`
+  ADD CONSTRAINT `community_article_comments_ibfk_1` FOREIGN KEY (`article_id`) REFERENCES `community_articles` (`article_id`),
+  ADD CONSTRAINT `community_article_comments_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`);
 
 --
 -- Ketidakleluasaan untuk tabel `orders`
