@@ -124,9 +124,6 @@ $result_auctions = $stmt_auc->get_result();
             <h2 class="fw-semibold mb-0">
                 <i class="bi bi-gavel me-2"></i> Lelang
             </h2>
-            <a href="community.php" class="btn btn-outline-secondary">
-                <i class="bi bi-chat-dots-fill me-1"></i> Kembali ke Komunitas
-            </a>
         </div>
 
         <div class="row g-4">
