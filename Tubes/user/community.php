@@ -8,7 +8,7 @@ if (!isset($_SESSION['kd_cs'])) {
 }
 $customer_id = (int)$_SESSION['kd_cs'];
 
-// THREAD (tetap sama)
+// ================== THREAD (forum) ==================
 $query_threads = "
     SELECT t.thread_id, t.title, t.created_at, c.nama as author_name,
            (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.thread_id) as reply_count,
@@ -18,6 +18,17 @@ $query_threads = "
     ORDER BY COALESCE(last_reply_time, t.created_at) DESC
 ";
 $result_threads = mysqli_query($conn, $query_threads);
+
+// ================== ARTIKEL ADMIN (content writing) ==================
+// tabel: community_articles (article_id, title, content, created_at, is_published, ...)
+$query_articles = "
+    SELECT article_id, title, content, created_at
+    FROM community_articles
+    WHERE is_published = 1
+    ORDER BY created_at DESC
+    LIMIT 5
+";
+$result_articles = mysqli_query($conn, $query_articles);
 ?>
 
 <!DOCTYPE html>
@@ -63,8 +74,54 @@ $result_threads = mysqli_query($conn, $query_threads);
             transform: translateY(-1px);
         }
 
+        /* ---------- Artikel Admin ---------- */
+        .article-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .article-section-title i {
+            color: var(--gold);
+        }
+
+        .article-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            background-color: #fffef7;
+        }
+
+        .article-card h5 {
+            margin-bottom: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .article-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .article-content {
+            font-size: 0.9rem;
+            color: #444;
+            white-space: pre-line; /* biar \n dari textarea admin jadi baris baru */
+        }
+
+        .article-divider {
+            border-top: 1px solid #f0e1a3;
+            margin: 20px 0 10px 0;
+        }
+
+        /* ---------- Thread List ---------- */
         .thread-list {
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .thread-item {
@@ -155,6 +212,31 @@ $result_threads = mysqli_query($conn, $query_threads);
             </div>
         </div>
 
+        <!-- ================= ARTIKEL DARI ADMIN ================= -->
+        <?php if ($result_articles && mysqli_num_rows($result_articles) > 0): ?>
+            <div class="mb-4">
+                <div class="article-section-title">
+                    <i class="bi bi-card-text"></i>
+                    <span>Artikel dari Admin</span>
+                </div>
+
+                <?php while ($article = mysqli_fetch_assoc($result_articles)): ?>
+                    <div class="article-card">
+                        <h5><?= htmlspecialchars($article['title']); ?></h5>
+                        <div class="article-meta">
+                            Diposting pada <?= date('d M Y, H:i', strtotime($article['created_at'])); ?>
+                        </div>
+                        <div class="article-content">
+                            <?= nl2br(htmlspecialchars($article['content'])); ?>
+                        </div>
+                    </div>
+                <?php endwhile; ?>
+
+                <div class="article-divider"></div>
+            </div>
+        <?php endif; ?>
+
+        <!-- ================= THREAD / DISKUSI FORUM ================= -->
         <?php if ($result_threads && mysqli_num_rows($result_threads) > 0): ?>
             <div class="thread-list">
                 <?php while ($thread = mysqli_fetch_assoc($result_threads)): ?>
