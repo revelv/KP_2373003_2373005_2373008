@@ -19,16 +19,19 @@ $query_threads = "
 ";
 $result_threads = mysqli_query($conn, $query_threads);
 
-// ================== ARTIKEL ADMIN (content writing) ==================
-// tabel: community_articles (article_id, title, content, created_at, is_published, ...)
-$query_articles = "
-    SELECT article_id, title, content, created_at
+// ================== FEATURED PRODUCT DARI KONTEN ==================
+$featured_article = null;
+$featured_sql = "
+    SELECT article_id, title, content, image_url, product_price
     FROM community_articles
     WHERE is_published = 1
     ORDER BY created_at DESC
-    LIMIT 5
+    LIMIT 1
 ";
-$result_articles = mysqli_query($conn, $query_articles);
+$featured_res = mysqli_query($conn, $featured_sql);
+if ($featured_res && mysqli_num_rows($featured_res) > 0) {
+    $featured_article = mysqli_fetch_assoc($featured_res);
+}
 ?>
 
 <!DOCTYPE html>
@@ -74,49 +77,41 @@ $result_articles = mysqli_query($conn, $query_articles);
             transform: translateY(-1px);
         }
 
-        /* ---------- Artikel Admin ---------- */
-        .article-section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+        /* ---------- Featured Product dari Konten ---------- */
+        .featured-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+            border: 1px solid #f3e1a0;
+        }
+
+        .featured-img-wrapper {
+            background: #000;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            height: 260px;
+            overflow: hidden;
         }
 
-        .article-section-title i {
-            color: var(--gold);
+        .featured-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .article-card {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 14px 16px;
-            margin-bottom: 12px;
-            background-color: #fffef7;
+        .featured-body {
+            background: #fffef7;
         }
 
-        .article-card h5 {
-            margin-bottom: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .article-meta {
-            font-size: 0.8rem;
-            color: #888;
-            margin-bottom: 6px;
-        }
-
-        .article-content {
+        .featured-desc {
             font-size: 0.9rem;
             color: #444;
-            white-space: pre-line; /* biar \n dari textarea admin jadi baris baru */
-        }
-
-        .article-divider {
-            border-top: 1px solid #f0e1a3;
-            margin: 20px 0 10px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 7;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         /* ---------- Thread List ---------- */
@@ -148,16 +143,11 @@ $result_articles = mysqli_query($conn, $query_articles);
             flex: 1;
         }
 
-        .thread-title {
-            margin-bottom: 6px;
-        }
-
         .thread-title a {
             text-decoration: none;
             color: #212529;
             font-weight: 600;
             font-size: 1.05rem;
-            transition: color 0.2s ease;
         }
 
         .thread-item:hover .thread-title a {
@@ -172,16 +162,6 @@ $result_articles = mysqli_query($conn, $query_articles);
         .thread-stats {
             text-align: right;
             min-width: 120px;
-        }
-
-        .replies {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .last-reply {
-            font-size: 0.8rem;
-            color: #6c757d;
         }
 
         @media (max-width: 600px) {
@@ -205,42 +185,53 @@ $result_articles = mysqli_query($conn, $query_articles);
             <h2 class="fw-semibold mb-0">
                 <i class="bi bi-chat-dots-fill me-2"></i> Komunitas
             </h2>
-            <div class="btn-group">
+            <div>
                 <a href="create_thread_form.php" class="btn btn-new-thread">
                     <i class="bi bi-plus-lg me-1"></i> Buat Topik
                 </a>
             </div>
         </div>
 
-        <!-- ================= ARTIKEL DARI ADMIN ================= -->
-        <?php if ($result_articles && mysqli_num_rows($result_articles) > 0): ?>
-            <div class="mb-4">
-                <div class="article-section-title">
-                    <i class="bi bi-card-text"></i>
-                    <span>Artikel dari Admin</span>
-                </div>
-
-                <?php while ($article = mysqli_fetch_assoc($result_articles)): ?>
-                    <div class="article-card">
-                        <h5><?= htmlspecialchars($article['title']); ?></h5>
-                        <div class="article-meta">
-                            Diposting pada <?= date('d M Y, H:i', strtotime($article['created_at'])); ?>
-                        </div>
-                        <div class="article-content">
-                            <?= nl2br(htmlspecialchars($article['content'])); ?>
-                        </div>
+        <!-- ============ FEATURED PRODUCT (NO ARTICLE LIST) ============ -->
+        <?php if ($featured_article && (int)$featured_article['product_price'] > 0): ?>
+            <div class="featured-card">
+                <div class="row g-0">
+                    <div class="col-md-5 featured-img-wrapper">
+                        <img
+                            src="<?= htmlspecialchars($featured_article['image_url'] ?: 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
+                            alt="<?= htmlspecialchars($featured_article['title']); ?>">
                     </div>
-                <?php endwhile; ?>
 
-                <div class="article-divider"></div>
+                    <div class="col-md-7 featured-body p-4">
+                        <h5 class="mb-2"><?= htmlspecialchars($featured_article['title']); ?></h5>
+
+                        <p class="mb-2 text-muted" style="font-size: 0.85rem;">
+                            Limited / Community Exclusive Product
+                        </p>
+
+                        <p class="featured-desc mb-3">
+                            <?= nl2br(htmlspecialchars($featured_article['content'])); ?>
+                        </p>
+
+                        <p class="fw-semibold mb-3">
+                            Harga: Rp <?= number_format($featured_article['product_price'], 0, ',', '.'); ?>
+                        </p>
+
+                        <a href="add_content_to_cart.php?article_id=<?= $featured_article['article_id']; ?>&qty=1"
+                           class="btn btn-warning fw-semibold">
+                           <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                        </a>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
 
-        <!-- ================= THREAD / DISKUSI FORUM ================= -->
+        <!-- ================= THREAD AREA ================= -->
         <?php if ($result_threads && mysqli_num_rows($result_threads) > 0): ?>
             <div class="thread-list">
                 <?php while ($thread = mysqli_fetch_assoc($result_threads)): ?>
                     <div class="thread-item" onclick="window.location='thread.php?id=<?= $thread['thread_id']; ?>'">
+
                         <div class="thread-info">
                             <h5 class="thread-title mb-1">
                                 <a href="thread.php?id=<?= $thread['thread_id']; ?>">
@@ -252,23 +243,24 @@ $result_articles = mysqli_query($conn, $query_articles);
                                 <?= date('d M Y, H:i', strtotime($thread['created_at'])); ?>
                             </p>
                         </div>
+
                         <div class="thread-stats">
-                            <span class="replies d-block"><?= $thread['reply_count']; ?> Replies</span>
+                            <span class="d-block"><?= $thread['reply_count']; ?> Balasan</span>
                             <?php if ($thread['last_reply_time']): ?>
-                                <span class="last-reply">
-                                    Last: <?= date('d M Y, H:i', strtotime($thread['last_reply_time'])); ?>
+                                <span class="text-muted" style="font-size: .8rem;">
+                                    Terakhir: <?= date('d M Y, H:i', strtotime($thread['last_reply_time'])); ?>
                                 </span>
                             <?php endif; ?>
                         </div>
+
                     </div>
                 <?php endwhile; ?>
             </div>
         <?php else: ?>
-            <p class="text-center text-muted">Belum ada topik diskusi. Jadilah yang pertama!</p>
+            <p class="text-center text-muted mt-3">Belum ada topik diskusi. Jadilah yang pertama!</p>
         <?php endif; ?>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
