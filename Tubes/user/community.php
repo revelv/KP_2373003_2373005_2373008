@@ -20,17 +20,23 @@ $query_threads = "
 $result_threads = mysqli_query($conn, $query_threads);
 
 // ================== FEATURED PRODUCT DARI KONTEN ==================
-$featured_article = null;
+$featured_articles = []; // <- PENTING: array, bukan satu variabel doang
+
 $featured_sql = "
     SELECT article_id, title, content, image_url, product_price
     FROM community_articles
     WHERE is_published = 1
     ORDER BY created_at DESC
-    LIMIT 1
+    LIMIT 5
 ";
 $featured_res = mysqli_query($conn, $featured_sql);
 if ($featured_res && mysqli_num_rows($featured_res) > 0) {
-    $featured_article = mysqli_fetch_assoc($featured_res);
+    while ($row = mysqli_fetch_assoc($featured_res)) {
+        // optional: hanya tampilkan yang punya harga
+        if ((int)$row['product_price'] > 0) {
+            $featured_articles[] = $row;
+        }
+    }
 }
 ?>
 
@@ -192,38 +198,47 @@ if ($featured_res && mysqli_num_rows($featured_res) > 0) {
             </div>
         </div>
 
-        <!-- ============ FEATURED PRODUCT (NO ARTICLE LIST) ============ -->
-        <?php if ($featured_article && (int)$featured_article['product_price'] > 0): ?>
-            <div class="featured-card">
-                <div class="row g-0">
-                    <div class="col-md-5 featured-img-wrapper">
-                        <img
-                            src="<?= htmlspecialchars($featured_article['image_url'] ?: 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
-                            alt="<?= htmlspecialchars($featured_article['title']); ?>">
-                    </div>
+        <!-- ============ FEATURED PRODUCT (BISA LEBIH DARI 1) ============ -->
+        <?php if (!empty($featured_articles)): ?>
+            <?php foreach ($featured_articles as $featured_article): ?>
+                <div class="featured-card">
+                    <div class="row g-0">
+                        <div class="col-md-5 featured-img-wrapper">
+                            <img
+                                src="<?= htmlspecialchars($featured_article['image_url'] ?: 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
+                                alt="<?= htmlspecialchars($featured_article['title']); ?>">
+                        </div>
 
-                    <div class="col-md-7 featured-body p-4">
-                        <h5 class="mb-2"><?= htmlspecialchars($featured_article['title']); ?></h5>
+                        <div class="col-md-7 featured-body p-4">
+                            <h5 class="mb-2"><?= htmlspecialchars($featured_article['title']); ?></h5>
 
-                        <p class="mb-2 text-muted" style="font-size: 0.85rem;">
-                            Limited / Community Exclusive Product
-                        </p>
+                            <p class="mb-2 text-muted" style="font-size: 0.85rem;">
+                                Limited / Community Exclusive Product
+                            </p>
 
-                        <p class="featured-desc mb-3">
-                            <?= nl2br(htmlspecialchars($featured_article['content'])); ?>
-                        </p>
+                            <p class="featured-desc mb-3">
+                                <?= nl2br(htmlspecialchars($featured_article['content'])); ?>
+                            </p>
 
-                        <p class="fw-semibold mb-3">
-                            Harga: Rp <?= number_format($featured_article['product_price'], 0, ',', '.'); ?>
-                        </p>
+                            <p class="fw-semibold mb-3">
+                                Harga: Rp <?= number_format($featured_article['product_price'], 0, ',', '.'); ?>
+                            </p>
 
-                        <a href="add_content_to_cart.php?article_id=<?= $featured_article['article_id']; ?>&qty=1"
-                           class="btn btn-warning fw-semibold">
-                           <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                        </a>
+                            <div class="d-flex gap-2">
+                                <a href="add_content_to_cart.php?article_id=<?= (int)$featured_article['article_id']; ?>&qty=1"
+                                    class="btn btn-warning fw-semibold">
+                                    <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                </a>
+
+                                <a href="community_article_detail.php?id=<?= (int)$featured_article['article_id']; ?>"
+                                    class="btn btn-outline-secondary fw-semibold">
+                                    <i class="bi bi-chat-dots me-1"></i> Lihat & Diskusi
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            <?php endforeach; ?>
         <?php endif; ?>
 
         <!-- ================= THREAD AREA ================= -->
@@ -263,4 +278,5 @@ if ($featured_res && mysqli_num_rows($featured_res) > 0) {
     </div>
 
 </body>
+
 </html>
