@@ -63,6 +63,17 @@ if (isset($_SESSION['kd_cs'])) {
         $order_stmt->close();
     }
 }
+
+// === LELANG BERLANGSUNG (untuk ditampilkan di paling atas halaman produk) ===
+$auction_result = mysqli_query(
+    $conn,
+    "SELECT auction_id, title, current_bid, image_url, end_time 
+     FROM auctions 
+     WHERE status = 'active' 
+       AND end_time > NOW()
+     ORDER BY end_time ASC 
+     LIMIT 3"
+);
 ?>
 
 <script>
@@ -105,6 +116,44 @@ if (isset($_SESSION['kd_cs'])) {
     </form>
 </div>
 
+<?php
+// === SECTION LELANG BERLANGSUNG (muncul hanya jika ada data) ===
+if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
+    <div class="container_produk mb-4">
+        <div class="text-center mb-3">
+            <h2 id="judul">Lelang Berlangsung</h2>
+            <p class="text-muted">Ikuti lelang spesial Styrk Industries, klik kartu untuk ikut bid.</p>
+        </div>
+        <div class="row">
+            <?php while ($auc = mysqli_fetch_assoc($auction_result)): ?>
+                <div class="col-sm-6 col-md-4 mb-3">
+                    <div class="thumbnail" onclick="window.location='auction_detail.php?id=<?= (int)$auc['auction_id']; ?>'">
+                        <a href="auction_detail.php?id=<?= (int)$auc['auction_id']; ?>">
+                            <img
+                                id="gambar"
+                                src="<?= htmlspecialchars($auc['image_url'] ?? 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
+                                alt="<?= htmlspecialchars($auc['title']); ?>">
+                        </a>
+                        <div class="caption">
+                            <h3><?= htmlspecialchars($auc['title']); ?></h3>
+                            <h4>Current Bid: Rp <?= number_format((int)$auc['current_bid'], 0, ',', '.'); ?></h4>
+                            <p class="mb-1"><small>Berakhir dalam:</small></p>
+                            <p class="fw-bold text-danger auction-countdown"
+                                data-endtime="<?= htmlspecialchars($auc['end_time']); ?>">
+                                Menghitung...
+                            </p>
+                            <a href="auction_detail.php?id=<?= (int)$auc['auction_id']; ?>"
+                                class="btn btn-warning btn-block">
+                                Lihat Detail Lelang
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php endwhile; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="container_produk mb-4">
     <h2 id="judul">Our Products</h2>
 
@@ -145,16 +194,16 @@ if (isset($_SESSION['kd_cs'])) {
                                     } else {
                                         if (isset($_SESSION['kd_cs'])) {
                                             echo '<div class="">
-                                            <a href="add_to_cart.php?product_id=' . $rec_row['product_id'] . '" class="btn btn-success btn-block" role="button">
-                                                <i class="glyphicon glyphicon-shopping-cart"></i> Add to cart
-                                            </a>
-                                        </div>';
+                                                <a href="add_to_cart.php?product_id=' . $rec_row['product_id'] . '" class="btn btn-success btn-block" role="button">
+                                                    <i class="glyphicon glyphicon-shopping-cart"></i> Add to cart
+                                                </a>
+                                            </div>';
                                         } else {
                                             echo '<div class="">
-                                            <a href="login.php" class="btn btn-success btn-block" role="button">
-                                                <i class="glyphicon glyphicon-shopping-cart"></i> Login to Add
-                                            </a>
-                                        </div>';
+                                                <a href="login.php" class="btn btn-success btn-block" role="button">
+                                                    <i class="glyphicon glyphicon-shopping-cart"></i> Login to Add
+                                                </a>
+                                            </div>';
                                         }
                                     }
                                     ?>
@@ -165,71 +214,7 @@ if (isset($_SESSION['kd_cs'])) {
                 </div>
             </div>
         <?php endif; ?>
-
-        <h2 class="section-heading text-uppercase">Recommendations</h2>
     </div>
-
-    <div class="row">
-        <?php
-        $recommend_query = "SELECT * FROM products ORDER BY stok DESC, product_id ASC LIMIT 3";
-        $recommend_result = mysqli_query($conn, $recommend_query);
-
-        while ($rec_row = mysqli_fetch_assoc($recommend_result)) {
-        ?>
-            <div class="col-sm-6 col-md-4">
-                <div class="thumbnail">
-                    <a href="#"
-                        class="product-detail"
-                        data-bs-toggle="modal"
-                        data-bs-target="#detailModal"
-                        data-id="<?= $rec_row['product_id']; ?>"
-                        data-nama="<?= htmlspecialchars($rec_row['nama_produk'], ENT_QUOTES); ?>"
-                        data-harga="<?= $rec_row['harga']; ?>"
-                        data-stok="<?= $rec_row['stok']; ?>"
-                        data-kategori="<?= $rec_row['category_id']; ?>"
-                        data-deskripsi="<?= htmlspecialchars($rec_row['deskripsi_produk'] ?? ''); ?>"
-                        data-gambar="<?= $rec_row['link_gambar']; ?>">
-                        <img id="gambar" src="<?= $rec_row['link_gambar']; ?>" alt="<?= $rec_row['nama_produk']; ?>">
-                    </a>
-
-                    <div class="caption">
-                        <h3><?= $rec_row['nama_produk']; ?></h3>
-                        <h4>Rp <?= number_format($rec_row['harga'], 0, ',', '.'); ?></h4>
-                    </div>
-
-                    <div class="button">
-                        <?php
-                        $rec_stok = (int)$rec_row['stok'];
-
-                        if ($rec_stok < 1) {
-                            echo '<div class=""><button class="btn btn-secondary btn-block" disabled>SOLD OUT</button></div>';
-                        } else {
-                            if (isset($_SESSION['kd_cs'])) {
-                                echo '<div class="">
-                                    <a href="add_to_cart.php?product_id=' . $rec_row['product_id'] . '" class="btn btn-success btn-block" role="button">
-                                        <i class="glyphicon glyphicon-shopping-cart"></i> Add to cart
-                                    </a>
-                                </div>';
-                            } else {
-                                echo '<div class="">
-                                    <a href="login.php" class="btn btn-success btn-block" role="button">
-                                        <i class="glyphicon glyphicon-shopping-cart"></i> Login to Add
-                                    </a>
-                                </div>';
-                            }
-                        }
-                        ?>
-                    </div>
-                </div>
-            </div>
-        <?php
-        }
-        ?>
-    </div>
-</div>
-
-<div class="container_produk">
-    <h2 id="judul"></h2>
 </div>
 
 <div class="container_produk">
@@ -253,7 +238,7 @@ if (isset($_SESSION['kd_cs'])) {
         if (count($where) > 0) {
             $where_conditions[] = implode(' AND ', $where);
         }
-        $where_conditions[] = "products.status_jual = 'dijual'"; 
+        $where_conditions[] = "products.status_jual = 'dijual'";
 
         $where_clause_final = 'WHERE ' . implode(' AND ', $where_conditions);
 
@@ -355,6 +340,29 @@ if (isset($_SESSION['kd_cs'])) {
 </html>
 
 <script>
+    // === COUNTDOWN UNTUK KARTU LELANG DI HALAMAN PRODUK ===
+    document.querySelectorAll('.auction-countdown').forEach(timer => {
+        const endTime = new Date(timer.dataset.endtime).getTime();
+
+        const intervalId = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance <= 0) {
+                clearInterval(intervalId);
+                timer.textContent = 'LELANG BERAKHIR';
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timer.textContent = `${days}h ${hours}j ${minutes}m ${seconds}d`;
+        }, 1000);
+    });
+
     // handle klik setiap produk (buka modal + isi konten)
     document.querySelectorAll('.product-detail').forEach(el => {
         el.addEventListener('click', function() {
