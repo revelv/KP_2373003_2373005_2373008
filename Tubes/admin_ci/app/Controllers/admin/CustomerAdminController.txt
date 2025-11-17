@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Controllers\Admin;
+
+use App\Controllers\BaseController;
+use App\Models\CustomerModel;
+
+class CustomerAdmin extends BaseController
+{
+    protected $customerModel;
+
+    public function __construct()
+    {
+        $this->customerModel = new CustomerModel();
+    }
+
+    // === READ ===
+    public function index()
+    {
+        $data = [
+            'title'     => 'Daftar Customer',
+            'customers' => $this->customerModel->findAll()
+        ];
+
+        return view('admin/customer/index', $data);
+    }
+
+    // === DELETE (testing only) ===
+    public function delete($id = null)
+    {
+        if ($id) {
+            $this->customerModel->delete($id);
+            session()->setFlashdata('success', 'Customer berhasil dihapus (testing only)');
+        }
+        return redirect()->to(base_url('admin/customer'));
+    }
+}
