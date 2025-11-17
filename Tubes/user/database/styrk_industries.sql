@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 17, 2025 at 05:18 AM
+-- Generation Time: Nov 17, 2025 at 11:50 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -31,9 +31,9 @@ CREATE TABLE `admin` (
   `admin_id` int NOT NULL,
   `username` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `password` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `provinsi` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `kota` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `kecamatan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL
+  `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `kecamatan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -69,8 +69,8 @@ CREATE TABLE `auctions` (
 --
 
 INSERT INTO `auctions` (`auction_id`, `customer_id`, `product_id`, `title`, `description`, `image_url`, `start_price`, `current_bid`, `current_winner_id`, `start_time`, `end_time`, `status`) VALUES
-(3, 16, 'KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 'https://i.postimg.cc/6QCJFYkj/42.jpg', 1000000.00, 1100000.00, 16, '2025-11-15 09:49:41', '2025-11-17 09:42:00', 'active'),
-(4, 16, 'KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2000000.00, 2000007.00, 18, '2025-11-15 10:03:48', '2025-11-17 10:03:00', 'active'),
+(3, 16, 'KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 'https://i.postimg.cc/6QCJFYkj/42.jpg', 1000000.00, 9999999.00, 18, '2025-11-15 09:49:41', '2025-11-17 09:42:00', 'active'),
+(4, 16, 'KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2000000.00, 2000008.00, 18, '2025-11-15 10:03:48', '2025-11-17 10:03:00', 'active'),
 (6, 16, 'KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 1000000.00, 1152000.00, 16, '2025-11-15 13:36:01', '2025-11-15 14:10:00', 'active');
 
 -- --------------------------------------------------------
@@ -97,7 +97,9 @@ INSERT INTO `bids` (`bid_id`, `auction_id`, `customer_id`, `bid_amount`, `bid_ti
 (3, 6, 10, 1150000.00, '2025-11-15 13:36:46'),
 (4, 6, 16, 1152000.00, '2025-11-15 14:07:42'),
 (5, 4, 18, 2000002.00, '2025-11-15 14:20:27'),
-(6, 4, 18, 2000007.00, '2025-11-15 14:20:35');
+(6, 4, 18, 2000007.00, '2025-11-15 14:20:35'),
+(7, 4, 18, 2000008.00, '2025-11-17 06:11:11'),
+(8, 3, 18, 9999999.00, '2025-11-17 06:11:54');
 
 -- --------------------------------------------------------
 
@@ -121,7 +123,8 @@ CREATE TABLE `carts` (
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 2, '2025-11-15 13:47:29', NULL),
 (70, 10, 'KB018', 1, '2025-11-15 13:47:33', NULL),
-(71, 16, 'KB018', 1, '2025-11-15 14:04:16', NULL);
+(71, 16, 'KB018', 1, '2025-11-15 14:04:16', NULL),
+(77, 18, 'KK009', 1, '2025-11-17 08:49:05', NULL);
 
 -- --------------------------------------------------------
 
@@ -146,6 +149,21 @@ INSERT INTO `category` (`category_id`, `category`) VALUES
 (5, 'Keypad'),
 (6, 'Stabilizers'),
 (7, 'Switch_kit');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `community_articles`
+--
+
+CREATE TABLE `community_articles` (
+  `article_id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_published` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -191,7 +209,7 @@ CREATE TABLE `customer` (
   `no_telepon` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `kecamatan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `kecamatan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `alamat` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `last_login` timestamp NULL DEFAULT NULL,
   `last_reengagement_sent` timestamp NULL DEFAULT NULL
@@ -208,8 +226,8 @@ INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`
 (10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', '', 'rumahsammy 123', '2025-11-15 13:36:31', NULL),
 (16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', '', 'gunung gede 123', '2025-11-15 14:02:53', '2025-10-26 08:32:45'),
 (17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', '', 'banjaran 120', NULL, NULL),
-(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', '6', '64', '626', 'Taman Kopo Indah 69 Blok S', '2025-11-17 04:39:44', NULL),
-(19, 'jeremiadylan', '$2y$12$iOWWC85uO2u7dOJuDEGG7eZiL.jRv2Or5fSYRgWAoLELkZMqHyS6a', 'jeremiadylan115@gmail.com', '081312663058', '5', '55', '', 'Taman Kopo Indah 69 Blok S', '2025-10-28 15:41:29', NULL);
+(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'Taman Kopo Indah 69 Blok S', '2025-11-17 09:32:52', NULL),
+(20, 'JRMI4A', '$2y$10$iQo8aKUB1k/Wqf5ffP3wm.8lujrZZXVXvpTpiYqJJOQjThxcySQBi', 'jeremiadylan115@gmail.com', '0813213123', 'JAWA BARAT', 'BANDUNG', 'ANDIR', 'Jalan andir no 15', '2025-11-17 11:36:01', NULL);
 
 -- --------------------------------------------------------
 
@@ -224,9 +242,9 @@ CREATE TABLE `orders` (
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `alamat` varchar(10000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `komship_order_no` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `komship_awb` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `komship_status` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `komship_order_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `komship_awb` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `komship_status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `komship_last_sync` date DEFAULT NULL,
   `code_courier` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `ongkos_kirim` int NOT NULL,
@@ -241,6 +259,10 @@ INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`
 ('ORD-20251117050246-469', 18, '2025-11-17 12:02:46', '6', '64', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', 7000, 3707000.00),
 ('ORD-20251117050534-242', 18, '2025-11-17 12:05:34', '6', '64', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', 7000, 2707000.00),
 ('ORD-20251117051054-966', 18, '2025-11-17 12:10:54', '6', '64', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', 7000, 357000.00),
+('ORD-20251117065225-781', 18, '2025-11-17 13:52:25', '5', '55', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', 9000, 2759000.00),
+('ORD-20251117065836-905', 18, '2025-11-17 13:58:36', '5', '55', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422 Create Order failed', '2025-11-17', 'pos', 9000, 329000.00),
+('ORD-20251117080623-619', 18, '2025-11-17 15:06:23', '5', '55', 'Taman Kopo Indah 69 Blok S', NULL, NULL, NULL, NULL, 'pos', 9000, 559000.00),
+('ORD-20251117081052-599', 18, '2025-11-17 15:10:52', '5', '55', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', 9000, 559000.00),
 ('STYRK176303123943954', 6, '2025-11-13 10:53:59', '2', '25', 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jne', 14000, 3714000.00),
 ('STYRK176303199680232', 6, '2025-11-13 11:06:36', '2', '25', 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jne', 14000, 2084000.00);
 
@@ -265,7 +287,8 @@ CREATE TABLE `order_details` (
 
 INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `harga_satuan`, `subtotal`) VALUES
 (49, 'STYRK176303123943954', 'CS001', 2, 1850000, 3700000),
-(50, 'STYRK176303199680232', 'KB017', 1, 2300000, 2300000);
+(50, 'STYRK176303199680232', 'KB017', 1, 2300000, 2300000),
+(52, 'ORD-20251117081052-599', 'SW004', 1, 550000, 550000);
 
 -- --------------------------------------------------------
 
@@ -500,6 +523,12 @@ ALTER TABLE `category`
   ADD PRIMARY KEY (`category_id`);
 
 --
+-- Indexes for table `community_articles`
+--
+ALTER TABLE `community_articles`
+  ADD PRIMARY KEY (`article_id`);
+
+--
 -- Indexes for table `courier`
 --
 ALTER TABLE `courier`
@@ -590,13 +619,13 @@ ALTER TABLE `auctions`
 -- AUTO_INCREMENT for table `bids`
 --
 ALTER TABLE `bids`
-  MODIFY `bid_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `bid_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -605,16 +634,22 @@ ALTER TABLE `category`
   MODIFY `category_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `community_articles`
+--
+ALTER TABLE `community_articles`
+  MODIFY `article_id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `customer`
 --
 ALTER TABLE `customer`
-  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT for table `order_tracking`
@@ -639,6 +674,12 @@ ALTER TABLE `posts`
 --
 ALTER TABLE `threads`
   MODIFY `thread_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `vouchers`
+--
+ALTER TABLE `vouchers`
+  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- Constraints for dumped tables

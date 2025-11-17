@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 session_start();
 include '../koneksi.php';
@@ -126,7 +127,7 @@ if ($is_repay) {
     $init_ongkir      = 0;
     $grand_total      = $base_total + $init_ongkir;
 
-// ====================== MODE 2: CHECKOUT BARU (LELANG / CART) ======================
+    // ====================== MODE 2: CHECKOUT BARU (LELANG / CART) ======================
 } else {
     // ====== MODE 2a: DARI LELANG ======
     if ($is_auction) {
@@ -197,7 +198,7 @@ if ($is_repay) {
 
         $current_courier = $_REQUEST['code_courier'] ?? ($_SESSION['checkout_courier'] ?? '');
 
-    // ====== MODE 2b: DARI CART NORMAL ======
+        // ====== MODE 2b: DARI CART NORMAL ======
     } else {
         if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
             $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
@@ -252,6 +253,7 @@ if ($is_repay) {
     }
 }
 
+
 // == Daftar kurir (SELALU, baik cart maupun repay/auction) ==
 $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier ORDER BY code_courier ASC");
 ?>
@@ -293,10 +295,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 ?>
             </h2>
             <a href="<?=
-                $is_repay
-                    ? 'riwayat_belanja.php'
-                    : ($is_auction ? 'auction_detail.php?id=' . (int)$auction_id_php : 'cart.php')
-            ?>" class="btn btn-secondary">← Kembali</a>
+                        $is_repay
+                            ? 'riwayat_belanja.php'
+                            : ($is_auction ? 'auction_detail.php?id=' . (int)$auction_id_php : 'cart.php')
+                        ?>" class="btn btn-secondary">← Kembali</a>
         </div>
 
         <!-- ====================== BARANG YANG DIBAYAR ====================== -->
@@ -469,37 +471,37 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
 
     <script>
-        const isRepay     = <?= $is_repay ? 'true' : 'false' ?>;
-        const isAuction   = <?= $is_auction ? 'true' : 'false' ?>;
-        const orderIdPHP  = <?= json_encode($order_id_php) ?>;
+        const isRepay = <?= $is_repay ? 'true' : 'false' ?>;
+        const isAuction = <?= $is_auction ? 'true' : 'false' ?>;
+        const orderIdPHP = <?= json_encode($order_id_php) ?>;
         const auctionIdPHP = <?= json_encode($auction_id_php) ?>;
 
-        const selectedItems    = <?= json_encode($selected_cart_ids) ?>;
-        const baseSubtotal     = <?= (int)$subtotal ?>;
-        const voucherDiscount  = <?= (int)$voucher_discount ?>;
-        const baseTotal        = Math.max(0, baseSubtotal - voucherDiscount);
+        const selectedItems = <?= json_encode($selected_cart_ids) ?>;
+        const baseSubtotal = <?= (int)$subtotal ?>;
+        const voucherDiscount = <?= (int)$voucher_discount ?>;
+        const baseTotal = Math.max(0, baseSubtotal - voucherDiscount);
 
         const profileAddress = {
-            nama:     <?= json_encode($profil_nama) ?>,
+            nama: <?= json_encode($profil_nama) ?>,
             provinsi: <?= json_encode($profil_prov) ?>,
-            kota:     <?= json_encode($profil_kota) ?>,
-            alamat:   <?= json_encode($profil_alamat) ?>
+            kota: <?= json_encode($profil_kota) ?>,
+            alamat: <?= json_encode($profil_alamat) ?>
         };
 
-        const courierSelect      = document.getElementById('code_courier');
-        const svcBox             = document.getElementById('shippingServices');
-        const ongkirCell         = document.getElementById('ongkirCell');
-        const grandCell          = document.getElementById('grandTotalCell');
-        const btnPay             = document.getElementById('btnPay');
+        const courierSelect = document.getElementById('code_courier');
+        const svcBox = document.getElementById('shippingServices');
+        const ongkirCell = document.getElementById('ongkirCell');
+        const grandCell = document.getElementById('grandTotalCell');
+        const btnPay = document.getElementById('btnPay');
 
-        const rProfil            = document.getElementById('alamatProfil');
-        const rLain              = document.getElementById('alamatLain');
-        const panelProfil        = document.getElementById('cardAlamatProfil');
-        const panelLain          = document.getElementById('formAlamatLain');
+        const rProfil = document.getElementById('alamatProfil');
+        const rLain = document.getElementById('alamatLain');
+        const panelProfil = document.getElementById('cardAlamatProfil');
+        const panelLain = document.getElementById('formAlamatLain');
 
-        const provinsiLainSel    = document.getElementById('provinsi_lain');
-        const kotaLainSel        = document.getElementById('kota_lain');
-        const kecLainSel         = document.getElementById('kecamatan_lain');
+        const provinsiLainSel = document.getElementById('provinsi_lain');
+        const kotaLainSel = document.getElementById('kota_lain');
+        const kecLainSel = document.getElementById('kecamatan_lain');
         const alamatLainTextarea = document.getElementById('alamat_lain');
 
         let currentShipping = {
@@ -516,8 +518,12 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             alamat: ''
         };
 
-        const show = el => { if (el) el.style.display = 'block'; };
-        const hide = el => { if (el) el.style.display = 'none'; };
+        const show = el => {
+            if (el) el.style.display = 'block';
+        };
+        const hide = el => {
+            if (el) el.style.display = 'none';
+        };
 
         function isAddressValid() {
             if (!shippingAddress.mode) return false;
@@ -534,10 +540,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         function updateTotals(cost = 0) {
             const ongkir = Number(cost) || 0;
-            const grand  = Math.max(0, baseTotal + ongkir);
+            const grand = Math.max(0, baseTotal + ongkir);
             if (ongkirCell) ongkirCell.textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
-            if (grandCell)  grandCell.textContent  = 'Rp ' + grand.toLocaleString('id-ID');
-            currentShipping.cost    = ongkir;
+            if (grandCell) grandCell.textContent = 'Rp ' + grand.toLocaleString('id-ID');
+            currentShipping.cost = ongkir;
             currentShipping.courier = courierSelect?.value || '';
             btnPay.disabled = !(currentShipping.service && isAddressValid());
         }
@@ -558,41 +564,41 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             };
 
             put('alamat_mode', shippingAddress.mode || '');
-            put('provinsi',    shippingAddress.provinsi || '');
-            put('kota',        shippingAddress.kota || '');
-            put('kecamatan',   shippingAddress.kecamatan || '');
-            put('alamat',      shippingAddress.alamat || '');
+            put('provinsi', shippingAddress.provinsi || '');
+            put('kota', shippingAddress.kota || '');
+            put('kecamatan', shippingAddress.kecamatan || '');
+            put('alamat', shippingAddress.alamat || '');
 
-            put('provinsi_id',  provinsiLainSel ? (provinsiLainSel.value || '') : '');
-            put('kota_id',      kotaLainSel ? (kotaLainSel.value || '') : '');
+            put('provinsi_id', provinsiLainSel ? (provinsiLainSel.value || '') : '');
+            put('kota_id', kotaLainSel ? (kotaLainSel.value || '') : '');
             put('kecamatan_id', kecLainSel ? (kecLainSel.value || '') : '');
 
-            let destCityId      = '';
-            let destProvId      = '';
-            let destDistrictId  = '';
+            let destCityId = '';
+            let destProvId = '';
+            let destDistrictId = '';
 
             if (shippingAddress.mode === 'custom') {
-                destCityId     = kotaLainSel ? (kotaLainSel.value || '') : '';
-                destProvId     = provinsiLainSel ? (provinsiLainSel.value || '') : '';
+                destCityId = kotaLainSel ? (kotaLainSel.value || '') : '';
+                destProvId = provinsiLainSel ? (provinsiLainSel.value || '') : '';
                 destDistrictId = kecLainSel ? (kecLainSel.value || '') : '';
             } else if (shippingAddress.mode === 'profil') {
                 const profileCity = document.getElementById('profile_city_id');
                 const profileProv = document.getElementById('profile_province_id');
-                destCityId     = profileCity ? (profileCity.value || '') : '';
-                destProvId     = profileProv ? (profileProv.value || '') : '';
+                destCityId = profileCity ? (profileCity.value || '') : '';
+                destProvId = profileProv ? (profileProv.value || '') : '';
             }
-            put('dest_city_id',     destCityId);
-            put('dest_prov_id',     destProvId);
+            put('dest_city_id', destCityId);
+            put('dest_prov_id', destProvId);
             put('dest_district_id', destDistrictId);
 
-            put('shipping_cost',    String(currentShipping.cost || 0));
+            put('shipping_cost', String(currentShipping.cost || 0));
             put('shipping_courier', currentShipping.courier || '');
             put('shipping_service', currentShipping.service || '');
 
             (selectedItems || []).forEach(id => {
                 const i = document.createElement('input');
-                i.type  = 'hidden';
-                i.name  = 'selected_items[]';
+                i.type = 'hidden';
+                i.name = 'selected_items[]';
                 i.value = String(id);
                 formEl.appendChild(i);
             });
@@ -635,7 +641,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) list = data.rajaongkir.results;
 
             const options = list.map(p => {
-                const id   = String(p.province_id ?? p.id ?? p.provinceId ?? '');
+                const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
                 const name = String(p.province ?? p.name ?? p.provinceName ?? '');
                 return (id && name) ? `<option value="${id}">${name}</option>` : '';
             }).join('');
@@ -649,7 +655,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         async function loadCities(provId) {
             if (!kotaLainSel) return;
             kotaLainSel.innerHTML = '<option value="">Loading...</option>';
-            kotaLainSel.disabled  = true;
+            kotaLainSel.disabled = true;
 
             if (!provId) {
                 kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>';
@@ -671,16 +677,16 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) list = data.rajaongkir.results;
 
             const options = list.map(c => {
-                const id   = String(c.city_id ?? c.id ?? c.cityId ?? '');
+                const id = String(c.city_id ?? c.id ?? c.cityId ?? '');
                 const name = String(c.city_name ?? c.name ?? c.cityName ?? '').trim();
                 return (id && name) ? `<option value="${id}">${name}</option>` : '';
             }).join('');
 
             kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
-            kotaLainSel.disabled  = false;
+            kotaLainSel.disabled = false;
 
             if (kecLainSel) {
-                kecLainSel.disabled  = true;
+                kecLainSel.disabled = true;
                 kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
             }
         }
@@ -688,7 +694,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         async function loadDistricts(cityId) {
             if (!kecLainSel) return;
 
-            kecLainSel.disabled  = true;
+            kecLainSel.disabled = true;
             kecLainSel.innerHTML = '<option value="">Loading...</option>';
 
             if (!cityId) {
@@ -743,12 +749,12 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 }
 
                 kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + options;
-                kecLainSel.disabled  = false;
+                kecLainSel.disabled = false;
 
             } catch (err) {
                 console.error('District fetch error:', err);
                 kecLainSel.innerHTML = '<option value="">Error load kecamatan</option>';
-                kecLainSel.disabled  = true;
+                kecLainSel.disabled = true;
             }
         }
 
@@ -756,11 +762,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (mode === 'profil') {
                 show(panelProfil);
                 hide(panelLain);
-                shippingAddress.mode      = 'profil';
-                shippingAddress.provinsi  = (profileAddress.provinsi || '').trim();
-                shippingAddress.kota      = (profileAddress.kota || '').trim();
+                shippingAddress.mode = 'profil';
+                shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
+                shippingAddress.kota = (profileAddress.kota || '').trim();
                 shippingAddress.kecamatan = '';
-                shippingAddress.alamat    = (profileAddress.alamat || '').trim();
+                shippingAddress.alamat = (profileAddress.alamat || '').trim();
                 resetOngkir(true);
             } else if (mode === 'custom') {
                 hide(panelProfil);
@@ -770,19 +776,19 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 const pOpt = provinsiLainSel?.selectedOptions?.[0];
                 const cOpt = kotaLainSel?.selectedOptions?.[0];
                 const kOpt = kecLainSel?.selectedOptions?.[0];
-                shippingAddress.provinsi  = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
-                shippingAddress.kota      = (cOpt && kotaLainSel.value) ? cOpt.text : '';
+                shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
+                shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
                 shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
-                shippingAddress.alamat    = (alamatLainTextarea?.value || '');
+                shippingAddress.alamat = (alamatLainTextarea?.value || '');
                 resetOngkir(true);
             } else {
                 hide(panelProfil);
                 hide(panelLain);
-                shippingAddress.mode      = '';
-                shippingAddress.provinsi  = '';
-                shippingAddress.kota      = '';
+                shippingAddress.mode = '';
+                shippingAddress.provinsi = '';
+                shippingAddress.kota = '';
                 shippingAddress.kecamatan = '';
-                shippingAddress.alamat    = '';
+                shippingAddress.alamat = '';
                 resetOngkir(false);
             }
         }
@@ -791,7 +797,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             hide(panelProfil);
             hide(panelLain);
             if (rProfil) rProfil.checked = false;
-            if (rLain)   rLain.checked   = false;
+            if (rLain) rLain.checked = false;
             applyAddressMode('');
         })();
 
@@ -803,10 +809,10 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (t === provinsiLainSel) {
                 loadCities(provinsiLainSel.value).then(() => {
                     const pOpt = provinsiLainSel.selectedOptions[0];
-                    shippingAddress.provinsi  = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
+                    shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
                     shippingAddress.kecamatan = '';
                     if (kecLainSel) {
-                        kecLainSel.disabled  = true;
+                        kecLainSel.disabled = true;
                         kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
                     }
                     resetOngkir(true);
@@ -868,26 +874,26 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
 
             formData.append('alamat_mode', shippingAddress.mode || '');
-            formData.append('provinsi',    shippingAddress.provinsi || '');
-            formData.append('kota',        shippingAddress.kota || '');
-            formData.append('kecamatan',   shippingAddress.kecamatan || '');
-            formData.append('alamat',      shippingAddress.alamat || '');
+            formData.append('provinsi', shippingAddress.provinsi || '');
+            formData.append('kota', shippingAddress.kota || '');
+            formData.append('kecamatan', shippingAddress.kecamatan || '');
+            formData.append('alamat', shippingAddress.alamat || '');
 
-            let destCityId     = '';
-            let destProvId     = '';
+            let destCityId = '';
+            let destProvId = '';
             let destDistrictId = '';
 
             if (shippingAddress.mode === 'custom') {
-                destCityId     = (kotaLainSel && kotaLainSel.value) ? kotaLainSel.value : '';
-                destProvId     = (provinsiLainSel && provinsiLainSel.value) ? provinsiLainSel.value : '';
+                destCityId = (kotaLainSel && kotaLainSel.value) ? kotaLainSel.value : '';
+                destProvId = (provinsiLainSel && provinsiLainSel.value) ? provinsiLainSel.value : '';
                 destDistrictId = (kecLainSel && kecLainSel.value) ? kecLainSel.value : '';
             } else if (shippingAddress.mode === 'profil') {
                 destCityId = (document.getElementById('profile_city_id')?.value || '');
                 destProvId = (document.getElementById('profile_province_id')?.value || '');
             }
 
-            formData.append('dest_city_id',     destCityId);
-            formData.append('dest_prov_id',     destProvId);
+            formData.append('dest_city_id', destCityId);
+            formData.append('dest_prov_id', destProvId);
             formData.append('dest_district_id', destDistrictId);
 
             svcBox.textContent = 'Menghitung ongkir...';
@@ -967,7 +973,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 return;
             }
 
-            const metode    = document.querySelector('input[name="metode"]:checked');
+            const metode = document.querySelector('input[name="metode"]:checked');
             const container = document.getElementById("paymentContainer");
             if (!metode) {
                 alert("Silakan pilih metode pembayaran terlebih dahulu.");
@@ -1016,7 +1022,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         function startQRISTimer() {
             clearInterval(qrTimer);
-            let duration       = 120;
+            let duration = 120;
             const timerDisplay = document.getElementById("timer");
             qrTimer = setInterval(() => {
                 const m = Math.floor(duration / 60);
@@ -1038,4 +1044,5 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
     </script>
 
 </body>
+
 </html>
