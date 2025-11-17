@@ -107,7 +107,6 @@ $result_bids = $stmt_bids->get_result();
                 <img src="<?= htmlspecialchars($auction['image_url']); ?>" class="auction-image-detail" alt="<?= htmlspecialchars($auction['title']); ?>">
             </div>
             <div class="col-lg-5">
-                <a href="community.php" class="btn btn-sm btn-outline-secondary mb-2">← Kembali ke Daftar Lelang</a>
                 <h2><?= htmlspecialchars($auction['title']); ?></h2>
                 <p><?= nl2br(htmlspecialchars($auction['description'])); ?></p>
 
