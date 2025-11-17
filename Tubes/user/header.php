@@ -159,7 +159,7 @@ if (isset($_SESSION['kd_cs'])) {
                     <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>HOME/index.php">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>produk.php">Products</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>community.php">Community</a></li>
-
+                    <li class="nav-item"><a class="nav-link" href="<?= BASE_URL ?>auction.php">Auction</a></li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>cart.php">
                             <i class="bi-cart-fill me-2"></i>
