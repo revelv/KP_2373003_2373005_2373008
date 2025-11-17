@@ -155,11 +155,12 @@ if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
 <?php endif; ?>
 
 <div class="container_produk mb-4">
-    <h2 id="judul"></h2>
+
     <div class="text-center">
         <?php if (!empty($recommendations_for_user)): ?>
             <div class="container_produk mb-4">
                 <div class="text-center">
+                    <h2 id="judul"></h2>
                     <h2 class="section-heading text-uppercase">Rekomendasi Untuk Anda</h2>
                 </div>
                 <div class="row">
