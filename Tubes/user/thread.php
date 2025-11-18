@@ -34,7 +34,12 @@ $stmt_thread->close();
 
 // Ambil semua post (balasan) untuk thread ini, urutkan dari yang terlama
 $query_posts = "
-    SELECT p.post_id, p.content, p.created_at as post_created, c.nama as author_name
+    SELECT 
+        p.post_id, 
+        p.content, 
+        p.created_at as post_created, 
+        c.nama as author_name,
+        c.profile_image
     FROM posts p
     JOIN customer c ON p.customer_id = c.customer_id
     WHERE p.thread_id = ?
@@ -145,7 +150,7 @@ $result_posts = $stmt_posts->get_result();
             /* kecilin juga biar rapat */
         }
 
-        /* avatar bulat inisial */
+        /* avatar bulat */
         .post-avatar {
             width: 42px;
             height: 42px;
@@ -160,7 +165,16 @@ $result_posts = $stmt_posts->get_result();
             justify-content: center;
             text-transform: uppercase;
             flex-shrink: 0;
-        } 
+            overflow: hidden;
+        }
+
+        .post-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+            display: block;
+        }
 
         .post-body {
             flex: 1;
@@ -265,13 +279,18 @@ $result_posts = $stmt_posts->get_result();
                 <?php if ($result_posts && mysqli_num_rows($result_posts) > 0): ?>
                     <?php while ($post = $result_posts->fetch_assoc()): ?>
                         <?php
-                        // ambil inisial buat avatar
-                        $initials = mb_substr($post['author_name'], 0, 1, 'UTF-8');
+                        // ambil inisial buat avatar kalau nggak ada foto
+                        $initials    = mb_substr($post['author_name'], 0, 1, 'UTF-8');
+                        $profileImg  = $post['profile_image'] ?? '';
                         ?>
                         <div class="post-item">
                             <div class="post-wrapper">
                                 <div class="post-avatar">
-                                    <?= htmlspecialchars(strtoupper($initials)); ?>
+                                    <?php if (!empty($profileImg)): ?>
+                                        <img src="<?= htmlspecialchars($profileImg); ?>" alt="Foto profil <?= htmlspecialchars($post['author_name']); ?>">
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(strtoupper($initials)); ?>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div class="post-body">
