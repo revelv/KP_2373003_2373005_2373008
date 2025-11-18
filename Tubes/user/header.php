@@ -132,7 +132,7 @@ if (isset($_GET['logout'])) {
         </button>
 
         <div class="collapse navbar-collapse" id="navbarContent">
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0" style="gap: 2rem;">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0" style="gap: 1rem;">
 
                 <li class="nav-item"><a class="nav-link" href="./HOME/index.php">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="./produk.php">Products</a></li>
