@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 18, 2025 at 05:03 PM
+-- Generation Time: Nov 18, 2025 at 06:17 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -124,8 +124,7 @@ INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `u
 (34, 10, 'KB013', 2, '2025-11-15 13:47:29', NULL),
 (70, 10, 'KB018', 1, '2025-11-15 13:47:33', NULL),
 (79, 16, 'COMM-2', 1, '2025-11-17 17:12:27', NULL),
-(92, 18, 'KB004', 1, '2025-11-18 15:41:04', NULL),
-(93, 21, 'CS001', 1, '2025-11-18 17:00:52', NULL);
+(92, 18, 'KB004', 1, '2025-11-18 15:41:04', NULL);
 
 -- --------------------------------------------------------
 
@@ -307,7 +306,10 @@ INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`
 ('ORD-20251118143330-454', 18, '2025-11-18 21:33:30', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jnt', 'EZ', 8000, 1258000.00),
 ('ORD-20251118143953-269', 18, '2025-11-18 21:39:53', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 1909500.00),
 ('ORD-20251118145554-579', 18, '2025-11-18 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 3309500.00),
-('ORD-20251118151141-961', 18, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00);
+('ORD-20251118151141-961', 18, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00),
+('ORD-20251118174018-120', 21, '2025-11-19 00:40:18', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', 5026, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1859500.00),
+('ORD-20251118181358-976', 21, '2025-11-19 01:13:58', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', 5143, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 4209500.00),
+('ORD-20251118181618-839', 21, '2025-11-19 01:16:18', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', 5143, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1859500.00);
 
 -- --------------------------------------------------------
 
@@ -341,7 +343,10 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `h
 (61, 'ORD-20251118143330-454', 'KB004', 1, 1250000, 1250000),
 (62, 'ORD-20251118143953-269', 'KB009', 1, 1900000, 1900000),
 (63, 'ORD-20251118145554-579', 'KC002', 1, 3300000, 3300000),
-(64, 'ORD-20251118151141-961', 'KB003', 1, 7800000, 7800000);
+(64, 'ORD-20251118151141-961', 'KB003', 1, 7800000, 7800000),
+(65, 'ORD-20251118174018-120', 'CS001', 1, 1850000, 1850000),
+(66, 'ORD-20251118181358-976', 'COMM-2', 1, 4200000, 4200000),
+(67, 'ORD-20251118181618-839', 'CS001', 1, 1850000, 1850000);
 
 -- --------------------------------------------------------
 
@@ -680,7 +685,7 @@ ALTER TABLE `bids`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -710,7 +715,7 @@ ALTER TABLE `customer`
 -- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `order_tracking`

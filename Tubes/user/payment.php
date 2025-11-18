@@ -129,7 +129,6 @@ if ($is_repay) {
     $base_total       = max(0, $subtotal - $voucher_discount);
     $init_ongkir      = 0;
     $grand_total      = $base_total + $init_ongkir;
-
 } else {
     // ====================== MODE 2: CHECKOUT BARU ======================
 
@@ -201,7 +200,6 @@ if ($is_repay) {
         $grand_total = $base_total + $init_ongkir;
 
         $current_courier = $_REQUEST['code_courier'] ?? ($_SESSION['checkout_courier'] ?? '');
-
     } else {
         // ====== MODE 2b: DARI CART NORMAL ======
         if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
@@ -402,23 +400,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                         placeholder="Jalan, No, RT/RW, patokan, dll"></textarea>
                                 </div>
                             </div>
-
-                            <!-- === ZONA KOMS HIP (DESTINATION ID) === -->
-                            <div class="border rounded p-3 mt-3">
-                                <label class="form-label">Zona Komship (Destination)</label>
-                                <div class="input-group mb-1">
-                                    <select id="komship_destination_select" class="form-select">
-                                        <option value="">-- Cari kecamatan dulu --</option>
-                                    </select>
-                                    <button class="btn btn-outline-secondary" type="button" id="btnSearchDest">
-                                        Cari Zona
-                                    </button>
-                                </div>
-                                <small class="text-muted">
-                                    Sistem akan mencari zona Komship berdasarkan <strong>kecamatan, kota, provinsi</strong> yang dipilih di atas.
-                                    Pilih hasil yang paling sesuai sebelum lanjut ke pembayaran.
-                                </small>
-                            </div>
                         </td>
                     </tr>
 
@@ -445,7 +426,8 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                                         <option disabled>Gagal load data kurir</option>
                                     <?php endif; ?>
                                 </select>
-
+                                <!-- HIDDEN KOMSHIP DESTINATION (NOW WITH NAME) -->
+                                <input type="hidden" id="komship_destination_id_input" name="komship_destination_id" value="">
                                 <div id="shippingServices" class="mt-2"></div>
                             </form>
                         </td>
@@ -462,9 +444,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 </tbody>
             </table>
         </div>
-
-        <!-- Hidden komship destination yang bakal dikirim ke checkout -->
-        <input type="hidden" id="komship_destination_id_input" value="">
 
         <!-- ====================== METODE PEMBAYARAN ====================== -->
         <div class="mb-4">
@@ -526,6 +505,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         const ongkirCell = document.getElementById('ongkirCell');
         const grandCell = document.getElementById('grandTotalCell');
         const btnPay = document.getElementById('btnPay');
+        const komshipHiddenInput = document.getElementById('komship_destination_id_input');
 
         const rProfil = document.getElementById('alamatProfil');
         const rLain = document.getElementById('alamatLain');
@@ -538,14 +518,11 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
         const kelLainSel = document.getElementById('kelurahan_lain');
         const alamatLainTextarea = document.getElementById('alamat_lain');
 
-        const komshipSelect = document.getElementById('komship_destination_select');
-        const btnSearchDest = document.getElementById('btnSearchDest');
-        const komshipHiddenInput = document.getElementById('komship_destination_id_input');
-
         let currentShipping = {
             cost: 0,
             courier: '',
-            service: ''
+            service: '',
+            komshipDestinationId: '' // <<=== KOMSHIP DESTINATION ID DISIMPAN DI SINI
         };
 
         let shippingAddress = {
@@ -585,13 +562,18 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             if (grandCell) grandCell.textContent = 'Rp ' + grand.toLocaleString('id-ID');
             currentShipping.cost = ongkir;
             currentShipping.courier = courierSelect?.value || '';
-            btnPay.disabled = !(currentShipping.service && isAddressValid() && komshipHiddenInput.value);
+            // tombol Pay nyala kalau service kepilih + alamat valid
+            btnPay.disabled = !(currentShipping.service && isAddressValid());
         }
 
         updateTotals(0);
 
         function ensureHiddenInputs(formEl) {
             if (!formEl) return;
+
+            // sebelum nambah, hapus dulu selected_items[] lama biar gak dobel-dobel
+            formEl.querySelectorAll('input[name="selected_items[]"]').forEach(i => i.remove());
+
             const put = (name, val) => {
                 let el = formEl.querySelector(`input[name="${name}"]`);
                 if (!el) {
@@ -623,21 +605,18 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 destCityId = kotaLainSel ? (kotaLainSel.value || '') : '';
                 destProvId = provinsiLainSel ? (provinsiLainSel.value || '') : '';
                 destDistrictId = kecLainSel ? (kecLainSel.value || '') : '';
-            } else if (shippingAddress.mode === 'profil') {
-                // kita gak punya id numerik, biarin kosong aja
-                destCityId = '';
-                destProvId = '';
             }
             put('dest_city_id', destCityId);
             put('dest_prov_id', destProvId);
             put('dest_district_id', destDistrictId);
 
+            // ongkir + courier + service
             put('shipping_cost', String(currentShipping.cost || 0));
             put('shipping_courier', currentShipping.courier || '');
             put('shipping_service', currentShipping.service || '');
 
-            // Komship destination id dari select
-            put('komship_destination_id', komshipHiddenInput.value || '');
+            // KOMSHIP DESTINATION ID IKUT DI-POST
+            put('komship_destination_id', currentShipping.komshipDestinationId || '');
 
             (selectedItems || []).forEach(id => {
                 const i = document.createElement('input');
@@ -657,6 +636,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         function resetOngkir(reload = false) {
             currentShipping.service = '';
+            currentShipping.cost = 0;
             updateTotals(0);
             btnPay.disabled = true;
             if (svcBox) svcBox.innerHTML = '';
@@ -666,7 +646,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
 
         let provinceLoaded = false;
 
-        // ====== PROV/KOTA/KEC (RAJAONGKIR) ======
+        // ====== PROV/KOTA/KEC/KEL (RAJAONGKIR) ======
         async function loadProvinces() {
             if (provinceLoaded) return;
             if (provinsiLainSel) provinsiLainSel.innerHTML = '<option value="">Loading...</option>';
@@ -889,8 +869,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.kecamatan = (profileAddress.kecamatan || '').trim();
                 shippingAddress.kelurahan = (profileAddress.kelurahan || '').trim();
                 shippingAddress.alamat = (profileAddress.alamat || '').trim();
-                komshipHiddenInput.value = '';
-                komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                 resetOngkir(true);
             } else if (mode === 'custom') {
                 hide(panelProfil);
@@ -906,8 +884,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
                 shippingAddress.kelurahan = (lOpt && kelLainSel.value) ? lOpt.text : '';
                 shippingAddress.alamat = (alamatLainTextarea?.value || '');
-                komshipHiddenInput.value = '';
-                komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                 resetOngkir(true);
             } else {
                 hide(panelProfil);
@@ -918,8 +894,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 shippingAddress.kecamatan = '';
                 shippingAddress.kelurahan = '';
                 shippingAddress.alamat = '';
-                komshipHiddenInput.value = '';
-                komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                 resetOngkir(false);
             }
         }
@@ -951,8 +925,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         kelLainSel.disabled = true;
                         kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     }
-                    komshipHiddenInput.value = '';
-                    komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                     resetOngkir(true);
                 });
             }
@@ -966,8 +938,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                         kelLainSel.disabled = true;
                         kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     }
-                    komshipHiddenInput.value = '';
-                    komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                     resetOngkir(true);
                 }).catch(() => {
                     resetOngkir(true);
@@ -977,14 +947,13 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                 const kOpt = kecLainSel.selectedOptions[0];
                 shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
                 shippingAddress.kelurahan = '';
-                komshipHiddenInput.value = '';
-                komshipSelect.innerHTML = '<option value="">-- Cari kecamatan dulu --</option>';
                 resetOngkir(true);
                 loadSubDistricts(kecLainSel.value).catch(console.error);
             }
             if (t === kelLainSel) {
                 const lOpt = kelLainSel.selectedOptions[0];
                 shippingAddress.kelurahan = (lOpt && kelLainSel.value) ? lOpt.text : '';
+                resetOngkir(true);
             }
             if (t === alamatLainTextarea) {
                 shippingAddress.alamat = (alamatLainTextarea.value || '');
@@ -1004,89 +973,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
         });
 
-        // ====================== SEARCH DESTINATION KOMSHIP ======================
-        async function searchKomshipDestination() {
-            let cityName = '';
-            let districtName = '';
-            let provinceName = '';
-
-            if (shippingAddress.mode === 'custom') {
-                const cOpt = kotaLainSel?.selectedOptions?.[0];
-                const kOpt = kecLainSel?.selectedOptions?.[0];
-                const pOpt = provinsiLainSel?.selectedOptions?.[0];
-
-                cityName     = (cOpt && kotaLainSel.value) ? cOpt.text : '';
-                districtName = (kOpt && kecLainSel.value) ? kOpt.text : '';
-                provinceName = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
-            } else if (shippingAddress.mode === 'profil') {
-                cityName     = (profileAddress.kota || '').trim();
-                districtName = (profileAddress.kecamatan || '').trim();
-                provinceName = (profileAddress.provinsi || '').trim();
-            }
-
-            if (!cityName || !districtName) {
-                alert('Kota dan kecamatan harus diisi/dipilih dulu bro.');
-                return;
-            }
-
-            const fd = new FormData();
-            fd.append('city_name', cityName);
-            fd.append('district_name', districtName);
-            fd.append('province_name', provinceName);
-
-            komshipSelect.innerHTML = '<option value="">Mencari zona...</option>';
-            komshipHiddenInput.value = '';
-
-            try {
-                const res = await fetch('./komship_destination.php', {
-                    method: 'POST',
-                    body: fd
-                });
-                const txt = await res.text();
-                console.log('Komship search raw response:', txt);
-                let data;
-                try {
-                    data = JSON.parse(txt);
-                } catch (e) {
-                    console.error('JSON parse error (search_destination):', e);
-                    throw new Error('Respon tidak valid dari search_destination.php');
-                }
-
-                if (!data.success) {
-                    komshipSelect.innerHTML = '<option value="">Gagal: ' + (data.message || 'Tidak ada hasil') + '</option>';
-                    updateTotals(currentShipping.cost);
-                    return;
-                }
-
-                if (!Array.isArray(data.options) || data.options.length === 0) {
-                    komshipSelect.innerHTML = '<option value="">Tidak ada hasil.</option>';
-                    updateTotals(currentShipping.cost);
-                    return;
-                }
-
-                komshipSelect.innerHTML = '<option value="">-- Pilih zona Komship --</option>';
-                data.options.forEach(opt => {
-                    const o = document.createElement('option');
-                    o.value = opt.destination_id;
-                    o.textContent = opt.label;
-                    komshipSelect.appendChild(o);
-                });
-            } catch (err) {
-                console.error('Error koneksi Komship search:', err);
-                komshipSelect.innerHTML = '<option value="">Error koneksi.</option>';
-            } finally {
-                updateTotals(currentShipping.cost);
-            }
-        }
-
-        btnSearchDest?.addEventListener('click', searchKomshipDestination);
-
-        komshipSelect?.addEventListener('change', () => {
-            komshipHiddenInput.value = komshipSelect.value || '';
-            updateTotals(currentShipping.cost);
-        });
-
-        // ====================== ONGKIR / LAYANAN (KOMSHIP CALC) ======================
+        // ====================== ONGKIR / LAYANAN (CALC ONGKIR) ======================
         async function loadServices(courier) {
             if (!courier) return;
 
@@ -1144,6 +1031,19 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                     throw new Error('Respon tidak valid dari calc_ongkir.php');
                 }
 
+                // === SET KOMSHIP DESTINATION ID DARI BACKEND ===
+                if (typeof data.receiver_destination_id !== 'undefined' && data.receiver_destination_id) {
+                    currentShipping.komshipDestinationId = String(data.receiver_destination_id);
+                    if (komshipHiddenInput) {
+                        komshipHiddenInput.value = currentShipping.komshipDestinationId;
+                    }
+                } else {
+                    currentShipping.komshipDestinationId = '';
+                    if (komshipHiddenInput) {
+                        komshipHiddenInput.value = '';
+                    }
+                }
+
                 if (!data.success || !Array.isArray(data.services) || data.services.length === 0) {
                     svcBox.innerHTML = `<div class="text-danger">Gagal: ${data.message || 'Tidak ada layanan.'}</div>`;
                     updateTotals(0);
@@ -1161,7 +1061,7 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
                             </option>
                         `).join('')}
                     </select>
-                    <small class="text-muted">Harga & estimasi berdasarkan Komship.</small>`;
+                    <small class="text-muted">Harga & estimasi berdasarkan API ongkir.</small>`;
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
@@ -1201,10 +1101,6 @@ $kurir_res = mysqli_query($conn, "SELECT code_courier, nama_kurir FROM courier O
             }
             if (!isAddressValid()) {
                 alert("Alamat pengiriman belum lengkap.");
-                return;
-            }
-            if (!komshipHiddenInput.value) {
-                alert("Zona Komship belum dipilih. Klik 'Cari Zona' lalu pilih salah satu.");
                 return;
             }
 

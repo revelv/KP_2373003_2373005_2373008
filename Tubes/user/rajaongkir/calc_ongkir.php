@@ -1,5 +1,5 @@
 <?php
-// user/calc_ongkir.php
+// user/rajaongkir/calc_ongkir.php
 declare(strict_types=1);
 
 session_start();
@@ -8,17 +8,13 @@ require_once __DIR__ . '/../koneksi.php';
 
 /*
  * ========================== KONFIG KOMSHIP (SANDBOX) ==========================
- * x-api-key  : API key Komship sandbox
- * shipper_destination_id : ID asal (gudang) dari endpoint:
- *   GET https://api-sandbox.collaborator.komerce.id/tariff/api/v1/destination/search?keyword=...
- * ===================================================================
  */
-const KOMSHIP_API_KEY         = '3I7kuf7B3e00fb2d23c692a69owo8BSW'; // TODO: ganti pakai API key sandbox lu
+const KOMSHIP_API_KEY         = '3I7kuf7B3e00fb2d23c692a69owo8BSW';
 const KOMSHIP_BASE_TARIFF     = 'https://api-sandbox.collaborator.komerce.id/tariff/api/v1';
-const KOMSHIP_SHIPPER_DEST_ID = 4944;        // TODO: ganti ke destination_id gudang asal lu
+const KOMSHIP_SHIPPER_DEST_ID = 4944; // destination_id gudang asal
 
 // (OPSIONAL) pin point origin gudang (latitude,longitude)
-const ORIGIN_PIN_POINT = '-7.279849431298132,109.35114360314475'; // TODO: ubah kalau perlu
+const ORIGIN_PIN_POINT = '-7.279849431298132,109.35114360314475';
 
 /* ---------- Helper JSON ---------- */
 function json_fail(string $msg, array $extra = []): void
@@ -63,42 +59,57 @@ if (!$cartIds && $orderId === '') {
     json_fail('Item tidak dikirim.');
 }
 
-/* ---------- Ambil data alamat dari FE (nama, bukan ID) ---------- */
-$alamatMode    = $_POST['alamat_mode'] ?? '';
-$provName      = trim((string)($_POST['provinsi'] ?? ''));
-$cityName      = trim((string)($_POST['kota'] ?? ''));
-$districtName  = trim((string)($_POST['kecamatan'] ?? ''));
-$alamatDetail  = trim((string)($_POST['alamat'] ?? ''));
+/* ---------- Ambil data alamat dari FE (NAMA, bukan ID) ---------- */
+$alamatMode       = $_POST['alamat_mode'] ?? '';
+$provName         = trim((string)($_POST['provinsi']   ?? ''));
+$cityName         = trim((string)($_POST['kota']       ?? ''));
+$districtName     = trim((string)($_POST['kecamatan']  ?? '')); // Kecamatan
+$subdistrictName  = trim((string)($_POST['kelurahan']  ?? '')); // Kelurahan / desa
+$alamatDetail     = trim((string)($_POST['alamat']     ?? ''));
 
 /**
  * Kalau nama dari FE kosong (misal user pilih "alamat profil"),
- * fallback ke tabel customer (yang sekarang simpan NAMA provinsi + kota + kecamatan).
+ * fallback ke tabel customer (NAMA provinsi + kota + kecamatan + kelurahan).
  */
-if ($provName === '' || $cityName === '' || $districtName === '') {
-    $stmt = $conn->prepare("SELECT provinsi, kota, kecamatan, alamat FROM customer WHERE customer_id = ? LIMIT 1");
+if ($provName === '' || $cityName === '' || $districtName === '' || $subdistrictName === '') {
+    $stmt = $conn->prepare("
+        SELECT provinsi, kota, kecamatan, kelurahan, alamat
+        FROM customer
+        WHERE customer_id = ?
+        LIMIT 1
+    ");
     if ($stmt) {
         $stmt->bind_param('i', $customerId);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && ($row = $res->fetch_assoc())) {
-            if ($provName === '')     $provName     = (string)($row['provinsi'] ?? '');
-            if ($cityName === '')     $cityName     = (string)($row['kota'] ?? '');
-            if ($districtName === '') $districtName = (string)($row['kecamatan'] ?? '');
-            if ($alamatDetail === '') $alamatDetail = (string)($row['alamat'] ?? '');
+            if ($provName === '')        $provName        = (string)($row['provinsi']   ?? '');
+            if ($cityName === '')        $cityName        = (string)($row['kota']       ?? '');
+            if ($districtName === '')    $districtName    = (string)($row['kecamatan']  ?? '');
+            if ($subdistrictName === '') $subdistrictName = (string)($row['kelurahan']  ?? '');
+            if ($alamatDetail === '')    $alamatDetail    = (string)($row['alamat']     ?? '');
         }
         $stmt->close();
     }
 }
 
-if ($cityName === '' && $districtName === '' && $provName === '') {
+if ($cityName === '' && $districtName === '' && $provName === '' && $subdistrictName === '') {
     json_fail('Alamat kosong, tidak bisa menentukan destinasi.');
 }
 
 /* ===================================================================
  * 1. Tentukan receiver_destination_id (Komship) dari NAMA
  *    - Pake /destination/search sandbox
+ *    - Prioritas keyword:
+ *         kelurahan -> kecamatan -> kota -> provinsi
  * =================================================================== */
-$keyword = $districtName !== '' ? $districtName : ($cityName !== '' ? $cityName : $provName);
+$keyword = $subdistrictName !== ''
+    ? $subdistrictName
+    : ($districtName !== ''
+        ? $districtName
+        : ($cityName !== ''
+            ? $cityName
+            : $provName));
 
 $destUrl = KOMSHIP_BASE_TARIFF . '/destination/search?keyword=' . urlencode($keyword);
 
@@ -133,12 +144,13 @@ if (!is_array($bodyDest) || !isset($bodyDest['data']) || !is_array($bodyDest['da
 
 $candidates = $bodyDest['data'];
 if (count($candidates) === 0) {
-    json_fail('Destination ID tidak ditemukan dari kota/kecamatan tersebut.', [
+    json_fail('Destination ID tidak ditemukan dari kota/kecamatan/kelurahan tersebut.', [
         'debug' => [
-            'provinsi' => $provName,
-            'kota'     => $cityName,
-            'kecamatan'=> $districtName,
-            'keyword'  => $keyword,
+            'provinsi'   => $provName,
+            'kota'       => $cityName,
+            'kecamatan'  => $districtName,
+            'kelurahan'  => $subdistrictName,
+            'keyword'    => $keyword,
         ]
     ]);
 }
@@ -149,12 +161,14 @@ $destinationPinPoint   = null; // kalau API ngasih lat/long di data, bisa dipaka
 $provLow = strtolower($provName);
 $cityLow = strtolower($cityName);
 $distLow = strtolower($districtName);
+$subLow  = strtolower($subdistrictName);
 
 /**
  * Cari kandidat yang paling match:
- * - provinsi sama
- * - kota mengandung nama kota
- * - kecamatan mengandung nama kecamatan
+ *  - provinsi sama (mengandung)
+ *  - kota mengandung nama kota
+ *  - subdistrict_name diprioritaskan match kelurahan,
+ *    kalau kelurahan kosong baru pakai kecamatan
  */
 foreach ($candidates as $row) {
     $id          = (int)($row['id'] ?? 0);
@@ -166,13 +180,19 @@ foreach ($candidates as $row) {
 
     $okProv = $provLow === '' ? true : (strpos($provRow, $provLow) !== false);
     $okCity = $cityLow === '' ? true : (strpos($cityRow, $cityLow) !== false);
-    $okDist = $distLow === '' ? true : (strpos($subdistrict, $distLow) !== false);
+
+    if ($subLow !== '') {
+        // kalau ada kelurahan, pakai itu
+        $okDist = (strpos($subdistrict, $subLow) !== false);
+    } else {
+        // fallback ke kecamatan
+        $okDist = $distLow === '' ? true : (strpos($subdistrict, $distLow) !== false);
+    }
 
     if ($okProv && $okCity && $okDist) {
         $receiverDestinationId = $id;
-        // kalau di response ada pin point, isi:
         if (!empty($row['pin_point'])) {
-            $destinationPinPoint = (string)$row['pin_point']; // pastikan format "lat,lon"
+            $destinationPinPoint = (string)$row['pin_point']; // format "lat,lon"
         }
         break;
     }
@@ -195,7 +215,7 @@ if ($receiverDestinationId <= 0) {
 
 /* ===================================================================
  * 2. Hitung total berat & total harga item
- *    - MODE CART      : dari carts + products
+ *    - MODE CART       : dari carts + products
  *    - MODE BAYAR ULANG: dari order_details + products
  * =================================================================== */
 $totalWeightGram  = 0;
@@ -262,7 +282,7 @@ $weightKg     = max(0.1, $weightKg); // minimal 0.1 kg
 $weightParam  = number_format($weightKg, 2, '.', '');
 
 // kalau mau COD → "yes", kalau nggak → "no"
-$codFlag = 'yes'; // atau 'no', sesuaikan
+$codFlag = 'yes';
 
 $queryParams = [
     'shipper_destination_id'   => KOMSHIP_SHIPPER_DEST_ID,
@@ -373,8 +393,9 @@ if (!$services) {
 usort($services, fn($a, $b) => $a['cost'] <=> $b['cost']);
 
 json_ok([
-    'services' => $services,
-    'debug'    => [
+    'services'               => $services,
+    'receiver_destination_id'=> $receiverDestinationId,  // <<=== PENTING
+    'debug'                  => [
         'url'                    => $calcUrl,
         'shipper_destination_id' => KOMSHIP_SHIPPER_DEST_ID,
         'receiver_destination_id'=> $receiverDestinationId,
@@ -386,3 +407,4 @@ json_ok([
         'kecamatan'              => $districtName,
     ],
 ]);
+

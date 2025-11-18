@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 session_start();
 include '../koneksi.php';
-require_once __DIR__ . '/komship_destination.php'; // <- file helper barusan
+
 
 // ====================== VALIDASI DASAR ======================
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -45,18 +45,20 @@ $alamat_mode = $_POST['alamat_mode'] ?? 'profil';
 $provinsi    = trim((string)($_POST['provinsi']   ?? ''));
 $kota        = trim((string)($_POST['kota']       ?? ''));
 $kecamatan   = trim((string)($_POST['kecamatan']  ?? ''));
+$kelurahan   = trim((string)($_POST['kelurahan']  ?? ''));   
 $alamat      = trim((string)($_POST['alamat']     ?? ''));
+
 
 // ID dari sisi RajaOngkir (opsional, kalau nanti mau dipakai)
 $dest_prov_id     = trim((string)($_POST['dest_prov_id']     ?? ''));
 $dest_city_id     = trim((string)($_POST['dest_city_id']     ?? ''));
 $dest_district_id = trim((string)($_POST['dest_district_id'] ?? ''));
 
-// metode pembayaran (QRIS / Transfer) – kalau mau disimpan, nanti tinggal tambah kolom di `orders`
+// metode pembayaran (QRIS / Transfer)
 $metode_pembayaran = $_POST['metode'] ?? 'Transfer';
 
-// Validasi minimal alamat + ongkir
-if ($provinsi === '' || $kota === '' || $alamat === '') {
+// ====================== VALIDASI ALAMAT & ONGKIR ======================
+if ($provinsi === '' || $kota === '' || $kelurahan === '' || $alamat === '') {
     $_SESSION['message'] = 'Alamat pengiriman belum lengkap.';
     header('Location: payment.php');
     exit();
@@ -140,20 +142,10 @@ $total_harga = $base_total + $shipping_cost;          // barang + ongkir
 // ====================== KOMSHIP DESTINATION ID ======================
 
 // 1) Coba pakai kalau sudah dikirim dari frontend (kalau suatu saat lu set di JS)
+// ====================== KOMSHIP DESTINATION ID ======================
 $komship_destination_id = 0;
 if (!empty($_POST['komship_destination_id']) && ctype_digit((string)$_POST['komship_destination_id'])) {
     $komship_destination_id = (int)$_POST['komship_destination_id'];
-}
-
-// 2) Kalau masih 0, baru kita hit API Komship via helper
-if ($komship_destination_id <= 0) {
-    // Supaya lebih aman matching, bisa lu uppercase semua
-    $komship_destination_id = getKomshipDestinationId(
-        strtoupper($provinsi),
-        strtoupper($kota),
-        strtoupper($kecamatan)
-    );
-    // Kalau tetap 0, yaudah simpan 0 dulu — nanti di admin bisa lu benahin manual atau re-sync
 }
 
 // ====================== BUAT ID ORDER LOKAL ======================
@@ -163,6 +155,7 @@ $order_id = 'ORD-' . date('YmdHis') . '-' . rand(100, 999);
 $komship_status = 'pending';
 
 // ====================== INSERT KE TABEL ORDERS ======================
+// NOTE: pastikan tabel orders sudah punya kolom `kelurahan`
 $sqlOrder = "
     INSERT INTO orders (
         order_id,
@@ -171,6 +164,7 @@ $sqlOrder = "
         provinsi,
         kota,
         kecamatan,
+        kelurahan,
         komship_destination_id,
         alamat,
         code_courier,
@@ -180,7 +174,7 @@ $sqlOrder = "
         komship_status
     ) VALUES (
         ?, ?, NOW(),
-        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?
     )
 ";
@@ -190,21 +184,46 @@ if (!$stmtOrder) {
     die('Query insert orders error: ' . $conn->error);
 }
 
+$stmtOrder = $conn->prepare($sqlOrder);
+if (!$stmtOrder) {
+    die('Query insert orders error: ' . $conn->error);
+}
+
 $stmtOrder->bind_param(
-    'sisssissiiis',
+    'sissssisssiis',
     $order_id,
     $customer_id,
     $provinsi,
     $kota,
     $kecamatan,
+    $kelurahan,
     $komship_destination_id,
     $alamat,
-    $shipping_courier,   // ex: 'SAP'
-    $shipping_service,   // ex: 'SAPFlat'
+    $shipping_courier,
+    $shipping_service,
     $shipping_cost,
     $total_harga,
     $komship_status
 );
+
+// perbaiki: string tipe harus TANPA spasi
+$stmtOrder->bind_param(
+    'sissssisssiis',
+    $order_id,
+    $customer_id,
+    $provinsi,
+    $kota,
+    $kecamatan,
+    $kelurahan,
+    $komship_destination_id,
+    $alamat,
+    $shipping_courier,
+    $shipping_service,
+    $shipping_cost,
+    $total_harga,
+    $komship_status
+);
+
 $stmtOrder->execute();
 $stmtOrder->close();
 
