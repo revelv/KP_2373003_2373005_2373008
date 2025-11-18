@@ -122,7 +122,7 @@ $result_auctions = $stmt_auc->get_result();
     <div class="auction-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-semibold mb-0">
-                <i class="bi bi-gavel me-2"></i> Lelang
+                <i class="bi bi-gavel me-2"></i> Auction
             </h2>
         </div>
 

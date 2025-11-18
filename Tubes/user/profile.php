@@ -23,39 +23,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telepon   = trim($_POST['telepon'] ?? '');
     $alamat    = trim($_POST['alamat'] ?? '');
 
-    // RajaOngkir ID (bukan nama)
-    $provinsi_id   = trim($_POST['provinsi_id'] ?? '');
-    $kota_id       = trim($_POST['kota_id'] ?? '');
-    $kecamatan_id  = trim($_POST['kecamatan_id'] ?? '');
+    // DI SINI: yang dikirim dari form adalah NAMA, bukan ID lagi
+    $provinsi  = trim($_POST['provinsi_id'] ?? '');
+    $kota      = trim($_POST['kota_id'] ?? '');
+    $kecamatan = trim($_POST['kecamatan_id'] ?? '');
 
     if (
         $nama === '' || $telepon === '' || $alamat === '' ||
-        $provinsi_id === '' || $kota_id === '' || $kecamatan_id === ''
+        $provinsi === '' || $kota === '' || $kecamatan === ''
     ) {
         $_SESSION['profile_error'] = 'Lengkapi semua data profil dan alamat (provinsi/kota/kecamatan).';
         header('Location: profile.php');
         exit();
     }
 
-    // pastikan ID-nya angka
-    if (
-        !preg_match('/^\d+$/', $provinsi_id) ||
-        !preg_match('/^\d+$/', $kota_id) ||
-        !preg_match('/^\d+$/', $kecamatan_id)
-    ) {
-        $_SESSION['profile_error'] = 'ID provinsi/kota/kecamatan harus berupa angka yang valid.';
-        header('Location: profile.php');
-        exit();
-    }
+    // Ga perlu cek angka lagi, karena yang disimpan sekarang NAMA
 
-    // ⬇⬇⬇ DI SINI YANG PENTING: pakai no_telepon, bukan telepon
     $sql = "UPDATE customer 
             SET nama = ?, 
                 no_telepon = ?, 
                 alamat = ?, 
-                provinsi = ?,   -- simpan province_id
-                kota = ?,       -- simpan city_id
-                kecamatan = ?   -- simpan subdistrict_id
+                provinsi = ?,   -- simpan NAMA provinsi
+                kota = ?,       -- simpan NAMA kota
+                kecamatan = ?   -- simpan NAMA kecamatan
             WHERE customer_id = ?";
 
     $stmt = $conn->prepare($sql);
@@ -70,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nama,
         $telepon,
         $alamat,
-        $provinsi_id,
-        $kota_id,
-        $kecamatan_id,
+        $provinsi,
+        $kota,
+        $kecamatan,
         $customer_id
     );
 
@@ -90,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ====== AMBIL DATA CUSTOMER UNTUK PREFILL FORM (GET) ======
 $nama = $telepon = $alamat = '';
-$provinsi_id = $kota_id = $kecamatan_id = '';
+$provinsi_name = $kota_name = $kecamatan_name = '';
 
 $query = "SELECT nama, no_telepon, alamat, provinsi, kota, kecamatan 
           FROM customer 
@@ -102,12 +92,12 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
-    $nama         = $row['nama'] ?? '';
-    $telepon      = $row['no_telepon'] ?? '';
-    $alamat       = $row['alamat'] ?? '';
-    $provinsi_id  = $row['provinsi'] ?? '';
-    $kota_id      = $row['kota'] ?? '';
-    $kecamatan_id = $row['kecamatan'] ?? '';
+    $nama           = $row['nama'] ?? '';
+    $telepon        = $row['no_telepon'] ?? '';
+    $alamat         = $row['alamat'] ?? '';
+    $provinsi_name  = $row['provinsi'] ?? '';   // ini NAMA
+    $kota_name      = $row['kota'] ?? '';       // ini NAMA
+    $kecamatan_name = $row['kecamatan'] ?? '';  // ini NAMA
 }
 $stmt->close();
 ?>
@@ -196,14 +186,24 @@ $stmt->close();
     <?php include 'footer.php'; ?>
 
     <script>
-        // ====== DATA ID DARI PHP (untuk preselect) ======
-        const currentProvId = <?= json_encode($provinsi_id) ?>;
-        const currentCityId = <?= json_encode($kota_id) ?>;
-        const currentDistId = <?= json_encode($kecamatan_id) ?>;
+        // Sekarang yang kita simpan di DB adalah NAMA, jadi yang dibawa ke JS:
+        const currentProvName = <?= json_encode($provinsi_name) ?>;
+        const currentCityName = <?= json_encode($kota_name) ?>;
+        const currentDistName = <?= json_encode($kecamatan_name) ?>;
 
         const provSel = document.getElementById('provinsi');
         const kotaSel = document.getElementById('kota');
-        const kecSel = document.getElementById('kecamatan');
+        const kecSel  = document.getElementById('kecamatan');
+
+        // Helper buat set selected berdasarkan TEXT (nama), bukan value
+        function selectByText(selectEl, text) {
+            if (!selectEl || !text) return;
+            const options = Array.from(selectEl.options);
+            const found = options.find(o => o.text.trim() === text.trim());
+            if (found) {
+                selectEl.value = found.value;
+            }
+        }
 
         // ====== LOAD PROVINCE ======
         async function loadProvinces() {
@@ -223,18 +223,20 @@ $stmt->close();
 
                 const list = Array.isArray(data) ? data : (data.data || []);
                 const options = list.map(p => {
-                    const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
+                    const id   = String(p.province_id ?? p.id ?? p.provinceId ?? '');
                     const name = String(p.province ?? p.name ?? p.provinceName ?? '');
                     if (!id || !name) return '';
-                    return `<option value="${id}">${name}</option>`;
+                    // value = NAMA, data-id = ID (buat fetch ke RajaOngkir)
+                    return `<option value="${name}" data-id="${id}">${name}</option>`;
                 }).join('');
 
                 provSel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' + options;
 
-                if (currentProvId) {
-                    provSel.value = currentProvId;
-                    if (provSel.value === currentProvId) {
-                        await loadCities(currentProvId, true);
+                if (currentProvName) {
+                    selectByText(provSel, currentProvName);
+                    const opt = provSel.options[provSel.selectedIndex];
+                    if (opt && opt.dataset.id) {
+                        await loadCities(opt.dataset.id, true);
                     }
                 }
             } catch (err) {
@@ -270,19 +272,20 @@ $stmt->close();
 
                 const list = Array.isArray(data) ? data : (data.data || []);
                 const options = list.map(c => {
-                    const id = String(c.city_id ?? c.id ?? c.cityId ?? '');
+                    const id   = String(c.city_id ?? c.id ?? c.cityId ?? '');
                     const name = String(c.city_name ?? c.name ?? c.cityName ?? '').trim();
                     if (!id || !name) return '';
-                    return `<option value="${id}">${name}</option>`;
+                    return `<option value="${name}" data-id="${id}">${name}</option>`;
                 }).join('');
 
                 kotaSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
                 kotaSel.disabled = false;
 
-                if (autoSelect && currentCityId) {
-                    kotaSel.value = currentCityId;
-                    if (kotaSel.value === currentCityId) {
-                        await loadDistricts(currentCityId, true);
+                if (autoSelect && currentCityName) {
+                    selectByText(kotaSel, currentCityName);
+                    const opt = kotaSel.options[kotaSel.selectedIndex];
+                    if (opt && opt.dataset.id) {
+                        await loadDistricts(opt.dataset.id, true);
                     }
                 }
 
@@ -332,7 +335,7 @@ $stmt->close();
                         ''
                     ).trim();
                     if (!id || !name) return '';
-                    return `<option value="${id}">${name}</option>`;
+                    return `<option value="${name}" data-id="${id}">${name}</option>`;
                 }).join('');
 
                 if (!options) {
@@ -343,8 +346,8 @@ $stmt->close();
                 kecSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + options;
                 kecSel.disabled = false;
 
-                if (autoSelect && currentDistId) {
-                    kecSel.value = currentDistId;
+                if (autoSelect && currentDistName) {
+                    selectByText(kecSel, currentDistName);
                 }
 
             } catch (err) {
@@ -358,14 +361,16 @@ $stmt->close();
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t === provSel) {
-                const val = provSel.value;
+                const opt = provSel.options[provSel.selectedIndex];
+                const provId = opt && opt.dataset.id ? opt.dataset.id : '';
                 kecSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
                 kecSel.disabled = true;
-                loadCities(val, false);
+                loadCities(provId, false);
             }
             if (t === kotaSel) {
-                const val = kotaSel.value;
-                loadDistricts(val, false);
+                const opt = kotaSel.options[kotaSel.selectedIndex];
+                const cityId = opt && opt.dataset.id ? opt.dataset.id : '';
+                loadDistricts(cityId, false);
             }
         });
 

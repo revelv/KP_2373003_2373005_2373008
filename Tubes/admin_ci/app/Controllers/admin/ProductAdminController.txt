@@ -1,0 +1,132 @@
+<?php
+
+namespace App\Controllers\Admin;
+
+use App\Controllers\BaseController;
+use App\Models\ProductModel;
+use App\Models\CategoryModel;
+
+class ProductAdmin extends BaseController
+{
+    protected $productModel;
+    protected $categoryModel;
+
+    public function __construct()
+    {
+        helper(['form', 'url']);
+        $this->productModel = new ProductModel();
+        $this->categoryModel = new CategoryModel();
+    }
+
+    // === LIST PRODUK ===
+    public function index()
+    {
+        $data = [
+            'title' => 'Daftar Produk',
+            'products' => $this->productModel->getProductsWithCategory(),
+            'categories' => $this->categoryModel->findAll(),
+            'category' => '',
+            'keyword' => '',
+        ];
+        return view('admin/products/index', $data);
+    }
+
+    // === FORM TAMBAH ===
+    public function create()
+    {
+        return view('admin/products/create', [
+            'title' => 'Tambah Produk',
+            'categories' => $this->categoryModel->findAll(),
+        ]);
+    }
+
+    // === SIMPAN PRODUK BARU ===
+    public function store()
+    {
+        $this->productModel->save([
+            'product_id' => $this->request->getPost('product_id'),
+            'nama_produk' => $this->request->getPost('nama_produk'),
+            'deskripsi_produk' => $this->request->getPost('deskripsi_produk'),
+            'harga' => $this->request->getPost('harga'),
+            'stok' => $this->request->getPost('stok'),
+            'link_gambar' => $this->request->getPost('link_gambar'),
+            'category_id' => $this->request->getPost('category_id')
+        ]);
+
+        return redirect()->to(base_url('admin/products'))->with('success', 'Produk berhasil ditambahkan!');
+    }
+
+    // === EDIT PRODUK ===
+    public function edit($id)
+    {
+        return view('admin/products/edit', [
+            'title' => 'Edit Produk',
+            'product' => $this->productModel->find($id),
+            'categories' => $this->categoryModel->findAll(),
+        ]);
+    }
+
+    // === UPDATE PRODUK ===
+    public function update($id)
+    {
+        $this->productModel->update($id, [
+            'nama_produk' => $this->request->getPost('nama_produk'),
+            'deskripsi_produk' => $this->request->getPost('deskripsi_produk'),
+            'harga' => $this->request->getPost('harga'),
+            'stok' => $this->request->getPost('stok'),
+            'link_gambar' => $this->request->getPost('link_gambar'),
+            'category_id' => $this->request->getPost('category_id')
+        ]);
+
+        return redirect()->to(base_url('admin/products'))->with('success', 'Produk berhasil diperbarui!');
+    }
+
+    // === DELETE PRODUK ===
+    public function delete($id)
+    {
+        $this->productModel->delete($id);
+        return redirect()->to(base_url('admin/products'))->with('success', 'Produk dihapus!');
+    }
+
+    // === DETAIL PRODUK ===
+    public function show($id)
+    {
+        return view('admin/products/show', [
+            'title' => 'Detail Produk',
+            'product' => $this->productModel->find($id),
+        ]);
+    }
+
+   public function search()
+{
+    $keyword = $this->request->getGet('keyword');
+    $filter = $this->request->getGet('filter') ?? 'nama_produk';
+
+    if ($keyword) {
+        switch ($filter) {
+            case 'product_id':
+                $products = $this->productModel->searchById($keyword);
+                break;
+            case 'category':
+                $products = $this->productModel->searchByCategory($keyword);
+                break;
+            default:
+                $products = $this->productModel->searchByName($keyword);
+                break;
+        }
+    } else {
+        $products = $this->productModel->getProductsWithCategory();
+    }
+
+    $data = [
+        'title' => 'Pencarian Produk',
+        'products' => $products,
+        'categories' => $this->categoryModel->findAll(),
+        'keyword' => $keyword,
+        'filter' => $filter,
+    ];
+
+    return view('admin/products/index', $data);
+}
+
+}

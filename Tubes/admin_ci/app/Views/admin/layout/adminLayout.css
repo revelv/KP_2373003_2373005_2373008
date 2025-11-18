@@ -1,0 +1,163 @@
+/* =================================================== */
+/* GLOBAL STYLES (app.css / layout.css)                */
+/* Dimuat di Layout View Utama CI4                     */
+/* =================================================== */
+
+/* --- 1. BODY & TIPOGRAFI GLOBAL (Dari semua file) --- */
+
+/* Menggabungkan background-color yang paling dominan/sering muncul (dark blue/grey) */
+body {
+    background-color: #0b132b; /* Paling dominan */
+    color: #fff; /* Warna teks umum yang paling sering */
+    font-family: 'Segoe UI', sans-serif; /* Font yang umum digunakan */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6; /* Diambil dari order/index */
+}
+
+/* H2/Judul Umum (Style dari order/index dan product/create/edit) */
+h2 {
+    /* Mengambil style dari product/create/edit */
+    background-color: #1c2541;
+    padding: 16px 24px;
+    margin: 0;
+    color: #ffd60a; /* Warna kuning yang sering muncul */
+}
+
+/* --- 2. KOMPONEN UMUM (Card, Container) --- */
+
+/* Style Card (Digunakan di customer/index dan payment/index) */
+.card {
+    background-color: #1c2541; /* Warna paling sering muncul (dark blue) */
+    border: 1px solid #2c3035; /* Diambil dari payment/index */
+    border-radius: 8px; /* Tambahan untuk estetika */
+}
+.card-header {
+    font-weight: bold; /* Diambil dari payment/index */
+}
+/* Container (Style dari order/index) */
+.container {
+    width: 90%;
+    margin: 40px auto;
+    background-color: #1b2233;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+/* --- 3. INPUT FORM & FORM GROUP (Dari product/create/edit) --- */
+
+input[type="text"],
+input[type="number"],
+select,
+textarea,
+.form-control { /* Tambahan .form-control karena sering digunakan di framework */
+    background-color: #2b354e; /* Warna input field */
+    border: none;
+    border-radius: 6px; /* Gabungan dari 6px dan 8px, ambil yang lebih kecil/sering */
+    padding: 10px;
+    color: #ffffff;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+label {
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+/* Focus State (Dari product/index) */
+.form-control:focus, select:focus {
+    background-color: #2b354e; /* Tetap sama */
+    color: #fff;
+    /* Tambahan efek focus, disesuaikan dengan warna kuning umum */
+    box-shadow: 0 0 0 0.2rem rgba(255, 214, 10, .25);
+}
+
+/* Placeholder (Dari product/index) */
+.form-control::placeholder {
+    color: #fff;
+    opacity: 1;
+}
+.form-control::-ms-input-placeholder {
+    color: #fff;
+}
+.form-control:-ms-input-placeholder {
+    color: #fff;
+}
+
+/* --- 4. BUTTON UTAMA (Menggabungkan berbagai style) --- */
+
+button,
+.btn-save,
+.btn-cancel,
+.btn-warning { /* Mengambil gaya dasar dari product/create/edit */
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    font-size: 14px;
+}
+/* Tombol Success/Save (Warna Kuning dominan) */
+.btn-save, .btn-primary { /* Primary button di order/index juga kuning */
+    background-color: #ffd60a; /* Yellow/Warning Color */
+    color: #000;
+}
+.btn-save:hover, .btn-primary:hover {
+    background-color: #ffe45c;
+}
+/* Tombol Cancel/Sekunder (Warna Abu-abu) */
+.btn-cancel {
+    background-color: #4b5563;
+    color: #fff;
+    text-decoration: none; /* Untuk kasus jika menggunakan tag <a> */
+}
+.btn-cancel:hover {
+    background-color: #6b7280;
+}
+/* Tombol Warning/Edit (Tergantung konteks, ambil warna kuning yang dominan) */
+.btn-warning {
+    background-color: #fca311; /* Diambil dari customer/index */
+    color: #000;
+}
+.btn-warning:hover {
+    background-color: #ffb703;
+}
+
+/* --- 5. TABLE UMUM (Gabungan dari order/index dan product/index) --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #161b22; /* Dominan dari product/index */
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+table thead {
+    background-color: #21262d; /* Dominan dari product/index */
+}
+
+table th, table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #2c3650; /* Dari order/index */
+}
+
+th {
+    color: #f1c40f; /* Kuning dari product/index */
+    font-weight: 600;
+}
+
+table tr:hover {
+    background-color: #2a3450; /* Hover dari order/index */
+}
+/* =================================================== */
+/* AKHIR GLOBAL STYLES                                 */
+/* =================================================== */

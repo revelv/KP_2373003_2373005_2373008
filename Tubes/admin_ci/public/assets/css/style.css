@@ -1,0 +1,318 @@
+/* === GLOBAL BASE === */
+body {
+  background-color: #0b132b;
+  color: #ffffff;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  background-color: #1c2541;
+  padding: 16px 24px;
+  margin: 0 0 16px 0;
+  color: #ffd60a;
+  font-weight: 600;
+}
+
+.container {
+  width: 90%;
+  margin: 40px auto;
+  background-color: #1b2233;
+  padding: 30px;
+  border-radius: 10px;
+}
+
+header {
+  background-color: #1c2541;
+  padding: 1rem;
+}
+
+nav a {
+  color: #fca311;
+  margin-right: 12px;
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* === TABLES === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #161b22;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table thead {
+  background-color: #0f1524;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #2c3650;
+}
+
+th {
+  color: #ffd60a;
+  font-weight: 600;
+}
+
+table tr:hover {
+  background-color: #2a3450;
+}
+
+/* === FORM ELEMENTS === */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  background-color: #2b354e;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #ccc;
+  opacity: 1;
+}
+
+/* === BUTTONS === */
+button,
+.btn,
+.btn-save,
+.btn-cancel,
+.btn-warning,
+.btn-primary,
+.btn-info {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+
+
+/* Warna Utama */
+.btn-save,
+.btn-primary,
+.btn-warning {
+  background-color: #ffd60a;
+  color: #000;
+}
+.btn-save:hover,
+.btn-primary:hover,
+.btn-warning:hover {
+  background-color: #ffe45c;
+}
+
+/* Cancel / Secondary */
+.btn-cancel {
+  background-color: #4b5563;
+  color: #fff;
+}
+.btn-cancel:hover {
+  background-color: #6b7280;
+}
+
+/* Info */
+.btn-info {
+  background-color: #3c6ff7;
+  color: #fff;
+}
+.btn-info:hover {
+  background-color: #5c85ff;
+}
+
+/* === CARD & ALERT === */
+.card {
+  background-color: #1c2541;
+  border: 1px solid #2c3035;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.alert {
+  background-color: #0f1524;
+  border-left: 5px solid #ffd60a;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+/* === IMAGE PREVIEW === */
+img.preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* === FLEX FORM ROWS === */
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* =================================================== */
+/* === CUSTOM STRUK STYLES === */
+/* =================================================== */
+
+/* Mengatur card agar padding-nya 0 sehingga header bisa menempel */
+.struk-card-wrapper {
+    overflow: hidden; /* Untuk memotong border-radius di header */
+    padding: 0 !important; /* Hapus padding default .card */
+    background-color: #222b40; /* Warna body struk yg lebih gelap */
+}
+
+/* 1. Header Kuning */
+.struk-header-yellow {
+    background-color: #F5A300; /* Warna kuning dari tema Anda */
+    color: #121728; /* Teks gelap agar kontras */
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+.struk-header-yellow strong {
+    font-size: 1.1em;
+}
+.struk-btn-cetak {
+    background-color: #121728;
+    color: #F5A300;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 13px;
+}
+.struk-btn-cetak:hover {
+    background-color: #0f1524;
+    color: #F5A300; /* Pastikan warna teks tetap */
+}
+
+/* 2. Body Struk (Konten di bawah header) */
+.struk-body {
+    padding: 20px;
+}
+
+/* 3. Judul */
+.struk-title {
+    text-align: center;
+    margin-bottom: 15px;
+}
+.struk-title h4 {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+    color: #fff;
+}
+.struk-title span {
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+/* 4. Garis putus-putus */
+.struk-hr {
+    border: none;
+    border-top: 2px dashed #4b5563;
+    margin: 20px 0;
+}
+
+/* 5. Detail (Label & Value) */
+.struk-details {
+    font-size: 0.95em;
+}
+.struk-details .detail-row {
+    display: flex;
+    margin-bottom: 6px;
+}
+.struk-details .detail-row strong {
+    width: 120px; /* Lebar label */
+    color: #ccc;
+    font-weight: 500;
+}
+.struk-details .detail-row span {
+    color: #fff;
+}
+
+/* 6. Total */
+.struk-total {
+    text-align: right;
+    margin-top: 20px;
+}
+.struk-total span {
+    display: block;
+    font-size: 1.1em;
+    color: #ccc;
+}
+.struk-total strong {
+    font-size: 1.5em;
+    color: #fff;
+}
+
+/* 7. Footer */
+.struk-footer {
+    text-align: center;
+    font-size: 0.9em;
+    color: #aaa;
+}
+.struk-footer p {
+    margin: 0;
+}
+/* =================================================== */
+/* === CUSTOM TRACKING TIMELINE === */
+/* =================================================== */
+
+.timeline-dot { 
+    flex-shrink: 0; 
+    width: 1rem; 
+    height: 1rem; 
+    border-radius: 9999px; 
+    background-color: #4b5563; 
+}
+.timeline-dot.active { 
+    background-color: #22c55e; 
+}
+.timeline-connector { 
+    flex-shrink: 0; 
+    width: 2px; 
+    height: 1.5rem; 
+    background-color: #4b5563; 
+    margin-left: 7px; /* Sesuaikan agar pas di tengah dot */
+}
+.timeline-connector.active { 
+    background-color: #22c55e; 
+}
