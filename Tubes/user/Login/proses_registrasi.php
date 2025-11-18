@@ -8,25 +8,30 @@ if ($conn->connect_error) {
 }
 
 // Ambil data dari form (pakai ?? '' biar nggak notice kalau key hilang)
-$nama       = trim($_POST['nama']      ?? '');
-$email      = trim($_POST['email']     ?? '');
-$provinsi   = trim($_POST['provinsi']  ?? '');   // NAMA provinsi
-$kota       = trim($_POST['kota']      ?? '');   // NAMA kota
-$kecamatan  = trim($_POST['kecamatan'] ?? '');   // NAMA kecamatan
-$alamat     = trim($_POST['alamat']    ?? '');
-$no_telepon = trim($_POST['telp']      ?? '');
-$password   = $_POST['password']       ?? '';
-$konfirmasi = $_POST['konfirmasi']     ?? '';
+$nama       = trim($_POST['nama']       ?? '');
+$email      = trim($_POST['email']      ?? '');
+$provinsi   = trim($_POST['provinsi']   ?? '');   // NAMA provinsi
+$kota       = trim($_POST['kota']       ?? '');   // NAMA kota
+$kecamatan  = trim($_POST['kecamatan']  ?? '');   // NAMA kecamatan
+$kelurahan  = trim($_POST['kelurahan']  ?? '');   // NAMA kelurahan (BARU)
+$alamat     = trim($_POST['alamat']     ?? '');
+$no_telepon = trim($_POST['telp']       ?? '');
+$password   = $_POST['password']        ?? '';
+$konfirmasi = $_POST['konfirmasi']      ?? '';
 
 $errors = [];
 
-// Validasi basic wajib isi
-if ($nama === '' || $email === '' || $provinsi === '' || $kota === '' || $kecamatan === '' ||
-    $alamat === '' || $no_telepon === '' || $password === '' || $konfirmasi === '') {
+// ================= VALIDASI DASAR =================
+if (
+    $nama === '' || $email === '' ||
+    $provinsi === '' || $kota === '' || $kecamatan === '' || $kelurahan === '' ||
+    $alamat === '' || $no_telepon === '' ||
+    $password === '' || $konfirmasi === ''
+) {
     $errors[] = "Semua field wajib diisi.";
 }
 
-// Validasi password sama
+// Password harus sama
 if ($password !== $konfirmasi) {
     $errors[] = "Password dan konfirmasi password tidak sama.";
 }
@@ -48,20 +53,32 @@ if ($email !== '') {
     }
 }
 
+// Kalau ada error, lempar balik ke form dengan data lama
 if (!empty($errors)) {
     $_SESSION['register_error'] = implode('<br>', $errors);
-    $_SESSION['form_data'] = $_POST;
+    $_SESSION['form_data']      = $_POST;
     header("Location: registrasi.php");
     exit;
 }
 
-// Hash password
+// ================= HASH PASSWORD =================
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-// Insert customer baru (provinsi/kota/kecamatan = NAMA)
+// ================= INSERT CUSTOMER BARU =================
+// provinsi / kota / kecamatan / kelurahan disimpan sebagai NAMA (string)
 $stmt = $conn->prepare("
-    INSERT INTO customer (nama, password, email, no_telepon, provinsi, kota, kecamatan, alamat) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO customer (
+        nama, 
+        password, 
+        email, 
+        no_telepon, 
+        provinsi, 
+        kota, 
+        kecamatan,
+        kelurahan,
+        alamat
+    ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 if (!$stmt) {
@@ -71,7 +88,7 @@ if (!$stmt) {
 }
 
 $stmt->bind_param(
-    "ssssssss",
+    "sssssssss",
     $nama,
     $hashed_password,
     $email,
@@ -79,6 +96,7 @@ $stmt->bind_param(
     $provinsi,   // NAMA provinsi
     $kota,       // NAMA kota
     $kecamatan,  // NAMA kecamatan
+    $kelurahan,  // NAMA kelurahan (BARU)
     $alamat
 );
 

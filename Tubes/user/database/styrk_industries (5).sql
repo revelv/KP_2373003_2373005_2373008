@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 18, 2025 at 03:26 PM
+-- Generation Time: Nov 18, 2025 at 05:03 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -123,7 +123,9 @@ CREATE TABLE `carts` (
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 2, '2025-11-15 13:47:29', NULL),
 (70, 10, 'KB018', 1, '2025-11-15 13:47:33', NULL),
-(79, 16, 'COMM-2', 1, '2025-11-17 17:12:27', NULL);
+(79, 16, 'COMM-2', 1, '2025-11-17 17:12:27', NULL),
+(92, 18, 'KB004', 1, '2025-11-18 15:41:04', NULL),
+(93, 21, 'CS001', 1, '2025-11-18 17:00:52', NULL);
 
 -- --------------------------------------------------------
 
@@ -235,6 +237,8 @@ CREATE TABLE `customer` (
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kecamatan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `kelurahan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `komship_destination_id` int DEFAULT NULL,
   `alamat` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `last_login` timestamp NULL DEFAULT NULL,
   `last_reengagement_sent` timestamp NULL DEFAULT NULL
@@ -244,15 +248,15 @@ CREATE TABLE `customer` (
 -- Dumping data for table `customer`
 --
 
-INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`, `provinsi`, `kota`, `kecamatan`, `alamat`, `last_login`, `last_reengagement_sent`) VALUES
-(5, 'Jeremia', '$2y$10$fwucJezb3RQTmc5Gz2a56uyAjvXYyMdS/V38v913qqxpJtpMF5sRS', 'jeremiadylan80@gmail.com', '081312663058', '', '', '', 'Jalan kebenara 169', NULL, NULL),
-(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'JAWA BARAT', 'BEKASI', 'BABELAN', 'Jalan asmi no 123', '2025-11-13 08:31:33', NULL),
-(7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', '', 'jalan tuhan kebenaran no. 100', NULL, NULL),
-(10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', '', 'rumahsammy 123', '2025-11-15 13:36:31', NULL),
-(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', '4', '462', '', 'gunung gede 123', '2025-11-17 14:02:30', '2025-10-26 08:32:45'),
-(17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', '', 'banjaran 120', NULL, NULL),
-(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'Taman Kopo Indah 69 Blok S', '2025-11-18 14:24:00', NULL),
-(20, 'JRMI4A', '$2y$10$iQo8aKUB1k/Wqf5ffP3wm.8lujrZZXVXvpTpiYqJJOQjThxcySQBi', 'jeremiadylan115@gmail.com', '0813213123', 'JAWA BARAT', 'BANDUNG', 'ANDIR', 'Jalan andir no 15', '2025-11-17 11:36:01', NULL);
+INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `komship_destination_id`, `alamat`, `last_login`, `last_reengagement_sent`) VALUES
+(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', 0, 'Jalan asmi no 123', '2025-11-18 16:26:10', NULL),
+(7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', '', '', 0, 'jalan tuhan kebenaran no. 100', NULL, NULL),
+(10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', '', '', 0, 'rumahsammy 123', '2025-11-15 13:36:31', NULL),
+(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', 0, 'gunung gede 123', '2025-11-18 16:26:34', '2025-10-26 08:32:45'),
+(17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', '', '', 0, 'banjaran 120', NULL, NULL),
+(18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', '2025-11-18 14:24:00', NULL),
+(20, 'JRMI4A', '$2y$10$iQo8aKUB1k/Wqf5ffP3wm.8lujrZZXVXvpTpiYqJJOQjThxcySQBi', 'jeremiadylan115@gmail.com', '0813213123', 'JAWA BARAT', 'BANDUNG', 'ANDIR', '', 0, 'Jalan andir no 15', '2025-11-17 11:36:01', NULL),
+(21, 'Jeremia', '$2y$12$NxiD4m53ua0WUI6QirVhV.QsmqhqO4he5ivJVJeogGPfrl2Fm2eQO', 'jeremiadylan80@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', NULL, 'Taman Kopo Indah 69 Blok S', '2025-11-18 16:49:43', NULL);
 
 -- --------------------------------------------------------
 
@@ -267,6 +271,7 @@ CREATE TABLE `orders` (
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kecamatan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `kelurahan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `komship_destination_id` int DEFAULT NULL,
   `alamat` varchar(10000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `komship_order_no` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -283,26 +288,26 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`, `kecamatan`, `komship_destination_id`, `alamat`, `komship_order_no`, `komship_awb`, `komship_status`, `komship_last_sync`, `code_courier`, `shipping_type`, `ongkos_kirim`, `total_harga`) VALUES
-('ORD-20251117050246-469', 18, '2025-11-17 12:02:46', '6', '64', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 3707000.00),
-('ORD-20251117050534-242', 18, '2025-11-17 12:05:34', '6', '64', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 2707000.00),
-('ORD-20251117051054-966', 18, '2025-11-17 12:10:54', '6', '64', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 357000.00),
-('ORD-20251117065225-781', 18, '2025-11-17 13:52:25', '5', '55', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', '', 9000, 2759000.00),
-('ORD-20251117065836-905', 18, '2025-11-17 13:58:36', '5', '55', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422 Create Order failed', '2025-11-17', 'pos', '', 9000, 329000.00),
-('ORD-20251117080623-619', 18, '2025-11-17 15:06:23', '5', '55', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, NULL, NULL, 'pos', '', 9000, 559000.00),
-('ORD-20251117081052-599', 18, '2025-11-17 15:10:52', '5', '55', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', '', 9000, 559000.00),
-('ORD-20251118113958-116', 6, '2025-11-18 18:39:58', 'JAWA BARAT', 'BEKASI', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'ERROR_HTTP_404', '2025-11-18', 'jne', '', 9500, 1759500.00),
-('ORD-20251118124139-307', 6, '2025-11-18 19:41:39', 'JAWA BARAT', 'BEKASI', 'BABELAN', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jne', '', 9500, 4659500.00),
-('ORD-20251118130310-367', 6, '2025-11-18 20:03:10', 'JAWA BARAT', 'BEKASI', 'BABELAN', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jnt', 'EZ', 11000, 2111000.00),
-('ORD-20251118131034-127', 6, '2025-11-18 20:10:34', 'JAWA BARAT', 'BEKASI', 'BABELAN', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 361000.00),
-('ORD-20251118131201-556', 6, '2025-11-18 20:12:01', 'JAWA BARAT', 'BEKASI', 'BABELAN', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 1461000.00),
-('ORD-20251118134721-120', 6, '2025-11-18 20:47:21', 'JAWA BARAT', 'BEKASI', 'BABELAN', NULL, 'Jalan asmi no 123', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 4209500.00),
-('ORD-20251118142423-111', 18, '2025-11-18 21:24:23', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', '0', 8000, 2958000.00),
-('ORD-20251118142837-726', 18, '2025-11-18 21:28:37', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'lion', 'REGPACK', 7000, 1857000.00),
-('ORD-20251118143330-454', 18, '2025-11-18 21:33:30', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jnt', 'EZ', 8000, 1258000.00),
-('ORD-20251118143953-269', 18, '2025-11-18 21:39:53', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 1909500.00),
-('ORD-20251118145554-579', 18, '2025-11-18 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 3309500.00),
-('ORD-20251118151141-961', 18, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00);
+INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `komship_destination_id`, `alamat`, `komship_order_no`, `komship_awb`, `komship_status`, `komship_last_sync`, `code_courier`, `shipping_type`, `ongkos_kirim`, `total_harga`) VALUES
+('ORD-20251117050246-469', 18, '2025-11-17 12:02:46', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 3707000.00),
+('ORD-20251117050534-242', 18, '2025-11-17 12:05:34', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 2707000.00),
+('ORD-20251117051054-966', 18, '2025-11-17 12:10:54', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17', 'jne', '', 7000, 357000.00),
+('ORD-20251117065225-781', 18, '2025-11-17 13:52:25', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', '', 9000, 2759000.00),
+('ORD-20251117065836-905', 18, '2025-11-17 13:58:36', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422 Create Order failed', '2025-11-17', 'pos', '', 9000, 329000.00),
+('ORD-20251117080623-619', 18, '2025-11-17 15:06:23', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, NULL, NULL, 'pos', '', 9000, 559000.00),
+('ORD-20251117081052-599', 18, '2025-11-17 15:10:52', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17', 'pos', '', 9000, 559000.00),
+('ORD-20251118113958-116', 6, '2025-11-18 18:39:58', 'JAWA BARAT', 'BEKASI', '', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'ERROR_HTTP_404', '2025-11-18', 'jne', '', 9500, 1759500.00),
+('ORD-20251118124139-307', 6, '2025-11-18 19:41:39', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jne', '', 9500, 4659500.00),
+('ORD-20251118130310-367', 6, '2025-11-18 20:03:10', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jnt', 'EZ', 11000, 2111000.00),
+('ORD-20251118131034-127', 6, '2025-11-18 20:10:34', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 361000.00),
+('ORD-20251118131201-556', 6, '2025-11-18 20:12:01', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 1461000.00),
+('ORD-20251118134721-120', 6, '2025-11-18 20:47:21', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 4209500.00),
+('ORD-20251118142423-111', 18, '2025-11-18 21:24:23', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', '0', 8000, 2958000.00),
+('ORD-20251118142837-726', 18, '2025-11-18 21:28:37', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'lion', 'REGPACK', 7000, 1857000.00),
+('ORD-20251118143330-454', 18, '2025-11-18 21:33:30', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jnt', 'EZ', 8000, 1258000.00),
+('ORD-20251118143953-269', 18, '2025-11-18 21:39:53', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 1909500.00),
+('ORD-20251118145554-579', 18, '2025-11-18 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 3309500.00),
+('ORD-20251118151141-961', 18, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', 0, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00);
 
 -- --------------------------------------------------------
 
@@ -520,7 +525,8 @@ INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupi
 (9, 17, 'STYRK14614D', 10000, NULL, '2025-10-26 02:41:20', '2025-11-08 19:41:20', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
 (10, 19, 'STYRK448348', 10000, NULL, '2025-10-26 06:17:56', '2025-11-08 23:17:56', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
 (11, 20, 'STYRK58BD69', 10000, NULL, '2025-10-26 06:20:03', '2025-11-08 23:20:03', 'aktif', 'Voucher Selamat Datang', 'rupiah'),
-(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 10:29:13', '2025-12-31 13:36:28', 'terpakai', 'Voucher global diskon 10% - STYRKIKUZO', 'persen');
+(12, 0, 'STYRKIKUZO', 0, 10, '2025-10-26 10:29:13', '2025-12-31 13:36:28', 'terpakai', 'Voucher global diskon 10% - STYRKIKUZO', 'persen'),
+(13, 21, 'STYRKD0DB69', 10000, NULL, '2025-11-18 16:49:43', '2025-12-02 09:49:43', 'aktif', 'Voucher Selamat Datang', 'rupiah');
 
 --
 -- Indexes for dumped tables
@@ -674,7 +680,7 @@ ALTER TABLE `bids`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -698,7 +704,7 @@ ALTER TABLE `community_article_comments`
 -- AUTO_INCREMENT for table `customer`
 --
 ALTER TABLE `customer`
-  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `order_details`
@@ -734,7 +740,7 @@ ALTER TABLE `threads`
 -- AUTO_INCREMENT for table `vouchers`
 --
 ALTER TABLE `vouchers`
-  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables

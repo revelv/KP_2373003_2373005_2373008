@@ -231,12 +231,22 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     </div>
                 </div>
 
-                <!-- Kecamatan (baru) -->
+                <!-- Kecamatan -->
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="kecamatan">Kecamatan</label>
                         <select id="kecamatan" name="kecamatan" class="form-control" required disabled>
                             <option value="">-- Pilih Kota Dahulu --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Kelurahan (Sub-district) -->
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="kelurahan">Kelurahan</label>
+                        <select id="kelurahan" name="kelurahan" class="form-control" required disabled>
+                            <option value="">-- Pilih Kecamatan Dahulu --</option>
                         </select>
                     </div>
                 </div>
@@ -283,15 +293,17 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
             const selProv = document.getElementById('provinsi');
             const selKota = document.getElementById('kota');
             const selKec = document.getElementById('kecamatan');
+            const selKel = document.getElementById('kelurahan');
 
-            const oldProv = <?= json_encode($old['provinsi'] ?? '') ?>; // NAMA provinsi
-            const oldKota = <?= json_encode($old['kota'] ?? '') ?>; // NAMA kota
-            const oldKec = <?= json_encode($old['kecamatan'] ?? '') ?>; // NAMA kecamatan
+            const oldProv = <?= json_encode($old['provinsi'] ?? '') ?>;   // NAMA provinsi
+            const oldKota = <?= json_encode($old['kota'] ?? '') ?>;       // NAMA kota
+            const oldKec  = <?= json_encode($old['kecamatan'] ?? '') ?>;  // NAMA kecamatan
+            const oldKel  = <?= json_encode($old['kelurahan'] ?? '') ?>;  // NAMA kelurahan
 
             function selectByText(selectEl, text) {
                 if (!selectEl || !text) return;
                 const opts = Array.from(selectEl.options);
-                const found = opts.find(o => o.text.trim() === text.trim());
+                const found = opts.find(o => o.text.trim().toUpperCase() === text.trim().toUpperCase());
                 if (found) selectEl.value = found.value;
             }
 
@@ -324,8 +336,8 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         const name = p.name ?? p.province ?? '';
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name; // ke PHP: NAMA
-                        opt.dataset.id = id; // buat JS panggil RajaOngkir
+                        opt.value = name;         // ke PHP: NAMA
+                        opt.dataset.id = id;      // buat JS panggil RajaOngkir
                         opt.textContent = name;
                         selProv.appendChild(opt);
                     }
@@ -348,13 +360,28 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 if (!provinceId || !selKota) {
                     selKota.innerHTML = '<option value="">-- Pilih Provinsi Dahulu --</option>';
                     selKota.disabled = true;
+                    if (selKec) {
+                        selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
+                        selKec.disabled = true;
+                    }
+                    if (selKel) {
+                        selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                        selKel.disabled = true;
+                    }
                     return;
                 }
 
                 selKota.innerHTML = '<option value="">Loading…</option>';
                 selKota.disabled = true;
-                selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
-                selKec.disabled = true;
+
+                if (selKec) {
+                    selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
+                    selKec.disabled = true;
+                }
+                if (selKel) {
+                    selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                    selKel.disabled = true;
+                }
 
                 try {
                     const res = await fetch('../../user/rajaongkir/get-cities.php?province=' + encodeURIComponent(provinceId), {
@@ -383,7 +410,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
                         opt.value = name; // ke PHP: NAMA
-                        opt.dataset.id = id; // buat JS ke district
+                        opt.dataset.id = id; // buat load district
                         opt.textContent = name + (c.zip_code && c.zip_code !== '0' ? ` (${c.zip_code})` : '');
                         selKota.appendChild(opt);
                     }
@@ -407,11 +434,20 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 if (!cityId || !selKec) {
                     selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
                     selKec.disabled = true;
+                    if (selKel) {
+                        selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                        selKel.disabled = true;
+                    }
                     return;
                 }
 
                 selKec.innerHTML = '<option value="">Loading…</option>';
                 selKec.disabled = true;
+
+                if (selKel) {
+                    selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                    selKel.disabled = true;
+                }
 
                 try {
                     const res = await fetch('../../user/rajaongkir/get-district.php?city=' + encodeURIComponent(cityId), {
@@ -439,8 +475,8 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         const name = (d.subdistrict_name ?? d.name ?? d.district_name ?? '').trim();
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name; // ke PHP: NAMA
-                        opt.dataset.id = id; // kalau nanti mau dipakai lagi
+                        opt.value = name;   // ke PHP: NAMA
+                        opt.dataset.id = id; // buat load subdistrict
                         opt.textContent = name;
                         selKec.appendChild(opt);
                     }
@@ -448,6 +484,10 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
 
                     if (autoSelect && oldKec) {
                         selectByText(selKec, oldKec);
+                        const opt = selKec.options[selKec.selectedIndex];
+                        if (opt && opt.dataset.id) {
+                            await loadSubDistricts(opt.dataset.id, true);
+                        }
                     }
 
                 } catch (e) {
@@ -456,17 +496,108 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 }
             }
 
+            async function loadSubDistricts(districtId, autoSelect = false) {
+                if (!selKel) return;
+
+                if (!districtId) {
+                    selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                    selKel.disabled = true;
+                    return;
+                }
+
+                selKel.innerHTML = '<option value="">Loading…</option>';
+                selKel.disabled = true;
+
+                try {
+                    const res = await fetch('../../user/rajaongkir/get-subdistrict.php?district=' +
+                        encodeURIComponent(districtId) + '&t=' + Date.now(), {
+                        cache: 'no-store'
+                    });
+                    const text = await res.text();
+                    let root;
+                    try {
+                        root = JSON.parse(text);
+                    } catch (e) {
+                        console.error('Subdistrict JSON error:', e, text);
+                        selKel.innerHTML = '<option value="">Gagal parsing data kelurahan</option>';
+                        return;
+                    }
+
+                    if (!root.success) {
+                        console.error('Subdistrict API error:', root.message);
+                        selKel.innerHTML = '<option value="">Gagal load kelurahan</option>';
+                        return;
+                    }
+
+                    const list = Array.isArray(root.data) ? root.data : [];
+                    if (!list.length) {
+                        selKel.innerHTML = '<option value="">(tidak ada kelurahan)</option>';
+                        selKel.disabled = false;
+                        return;
+                    }
+
+                    selKel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
+                    for (const s of list) {
+                        const id = s.subdistrict_id ?? s.id ?? '';
+                        const name = (s.subdistrict_name ?? s.name ?? '').trim();
+                        if (!id || !name) continue;
+                        const opt = document.createElement('option');
+                        opt.value = name;      // ke PHP: NAMA
+                        opt.dataset.id = id;   // kalau mau dipakai lagi
+                        opt.textContent = name + (s.zip_code && s.zip_code !== '0' ? ` (${s.zip_code})` : '');
+                        selKel.appendChild(opt);
+                    }
+                    selKel.disabled = false;
+
+                    if (autoSelect && oldKel) {
+                        selectByText(selKel, oldKel);
+                    }
+
+                } catch (e) {
+                    console.error('Subdistrict fetch error:', e);
+                    selKel.innerHTML = '<option value="">Error load kelurahan</option>';
+                    selKel.disabled = true;
+                }
+            }
+
             // Event handlers
             selProv.addEventListener('change', () => {
                 const opt = selProv.options[selProv.selectedIndex];
                 const provId = opt && opt.dataset.id ? opt.dataset.id : '';
+
+                selKota.innerHTML = '<option value="">-- Pilih Provinsi Dahulu --</option>';
+                selKota.disabled = true;
+
+                selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
+                selKec.disabled = true;
+
+                selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                selKel.disabled = true;
+
                 loadCities(provId, false);
             });
 
             selKota.addEventListener('change', () => {
                 const opt = selKota.options[selKota.selectedIndex];
                 const cityId = opt && opt.dataset.id ? opt.dataset.id : '';
+
+                selKec.innerHTML = '<option value="">-- Pilih Kota Dahulu --</option>';
+                selKec.disabled = true;
+
+                selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                selKel.disabled = true;
+
                 loadDistricts(cityId, false);
+            });
+
+            selKec.addEventListener('change', () => {
+                const opt = selKec.options[selKec.selectedIndex];
+                const districtId = opt && opt.dataset.id ? opt.dataset.id : '';
+
+                selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
+                selKel.disabled = true;
+
+                loadSubDistricts(districtId, false);
             });
 
             // Init
