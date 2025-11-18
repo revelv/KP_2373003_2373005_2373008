@@ -1,48 +1,90 @@
 <?php
-
+// user/checkout.php
 declare(strict_types=1);
+
 session_start();
 include '../koneksi.php';
+require_once __DIR__ . '/komship_destination.php'; // <- file helper barusan
 
-// ===================== KONFIG KOMSHIP =====================
-const KOMSHIP_API_KEY   = '3I7kuf7B3e00fb2d23c692a69owo8BSW';
-const KOMSHIP_BASE_URL  = 'https://api-sandbox.collaborator.komerce.id/order/api/v1/orders/store';
-// ==========================================================
-
-// --- Wajib POST ---
+// ====================== VALIDASI DASAR ======================
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die('Metode tidak valid.');
 }
 
-// --- Wajib login customer ---
 if (!isset($_SESSION['kd_cs'])) {
     $_SESSION['message'] = 'Anda harus login terlebih dahulu.';
     header('Location: produk.php');
     exit();
 }
+
 $customer_id = (int)$_SESSION['kd_cs'];
 
-// --- Validasi item cart ---
-if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
+// ====================== AMBIL CART_ID DARI POST ======================
+$rawItems = $_POST['selected_items'] ?? [];
+if (!is_array($rawItems)) {
+    $rawItems = [];
+}
+
+$selected_cart_ids = array_map('intval', $rawItems);
+$selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
+
+if (empty($selected_cart_ids)) {
     $_SESSION['message'] = 'Tidak ada item yang dipilih untuk checkout.';
     header('Location: cart.php');
     exit();
 }
-$selected_cart_ids = array_map('intval', $_POST['selected_items']);
-$selected_cart_ids = array_filter($selected_cart_ids, fn($v) => $v > 0);
-$in_clause         = implode(',', $selected_cart_ids);
 
-// --- Ambil data cart & produk (untuk hitung subtotal & berat) ---
+$in_clause = implode(',', $selected_cart_ids);
+
+// ====================== DATA ONGKIR & ALAMAT DARI PAYMENT ======================
+$shipping_cost    = (int)($_POST['shipping_cost']    ?? 0);
+$shipping_courier = trim((string)($_POST['shipping_courier'] ?? '')); // jne / jnt / sap
+$shipping_service = trim((string)($_POST['shipping_service'] ?? '')); // REG / SAPFlat, dll
+
+$alamat_mode = $_POST['alamat_mode'] ?? 'profil';
+$provinsi    = trim((string)($_POST['provinsi']   ?? ''));
+$kota        = trim((string)($_POST['kota']       ?? ''));
+$kecamatan   = trim((string)($_POST['kecamatan']  ?? ''));
+$alamat      = trim((string)($_POST['alamat']     ?? ''));
+
+// ID dari sisi RajaOngkir (opsional, kalau nanti mau dipakai)
+$dest_prov_id     = trim((string)($_POST['dest_prov_id']     ?? ''));
+$dest_city_id     = trim((string)($_POST['dest_city_id']     ?? ''));
+$dest_district_id = trim((string)($_POST['dest_district_id'] ?? ''));
+
+// metode pembayaran (QRIS / Transfer) – kalau mau disimpan, nanti tinggal tambah kolom di `orders`
+$metode_pembayaran = $_POST['metode'] ?? 'Transfer';
+
+// Validasi minimal alamat + ongkir
+if ($provinsi === '' || $kota === '' || $alamat === '') {
+    $_SESSION['message'] = 'Alamat pengiriman belum lengkap.';
+    header('Location: payment.php');
+    exit();
+}
+
+if ($shipping_courier === '' || $shipping_cost <= 0 || $shipping_service === '') {
+    $_SESSION['message'] = 'Data ongkir / kurir belum lengkap.';
+    header('Location: payment.php');
+    exit();
+}
+
+// ====================== AMBIL ITEM DARI CART ======================
 $sqlCart = "
-    SELECT c.cart_id, c.product_id, c.jumlah_barang,
-           p.nama_produk, p.harga, p.link_gambar,
-           p.stok,
-           IFNULL(p.weight, 0) AS weight
+    SELECT 
+        c.cart_id,
+        c.product_id,
+        c.jumlah_barang,
+        p.nama_produk,
+        p.harga,
+        p.link_gambar,
+        p.stok,
+        IFNULL(p.weight, 0) AS weight
     FROM carts c
     JOIN products p ON c.product_id = p.product_id
     WHERE c.customer_id = ?
       AND c.cart_id IN ($in_clause)
 ";
+
 $stmtCart = $conn->prepare($sqlCart);
 if (!$stmtCart) {
     die('Query cart error: ' . $conn->error);
@@ -51,14 +93,14 @@ $stmtCart->bind_param('i', $customer_id);
 $stmtCart->execute();
 $resCart = $stmtCart->get_result();
 
-$items       = [];
-$subtotal    = 0;
-$totalBeratG = 0; // gram
+$items    = [];
+$subtotal = 0;
 
 while ($row = $resCart->fetch_assoc()) {
     $qty   = (int)$row['jumlah_barang'];
     $harga = (int)$row['harga'];
 
+    // Cek stok
     if ((int)$row['stok'] < $qty) {
         die('Stok produk ' . htmlspecialchars($row['nama_produk']) . ' tidak cukup.');
     }
@@ -66,27 +108,21 @@ while ($row = $resCart->fetch_assoc()) {
     $itemSub = $qty * $harga;
     $subtotal += $itemSub;
 
-    // berat total (gram)
-    $beratItem = (int)$row['weight'] * $qty;
-    $totalBeratG += $beratItem;
-
     $row['item_subtotal'] = $itemSub;
-    $row['berat_item']    = $beratItem;
     $items[] = $row;
 }
 $stmtCart->close();
 
-if ($subtotal <= 0) {
-    die('Subtotal tidak valid.');
+if ($subtotal <= 0 || empty($items)) {
+    die('Data cart tidak valid (subtotal 0 / item kosong).');
 }
 
-// --- Voucher dari session (sudah diset di cart.php) ---
+// ====================== VOUCHER (DARI SESSION) ======================
 $voucher_code = $_SESSION['voucher_code']         ?? null;
 $voucher_tipe = $_SESSION['voucher_tipe']         ?? null; // 'persen' | 'rupiah'
 $voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah'] ?? 0);
 $voucher_pct  = (int)($_SESSION['voucher_nilai_persen'] ?? 0);
 
-// hitung diskon
 $voucher_discount = 0;
 if ($voucher_code && $voucher_tipe === 'persen') {
     $voucher_discount = (int)round($subtotal * ($voucher_pct / 100));
@@ -97,42 +133,36 @@ if ($voucher_discount > $subtotal) {
     $voucher_discount = $subtotal;
 }
 
-// --- Base total (tanpa ongkir) ---
-$base_total = max(0, $subtotal - $voucher_discount);
+// ====================== TOTAL AKHIR ======================
+$base_total  = max(0, $subtotal - $voucher_discount); // nilai barang
+$total_harga = $base_total + $shipping_cost;          // barang + ongkir
 
-// --- Ambil data ongkir & kurir dari POST (hasil dari RajaOngkir) ---
-$shipping_cost   = (int)($_POST['shipping_cost']   ?? 0);
-$shipping_courier = trim((string)($_POST['shipping_courier'] ?? ''));
-$shipping_service = trim((string)($_POST['shipping_service'] ?? ''));
+// ====================== KOMSHIP DESTINATION ID ======================
 
-if ($shipping_cost < 0) $shipping_cost = 0;
-
-// --- Alamat pengiriman dari payment.php ---
-$alamat_mode = $_POST['alamat_mode'] ?? 'profil';
-$provinsi    = trim((string)($_POST['provinsi']   ?? ''));
-$kota        = trim((string)($_POST['kota']       ?? ''));
-$kecamatan   = trim((string)($_POST['kecamatan']  ?? '')); // opsional kolom di DB
-$alamat      = trim((string)($_POST['alamat']     ?? ''));
-
-// ID tujuan (RajaOngkir / Komship) -> penting buat Komship
-$dest_prov_id     = trim((string)($_POST['dest_prov_id']     ?? ''));
-$dest_city_id     = trim((string)($_POST['dest_city_id']     ?? ''));
-$dest_district_id = trim((string)($_POST['dest_district_id'] ?? ''));
-
-// --- Validasi alamat minimal ---
-if ($provinsi === '' || $kota === '' || $alamat === '') {
-    $_SESSION['message'] = 'Alamat pengiriman belum lengkap.';
-    header('Location: payment.php');  // sesuaikan path
-    exit();
+// 1) Coba pakai kalau sudah dikirim dari frontend (kalau suatu saat lu set di JS)
+$komship_destination_id = 0;
+if (!empty($_POST['komship_destination_id']) && ctype_digit((string)$_POST['komship_destination_id'])) {
+    $komship_destination_id = (int)$_POST['komship_destination_id'];
 }
 
-// --- Total akhir (barang + ongkir) ---
-$total_harga = $base_total + $shipping_cost;
+// 2) Kalau masih 0, baru kita hit API Komship via helper
+if ($komship_destination_id <= 0) {
+    // Supaya lebih aman matching, bisa lu uppercase semua
+    $komship_destination_id = getKomshipDestinationId(
+        strtoupper($provinsi),
+        strtoupper($kota),
+        strtoupper($kecamatan)
+    );
+    // Kalau tetap 0, yaudah simpan 0 dulu — nanti di admin bisa lu benahin manual atau re-sync
+}
 
-// --- Generate order_id (bebas, penting unik) ---
+// ====================== BUAT ID ORDER LOKAL ======================
 $order_id = 'ORD-' . date('YmdHis') . '-' . rand(100, 999);
 
-// --- Simpan ke tabel orders dulu (tanpa data Komship) ---
+// Status awal Komship
+$komship_status = 'pending';
+
+// ====================== INSERT KE TABEL ORDERS ======================
 $sqlOrder = "
     INSERT INTO orders (
         order_id,
@@ -140,133 +170,94 @@ $sqlOrder = "
         tgl_order,
         provinsi,
         kota,
+        kecamatan,
+        komship_destination_id,
         alamat,
-        komship_order_no,
-        komship_awb,
-        komship_status,
-        komship_last_sync,
         code_courier,
+        shipping_type,
         ongkos_kirim,
-        total_harga
+        total_harga,
+        komship_status
     ) VALUES (
-        ?, ?, NOW(), ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?
+        ?, ?, NOW(),
+        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?
     )
 ";
+
 $stmtOrder = $conn->prepare($sqlOrder);
 if (!$stmtOrder) {
     die('Query insert orders error: ' . $conn->error);
 }
+
 $stmtOrder->bind_param(
-    'sissssid',
+    'sisssissiiis',
     $order_id,
     $customer_id,
     $provinsi,
     $kota,
+    $kecamatan,
+    $komship_destination_id,
     $alamat,
-    $shipping_courier,
+    $shipping_courier,   // ex: 'SAP'
+    $shipping_service,   // ex: 'SAPFlat'
     $shipping_cost,
-    $total_harga
+    $total_harga,
+    $komship_status
 );
 $stmtOrder->execute();
 $stmtOrder->close();
 
-// ======================= KOMSHIP: CREATE ORDER =======================
-$komship_status   = 'PENDING';
-$komship_order_no = null;
-$komship_awb      = null;
-// konversi berat ke KG (biasanya API pakai kg, cek dokumen Komship)
-$weightKg = max(1, ceil($totalBeratG / 1000)); // minimal 1 kg
-
-// nilai barang untuk asuransi / COD
-$item_value = $base_total; // atau $total_harga, sesuaikan kebutuhan
-
-// contoh payload (SAMAKAN dengan dokumen resmi Komship)
-$komshipPayload = [
-    'order_no'                => $order_id,
-    'receiver_destination_id' => $dest_district_id ?: $dest_city_id, // tergantung requirement
-    'weight'                  => $weightKg,
-    'item_value'              => $item_value,
-    'cod'                     => false, // kalau mau COD -> true
-    'courier_code'            => $shipping_courier,
-    'service_code'            => $shipping_service,
-    'receiver_name'           => $_SESSION['nama_cs'] ?? 'Customer',
-    'receiver_phone'          => $_SESSION['no_telepon_cs'] ?? '', // sesuaikan field session/no_telepon
-    'receiver_address'        => $alamat,
-    'receiver_city'           => $kota,
-    'receiver_province'       => $provinsi,
-    // tambahkan field lain sesuai dokumen Komship:
-    // 'receiver_lat'        => '...',
-    // 'receiver_lng'        => '...',
-    // 'shipper_destination_id' => 'ID_GUDANG_LU', dll.
-];
-
-// endpoint contoh, SESUAIKAN path-nya dengan dokumen Komship
-$komshipUrl = 'https://api-sandbox.collaborator.komerce.id/order/api/v1/orders/create';
-
-$ch = curl_init($komshipUrl);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_MAXREDIRS      => 5,
-    CURLOPT_TIMEOUT        => 30,
-    CURLOPT_HTTPHEADER     => [
-        'Content-Type: application/json',
-        'Accept: application/json',
-        'x-api-key: ' . KOMSHIP_API_KEY,  // pastikan constant ini bener
-    ],
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => json_encode($payload),
-]);
-
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
-
-if ($response === false) {
-    $komship_status = 'ERROR_CURL';
-} else {
-    $data = json_decode($response, true);
-
-    if ($httpCode >= 200 && $httpCode < 300 && isset($data['data']['order_no'])) {
-        $komship_order_no = $data['data']['order_no'];
-        $komship_awb      = $data['data']['awb'] ?? null;
-        $komship_status   = 'SUCCESS';
-    } else {
-        // simpan kode HTTP biar kelihatan di DB
-        $komship_status = 'ERROR_HTTP_' . (string)$httpCode;
-    }
-}
-
-// --- Update record orders dengan data Komship (kalau ada) ---
-$sqlUpd = "
-    UPDATE orders
-    SET komship_order_no = ?,
-        komship_awb      = ?,
-        komship_status   = ?,
-        komship_last_sync= CURDATE()
-    WHERE order_id = ?
+// ====================== INSERT ORDER DETAILS ======================
+$sqlDetail = "
+    INSERT INTO order_details (
+        order_id,
+        product_id,
+        jumlah,
+        harga_satuan,
+        subtotal
+    ) VALUES (?, ?, ?, ?, ?)
 ";
-$stmtUpd = $conn->prepare($sqlUpd);
-if ($stmtUpd) {
-    $stmtUpd->bind_param(
-        'ssss',
-        $komship_order_no,
-        $komship_awb,
-        $komship_status,
-        $order_id
-    );
-    $stmtUpd->execute();
-    $stmtUpd->close();
+
+$stmtDetail = $conn->prepare($sqlDetail);
+if (!$stmtDetail) {
+    die('Query insert order_details error: ' . $conn->error);
 }
 
-// =================== BERES: HAPUS ITEM DARI CART, REDIRECT ===================
+foreach ($items as $it) {
+    $pid   = (string)$it['product_id'];       // VARCHAR
+    $qty   = (int)$it['jumlah_barang'];
+    $harga = (int)$it['harga'];
+    $sub   = (int)$it['item_subtotal'];
 
-// hapus cart yg sudah di-checkout
+    $stmtDetail->bind_param(
+        'ssiii',
+        $order_id,
+        $pid,
+        $qty,
+        $harga,
+        $sub
+    );
+    $stmtDetail->execute();
+}
+$stmtDetail->close();
+
+// ====================== HAPUS ITEM DARI CART ======================
 $conn->query("DELETE FROM carts WHERE customer_id = {$customer_id} AND cart_id IN ($in_clause)");
 
-// bisa simpan info order_id di session utk halaman sukses
-$_SESSION['last_order_id'] = $order_id;
+// ====================== BERSIHIN SESSION VOUCHER ======================
+unset(
+    $_SESSION['voucher_code'],
+    $_SESSION['voucher_tipe'],
+    $_SESSION['voucher_nilai_rupiah'],
+    $_SESSION['voucher_nilai_persen']
+);
 
-header('Location: order_success.php'); // bikin halaman terima kasih
+// Simpan info order terakhir
+$_SESSION['last_order_id']       = $order_id;
+$_SESSION['last_order_total']    = $total_harga;
+$_SESSION['last_order_shipping'] = $shipping_cost;
+
+// Redirect ke riwayat belanja
+header('Location: riwayat_belanja.php');
 exit;

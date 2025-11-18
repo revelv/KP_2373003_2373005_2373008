@@ -264,18 +264,6 @@ $weightParam  = number_format($weightKg, 2, '.', '');
 // kalau mau COD → "yes", kalau nggak → "no"
 $codFlag = 'yes'; // atau 'no', sesuaikan
 
-/* ===================================================================
- * 3. Call Komship Tariff Calculate (SANDBOX)
- *    Contoh:
- *    https://api-sandbox.collaborator.komerce.id/tariff/api/v1/calculate
- *      ?shipper_destination_id=...
- *      &receiver_destination_id=...
- *      &weight=1
- *      &item_value=300000
- *      &cod=yes
- *      &origin_pin_point=...
- *      &destination_pin_point=...
- * =================================================================== */
 $queryParams = [
     'shipper_destination_id'   => KOMSHIP_SHIPPER_DEST_ID,
     'receiver_destination_id'  => $receiverDestinationId,
@@ -342,15 +330,6 @@ if ($http >= 400 || $metaCode >= 400 || $metaStatus === 'error') {
     ]);
 }
 
-/* ===================================================================
- * 4. Normalisasi ke format FE:
- *    services[] = [
- *      'courier' => 'JNE',
- *      'service' => 'REG23',
- *      'cost'    => 9300,
- *      'etd'     => ''   // Komship tarif nggak kasih ETD, biarin kosong
- *    ]
- * =================================================================== */
 $services = [];
 $reguler  = $body['data']['calculate_reguler'] ?? [];
 
