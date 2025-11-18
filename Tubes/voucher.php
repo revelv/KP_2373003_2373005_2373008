@@ -1,8 +1,8 @@
 <?php
 
-require 'vendor/autoload.php';
-require 'koneksi.php';
-
+// Ganti include/require di file otomatisasi jadi kayak gini:
+require_once __DIR__ . '/vendor/autoload.php';
+include_once __DIR__ . '/koneksi.php'; // Atau sesuaikan lokasi koneksi root lu
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -45,7 +45,7 @@ function kirimVoucherEmail($emailPenerima, $namaPenerima, $subjek, $pesanBody, $
     $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
     $mail->Username   = 'styrk.industries@gmail.com';
-    $mail->Password   = 'cudw nbsm vxwo wfnm';
+    $mail->Password   = 'fexu yqdy woef kepl';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
     $mail->Port       = 465;
 
@@ -243,7 +243,7 @@ function kirimEmailPemenangLelang($emailPenerima, $namaPenerima, $namaBarang, $t
     $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
     $mail->Username   = 'styrk.industries@gmail.com';
-    $mail->Password   = 'cudw nbsm vxwo wfnm'; // App Password Anda
+    $mail->Password   = 'fexu yqdy woef kepl'; // App Password Anda
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
     $mail->Port       = 465;
 
