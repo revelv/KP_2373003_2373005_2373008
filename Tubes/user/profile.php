@@ -29,6 +29,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kecamatan = trim($_POST['kecamatan_id']  ?? '');
     $kelurahan = trim($_POST['kelurahan_id']  ?? '');
 
+    // ====== TAMBAHAN: INFO FOTO PROFIL ======
+    $profile_image_path   = ''; // path foto baru (kalau upload)
+    $old_profile_image    = trim($_POST['current_profile_image'] ?? '');
+    $delete_photo         = isset($_POST['hapus_foto']) && $_POST['hapus_foto'] === '1';
+
+    // FOTO PROFIL (OPSIONAL)
+    if (!empty($_FILES['profile_image']['name']) && is_uploaded_file($_FILES['profile_image']['tmp_name'])) {
+        $fileTmp  = $_FILES['profile_image']['tmp_name'];
+        $fileSize = (int)$_FILES['profile_image']['size'];
+        $mime     = @mime_content_type($fileTmp);
+
+        $allowedMime = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+
+        if (!in_array($mime, $allowedMime, true)) {
+            $_SESSION['profile_error'] = 'Format foto tidak didukung. Gunakan JPG/PNG/WebP.';
+            header('Location: profile.php');
+            exit();
+        }
+        if ($fileSize > 2 * 1024 * 1024) { // 2MB
+            $_SESSION['profile_error'] = 'Ukuran foto maksimal 2MB.';
+            header('Location: profile.php');
+            exit();
+        }
+
+        $uploadDirFs  = __DIR__ . '/../uploads/profile/'; // folder fisik
+        $uploadDirWeb = '../uploads/profile/';             // path untuk disimpan di DB / img src
+
+        if (!is_dir($uploadDirFs)) {
+            @mkdir($uploadDirFs, 0777, true);
+        }
+
+        $ext     = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
+        $newName = 'profile_' . $customer_id . '_' . time() . '.' . $ext;
+
+        $targetFs = $uploadDirFs . $newName;
+        $targetDb = $uploadDirWeb . $newName;
+
+        if (!move_uploaded_file($fileTmp, $targetFs)) {
+            $_SESSION['profile_error'] = 'Gagal mengupload foto profil.';
+            header('Location: profile.php');
+            exit();
+        }
+
+        $profile_image_path = $targetDb;
+
+        // Kalau upload foto baru, abaikan checkbox hapus
+        $delete_photo = false;
+    }
+
     if (
         $nama === '' || $telepon === '' || $alamat === '' ||
         $provinsi === '' || $kota === '' || $kecamatan === '' || $kelurahan === ''
@@ -69,6 +118,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($stmt->execute()) {
+        // ====== UPDATE FOTO PROFIL (pisah biar query utama lu ga diubah) ======
+        // 1. Kalau ada foto baru → set profile_image ke path baru
+        if ($profile_image_path !== '') {
+            $stmt2 = $conn->prepare("UPDATE customer SET profile_image = ? WHERE customer_id = ?");
+            if ($stmt2) {
+                $stmt2->bind_param("si", $profile_image_path, $customer_id);
+                $stmt2->execute();
+                $stmt2->close();
+            }
+
+            // Hapus file lama kalau ada
+            if ($old_profile_image !== '') {
+                $oldFs = realpath(__DIR__ . '/' . $old_profile_image);
+                if ($oldFs && is_file($oldFs)) {
+                    @unlink($oldFs);
+                }
+            }
+
+        // 2. Kalau user centang "hapus foto" dan tidak upload foto baru
+        } elseif ($delete_photo) {
+            $stmt2 = $conn->prepare("UPDATE customer SET profile_image = NULL WHERE customer_id = ?");
+            if ($stmt2) {
+                $stmt2->bind_param("i", $customer_id);
+                $stmt2->execute();
+                $stmt2->close();
+            }
+
+            if ($old_profile_image !== '') {
+                $oldFs = realpath(__DIR__ . '/' . $old_profile_image);
+                if ($oldFs && is_file($oldFs)) {
+                    @unlink($oldFs);
+                }
+            }
+        }
+
         $_SESSION['profile_success'] = 'Profil berhasil diperbarui.';
     } else {
         $_SESSION['profile_error'] = 'Gagal update profil: ' . $stmt->error;
@@ -83,8 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ====== AMBIL DATA CUSTOMER UNTUK PREFILL FORM (GET) ======
 $nama = $telepon = $alamat = '';
 $provinsi_name = $kota_name = $kecamatan_name = $kelurahan_name = '';
+$profile_image = '';
 
-$query = "SELECT nama, no_telepon, alamat, provinsi, kota, kecamatan, kelurahan
+$query = "SELECT nama, no_telepon, alamat, provinsi, kota, kecamatan, kelurahan, profile_image
           FROM customer 
           WHERE customer_id = ?";
 
@@ -101,6 +186,7 @@ if ($row = $result->fetch_assoc()) {
     $kota_name       = $row['kota'] ?? '';       // NAMA kota
     $kecamatan_name  = $row['kecamatan'] ?? '';  // NAMA kecamatan
     $kelurahan_name  = $row['kelurahan'] ?? '';  // NAMA kelurahan
+    $profile_image   = $row['profile_image'] ?? '';
 }
 $stmt->close();
 ?>
@@ -143,7 +229,34 @@ $stmt->close();
             <?php unset($_SESSION['profile_success']); ?>
         <?php endif; ?>
 
-        <form method="post" action="profile.php">
+        <!-- TAMBAHAN: enctype & field foto -->
+        <form method="post" action="profile.php" enctype="multipart/form-data">
+
+            <!-- FOTO PROFIL OPSIONAL -->
+            <div class="mb-3">
+                <label class="form-label">Foto Profil (opsional)</label>
+                <?php if (!empty($profile_image)): ?>
+                    <div class="mb-2">
+                        <img src="<?= htmlspecialchars($profile_image) ?>"
+                             alt="Foto Profil"
+                             style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #ddd;">
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="1" id="hapus_foto" name="hapus_foto">
+                        <label class="form-check-label" for="hapus_foto">
+                            Hapus foto profil
+                        </label>
+                    </div>
+                <?php endif; ?>
+
+                <!-- selalu kirim path lama (bisa kosong) -->
+                <input type="hidden" name="current_profile_image" value="<?= htmlspecialchars($profile_image) ?>">
+
+                <input type="file" class="form-control" name="profile_image" accept="image/*">
+                <div class="form-text">Kosongkan jika tidak ingin mengubah foto.</div>
+            </div>
+            <!-- END FOTO PROFIL -->
+
             <div class="mb-3">
                 <label for="nama" class="form-label">Nama Lengkap</label>
                 <input type="text" class="form-control" id="nama" name="nama"
@@ -504,9 +617,6 @@ $stmt->close();
                 kelSel.disabled = true;
             }
         }
-
-
-
 
         // ====== EVENT HANDLER ======
         document.addEventListener('change', (e) => {
