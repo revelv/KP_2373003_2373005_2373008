@@ -45,7 +45,7 @@ $alamat_mode = $_POST['alamat_mode'] ?? 'profil';
 $provinsi    = trim((string)($_POST['provinsi']   ?? ''));
 $kota        = trim((string)($_POST['kota']       ?? ''));
 $kecamatan   = trim((string)($_POST['kecamatan']  ?? ''));
-$kelurahan   = trim((string)($_POST['kelurahan']  ?? ''));   
+$kelurahan   = trim((string)($_POST['kelurahan']  ?? ''));
 $alamat      = trim((string)($_POST['alamat']     ?? ''));
 
 
@@ -140,13 +140,24 @@ $base_total  = max(0, $subtotal - $voucher_discount); // nilai barang
 $total_harga = $base_total + $shipping_cost;          // barang + ongkir
 
 // ====================== KOMSHIP DESTINATION ID ======================
-
-// 1) Coba pakai kalau sudah dikirim dari frontend (kalau suatu saat lu set di JS)
-// ====================== KOMSHIP DESTINATION ID ======================
 $komship_destination_id = 0;
-if (!empty($_POST['komship_destination_id']) && ctype_digit((string)$_POST['komship_destination_id'])) {
+
+// 1) Ambil dari hidden komship_destination_id (hasil calc_ongkir / Komship di payment)
+if (isset($_POST['komship_destination_id']) && ctype_digit((string)$_POST['komship_destination_id'])) {
     $komship_destination_id = (int)$_POST['komship_destination_id'];
 }
+
+if (
+    $alamat_mode === 'custom'
+    && $dest_district_id !== ''
+    && ctype_digit($dest_district_id)
+    && (int)$dest_district_id > 0
+) {
+    $komship_destination_id = (int)$dest_district_id;
+}
+
+// (opsional) kalau masih 0 di titik ini, biarin 0 aja dulu atau lu kasih default lain.
+
 
 // ====================== BUAT ID ORDER LOKAL ======================
 $order_id = 'ORD-' . date('YmdHis') . '-' . rand(100, 999);

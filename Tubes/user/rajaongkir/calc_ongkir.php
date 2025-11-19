@@ -71,25 +71,36 @@ $alamatDetail     = trim((string)($_POST['alamat']     ?? ''));
  * Kalau nama dari FE kosong (misal user pilih "alamat profil"),
  * fallback ke tabel customer (NAMA provinsi + kota + kecamatan + kelurahan).
  */
+/**
+ * Kalau nama dari FE kosong (misal user pilih "alamat profil"),
+ * fallback ke tabel customer (NAMA provinsi + kota + kecamatan + kelurahan).
+ *
+ * TAPI: kalau mode = custom, JANGAN fallback ke profil.
+ * Biar alamat lain bener-bener pakai data yang dipilih user, bukan ke-tiban profil.
+ */
 if ($provName === '' || $cityName === '' || $districtName === '' || $subdistrictName === '') {
-    $stmt = $conn->prepare("
-        SELECT provinsi, kota, kecamatan, kelurahan, alamat
-        FROM customer
-        WHERE customer_id = ?
-        LIMIT 1
-    ");
-    if ($stmt) {
-        $stmt->bind_param('i', $customerId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($res && ($row = $res->fetch_assoc())) {
-            if ($provName === '')        $provName        = (string)($row['provinsi']   ?? '');
-            if ($cityName === '')        $cityName        = (string)($row['kota']       ?? '');
-            if ($districtName === '')    $districtName    = (string)($row['kecamatan']  ?? '');
-            if ($subdistrictName === '') $subdistrictName = (string)($row['kelurahan']  ?? '');
-            if ($alamatDetail === '')    $alamatDetail    = (string)($row['alamat']     ?? '');
+
+    // HANYA fallback ke profil kalau BUKAN alamat custom
+    if ($alamatMode !== 'custom') {
+        $stmt = $conn->prepare("
+            SELECT provinsi, kota, kecamatan, kelurahan, alamat
+            FROM customer
+            WHERE customer_id = ?
+            LIMIT 1
+        ");
+        if ($stmt) {
+            $stmt->bind_param('i', $customerId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($res && ($row = $res->fetch_assoc())) {
+                if ($provName === '')        $provName        = (string)($row['provinsi']   ?? '');
+                if ($cityName === '')        $cityName        = (string)($row['kota']       ?? '');
+                if ($districtName === '')    $districtName    = (string)($row['kecamatan']  ?? '');
+                if ($subdistrictName === '') $subdistrictName = (string)($row['kelurahan']  ?? '');
+                if ($alamatDetail === '')    $alamatDetail    = (string)($row['alamat']     ?? '');
+            }
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
 
@@ -243,7 +254,6 @@ if ($cartIds) {
         $totalItemValue  += $price * $qty;
     }
     mysqli_free_result($res);
-
 } elseif ($orderId !== '') {
     // MODE BAYAR ULANG
     $stmt = $conn->prepare("
@@ -383,7 +393,7 @@ if (!$services) {
         'debug' => [
             'selected_courier'       => $selectedCourier,
             'shipper_destination_id' => KOMSHIP_SHIPPER_DEST_ID,
-            'receiver_destination_id'=> $receiverDestinationId,
+            'receiver_destination_id' => $receiverDestinationId,
             'weight_kg'              => $weightParam,
         ]
     ]);
@@ -394,11 +404,11 @@ usort($services, fn($a, $b) => $a['cost'] <=> $b['cost']);
 
 json_ok([
     'services'               => $services,
-    'receiver_destination_id'=> $receiverDestinationId,  // <<=== PENTING
+    'receiver_destination_id' => $receiverDestinationId,  // <<=== PENTING
     'debug'                  => [
         'url'                    => $calcUrl,
         'shipper_destination_id' => KOMSHIP_SHIPPER_DEST_ID,
-        'receiver_destination_id'=> $receiverDestinationId,
+        'receiver_destination_id' => $receiverDestinationId,
         'weight_kg'              => $weightParam,
         'item_value'             => $totalItemValue,
         'cod'                    => $codFlag,
@@ -407,4 +417,3 @@ json_ok([
         'kecamatan'              => $districtName,
     ],
 ]);
-

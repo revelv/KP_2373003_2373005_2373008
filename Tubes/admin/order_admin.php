@@ -3,7 +3,7 @@ include 'koneksi.php';
 include 'header_admin.php';
 
 // Komship helper (pastikan path ini bener ke file lu)
-require_once __DIR__ . '/../user/create_order_komship.php';
+require_once __DIR__ . '/create_order_komship.php';
 
 // --- Hapus Order ---
 if (isset($_GET['hapus'])) {
@@ -13,20 +13,23 @@ if (isset($_GET['hapus'])) {
   exit();
 }
 
-// --- TRIGGER CREATE ORDER KE KOMSHIP (dari Orders tab / Payment tab) ---
+// --- TRIGGER CREATE ORDER KE KOMSHIP (Orders tab / Payment tab) ---
 if (isset($_POST['create_komship'])) {
   $order_id = mysqli_real_escape_string($conn, $_POST['order_id']);
 
+  // Fungsi ini lu handle di create_order_komship.php
+  // return array:
+  // ['success'=>true, 'komship_order_no'=>..., 'komship_awb'=>..., 'http_code'=>..., 'meta_message'=>...]
   $kom = createKomshipOrderFromDb($conn, $order_id);
 
   if (!empty($kom['success'])) {
-    $awb = $kom['komship_awb'] ?? '-';
+    $awb = $kom['komship_awb']     ?? '-';
     $ono = $kom['komship_order_no'] ?? '-';
     $msg = "Order Komship berhasil dibuat.\nOrder No: $ono\nAWB: $awb";
     echo "<script>alert(" . json_encode($msg) . "); window.location='order_admin.php';</script>";
     exit();
   } else {
-    $http = $kom['http_code'] ?? '-';
+    $http = $kom['http_code']    ?? '-';
     $meta = $kom['meta_message'] ?? 'Gagal create order ke Komship.';
     $msg  = "Komship Error (HTTP $http): $meta";
     echo "<script>alert(" . json_encode($msg) . "); window.location='order_admin.php';</script>";
@@ -84,7 +87,7 @@ $search        = $_GET['search']     ?? '';
 $search_by     = $_GET['search_by']  ?? 'customer';
 $status_filter = $_GET['status']     ?? '';
 
-// Query Orders (pakai komship_status, ga ada lagi orders.status)
+// Query Orders (pakai komship_status)
 $query = "
   SELECT 
     o.order_id,
@@ -94,7 +97,12 @@ $query = "
     o.total_harga,
     o.komship_status,
     o.komship_order_no,
-    o.komship_awb
+    o.komship_awb,
+    o.provinsi,
+    o.kota,
+    o.kecamatan,
+    o.kelurahan,
+    o.alamat
   FROM orders o
   JOIN customer c ON o.customer_id = c.customer_id
   WHERE 1=1
@@ -220,6 +228,7 @@ if (isset($_GET['view_payments'])) {
             <th class="py-3 px-4 text-left">Customer</th>
             <th class="py-3 px-4 text-left">Tanggal Order</th>
             <th class="py-3 px-4 text-left">Total</th>
+            <th class="py-3 px-4 text-left">Alamat</th>
             <th class="py-3 px-4 text-left">Status Komship</th>
             <th class="py-3 px-4 text-center">Aksi</th>
           </tr>
@@ -227,21 +236,40 @@ if (isset($_GET['view_payments'])) {
         <tbody class="divide-y divide-gray-700">
           <?php while ($row = mysqli_fetch_assoc($result)) : ?>
             <?php
-              $kstat = (string)($row['komship_status'] ?? '');
+              $kstat      = (string)($row['komship_status'] ?? '');
               $kstatLower = strtolower($kstat);
               $badgeClass = match ($kstatLower) {
-                  'pending' => 'bg-yellow-500 text-gray-900',
-                  'success', 'delivered' => 'bg-green-500 text-white',
-                  'failed', 'error', 'batal', 'canceled' => 'bg-red-500 text-white',
-                  default => 'bg-gray-600 text-white',
+                  'pending'                    => 'bg-yellow-500 text-gray-900',
+                  'success', 'delivered'       => 'bg-green-500 text-white',
+                  'failed', 'error', 'batal',
+                  'canceled'                   => 'bg-red-500 text-white',
+                  default                      => 'bg-gray-600 text-white',
               };
               $alreadyKomship = !empty($row['komship_order_no']);
+
+              // Susun alamat lengkap
+              $alamat = trim((string)($row['alamat'] ?? ''));
+              $kel    = trim((string)($row['kelurahan'] ?? ''));
+              $kec    = trim((string)($row['kecamatan'] ?? ''));
+              $kota   = trim((string)($row['kota'] ?? ''));
+              $prov   = trim((string)($row['provinsi'] ?? ''));
+
+              $alamatLengkap = $alamat;
+              if ($kel  !== '') $alamatLengkap .= ', ' . $kel;
+              if ($kec  !== '') $alamatLengkap .= ', ' . $kec;
+              if ($kota !== '') $alamatLengkap .= ', ' . $kota;
+              if ($prov !== '') $alamatLengkap .= ', ' . $prov;
             ?>
             <tr class="hover:bg-gray-700">
               <td class="py-3 px-4"><?= htmlspecialchars($row['order_id']) ?></td>
               <td class="py-3 px-4"><?= htmlspecialchars($row['customer']) ?></td>
               <td class="py-3 px-4"><?= date('d-m-Y H:i', strtotime($row['tgl_order'])) ?></td>
               <td class="py-3 px-4">Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></td>
+
+              <!-- Alamat -->
+              <td class="py-3 px-4 text-sm">
+                <?= nl2br(htmlspecialchars($alamatLengkap !== '' ? $alamatLengkap : '-')) ?>
+              </td>
 
               <!-- KOMSHIP STATUS + info -->
               <td class="py-3 px-4 text-sm">
@@ -259,6 +287,7 @@ if (isset($_GET['view_payments'])) {
               <!-- AKSI -->
               <td class="py-3 px-4 text-center">
                 <div class="flex flex-col items-center space-y-2">
+                  <!-- Tombol Create Komship -->
                   <form method="POST">
                     <input type="hidden" name="order_id" value="<?= htmlspecialchars($row['order_id']) ?>">
                     <button type="submit" name="create_komship"
@@ -314,7 +343,7 @@ if (isset($_GET['view_payments'])) {
                 default    => 'bg-gray-600 text-white',
               };
 
-              $kstat = (string)($payment['komship_status'] ?? '');
+              $kstat         = (string)($payment['komship_status'] ?? '');
               $alreadyKomship = !empty($payment['komship_order_no']);
             ?>
             <tr class="hover:bg-gray-700">
@@ -340,7 +369,7 @@ if (isset($_GET['view_payments'])) {
                   <?php endif; ?>
                 </div>
 
-                <!-- tombol create order (gantiin dropdown payment_status kaya request lu) -->
+                <!-- tombol create order komship -->
                 <form method="POST">
                   <input type="hidden" name="order_id" value="<?= htmlspecialchars($payment['order_id']) ?>">
                   <button type="submit" name="create_komship"
