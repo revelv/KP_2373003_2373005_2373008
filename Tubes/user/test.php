@@ -25,7 +25,7 @@
       "receiver_address": "order destination address detail",     
       "shipping": "SAP",                                          
       "shipping_type": "SAPFlat",                                      
-      "payment_method": "COD",                                    
+      "payment_method": " BANKTRANSFER",                                    
       "shipping_cost": 18600,                                     
       "shipping_cashback": 0,
       "service_fee": 1921,
