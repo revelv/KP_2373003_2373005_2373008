@@ -123,7 +123,7 @@ if (isset($_GET['logout'])) {
 
 <nav class="navbar navbar-expand-lg">
     <div class="container_header">
-        <a class="navbar-brand" href="./HOME/index.php">
+        <a class="navbar-brand" href="home.php">
             <img src="https://i.postimg.cc/855ZSty7/no-bg.png" alt="Styrk Industries">
         </a>
 
@@ -134,11 +134,10 @@ if (isset($_GET['logout'])) {
         <div class="collapse navbar-collapse" id="navbarContent">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0" style="gap: 1rem;">
 
-                <li class="nav-item"><a class="nav-link" href="./HOME/index.php">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="./produk.php">Products</a></li>
                 <li class="nav-item"><a class="nav-link" href="./community.php">Community</a></li>
                 <li class="nav-item"><a class="nav-link" href="./auction.php">Auction</a></li>
-                <li class="nav-item"><a class="nav-link" href="./HOME/index.php#about">About Us</a></li>
+                <li class="nav-item"><a class="nav-link" href="home.php#about">About Us</a></li>
 
                 <?php
                 $cart_count = 0;
