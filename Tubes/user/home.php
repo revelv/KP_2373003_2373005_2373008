@@ -60,7 +60,7 @@ require_once 'header.php';
             align-items: center;
             justify-content: center;
             /* BACKGROUND IMAGE DARI GAMBAR KEYBOARD LU */
-            background: url('https://i.postimg.cc/Qd2MZSbF/1000_F_576083591_j-O2u-WDr-W843l-L8e-FMe9a-DZlo-Iri7ghc4.jpg') no-repeat center center/cover; 
+            background: url('https://i.postimg.cc/2jHnVCpR/aesthetic-pink-purple-keyboard-upcs1h9i14iu7fn3.jpg') no-repeat center center/cover; 
             overflow: hidden;
         }
 
@@ -366,7 +366,7 @@ require_once 'header.php';
                 <div class="col-lg-6 mb-4 mb-lg-0">
                     <h2 class="section-title mb-4">The Styrk Vision</h2>
                     <div class="about-text">
-                        <p class="mb-4">
+                        <p class="mb-6">
                             Lahir di garasi kecil pada tahun 2023, <strong>Styrk Industries</strong> dimulai dari frustrasi tiga enthusiast terhadap keyboard pasaran yang "begitu-begitu saja".
                         </p>
                         <p class="mb-4">
@@ -423,22 +423,22 @@ require_once 'header.php';
     <div class="clients-section">
         <div class="container">
             <div class="row align-items-center justify-content-center text-center">
-                <div class="col-6 col-md-3 my-3">
+                <div class="col-6 col-md-3 my-2">
                     <a href="https://www.instagram.com/tonyck_gaming" target="_blank">
                         <img class="img-fluid img-brand" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png" alt="Instagram" />
                     </a>
                 </div>
-                <div class="col-6 col-md-3 my-3">
+                <div class="col-6 col-md-3 my-2">
                     <a href="https://x.com/TonyCK169" target="_blank">
                         <img class="img-fluid img-brand" src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="Twitter" style="filter: invert(1); opacity: 0.7;" />
                     </a>
                 </div>
-                <div class="col-6 col-md-3 my-3">
+                <div class="col-6 col-md-3 my-2">
                     <a href="https://www.youtube.com/@JessNoLimit" target="_blank">
                         <img class="img-fluid img-brand" src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" alt="YouTube" />
                     </a>
                 </div>
-                <div class="col-6 col-md-3 my-3">
+                <div class="col-6 col-md-3 my-2">
                     <a href="https://www.tiktok.com/@tonyckgaming" target="_blank">
                         <img class="img-fluid img-brand" src="https://i.postimg.cc/Qd2MZSbF/1000_F_576083591_j-O2u-WDr-W843l-L8e-FMe9a-DZlo-Iri7ghc4.jpg" alt="TikTok" />
                     </a>
@@ -456,7 +456,7 @@ require_once 'header.php';
                 <div class="col-lg-4 my-3 my-lg-0 text-center">
                     </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a class="text-decoration-none me-3" href="#!">Privacy Policy</a>
+                    <a class="text-decoration-none " href="#!">Privacy Policy</a>
                     <a class="text-decoration-none" href="#!">Terms of Use</a>
                 </div>
             </div>
