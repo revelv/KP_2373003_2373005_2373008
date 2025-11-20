@@ -1,0 +1,122 @@
+=== 2025-11-20 15:39:18 ===
+HTTP: 400
+Payload:
+{
+    "pickup_date": "2025-11-20",
+    "pickup_time": "22:40",
+    "pickup_vehicle": "Mobil",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Pickup request failed, pickup time at least 90 minutes before pickup","code":400,"status":"error"},"data":null}
+
+=== 2025-11-20 15:45:15 ===
+HTTP: 201
+Payload:
+{
+    "pickup_date": "2025-11-21",
+    "pickup_time": "10:00",
+    "pickup_vehicle": "Mobil",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Success Request Pickup","code":201,"status":"success"},"data":[{"status":"failed","order_no":"KOM49363202511200103","awb":""}]}
+
+=== 2025-11-20 16:19:22 ===
+order_id: ORD-20251119175057-997
+order_no: KOM71875202511200051
+HTTP: 400
+Payload:
+{
+    "pickup_date": "2025-11-20",
+    "pickup_time": "18:19",
+    "pickup_vehicle": "Motor",
+    "orders": [
+        {
+            "order_no": "KOM71875202511200051"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Pickup request failed, pickup time at least 90 minutes before pickup","code":400,"status":"error"},"data":null}
+
+=== 2025-11-20 16:20:32 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 400
+Payload:
+{
+    "pickup_date": "2025-11-20",
+    "pickup_time": "18:20",
+    "pickup_vehicle": "Motor",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Pickup request failed, pickup time at least 90 minutes before pickup","code":400,"status":"error"},"data":null}
+
+=== 2025-11-20 16:21:17 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 400
+Payload:
+{
+    "pickup_date": "2025-11-20",
+    "pickup_time": "18:21",
+    "pickup_vehicle": "Motor",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Pickup request failed, pickup time at least 90 minutes before pickup","code":400,"status":"error"},"data":null}
+
+=== 2025-11-20 16:27:57 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 201
+Payload:
+{
+    "pickup_date": "2025-11-21",
+    "pickup_time": "10:00",
+    "pickup_vehicle": "Motor",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Success Request Pickup","code":201,"status":"success"},"data":[{"status":"failed","order_no":"KOM49363202511200103","awb":""}]}
+
+=== 2025-11-20 16:28:35 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 201
+Payload:
+{
+    "pickup_date": "2025-11-21",
+    "pickup_time": "01:12",
+    "pickup_vehicle": "Motor",
+    "orders": [
+        {
+            "order_no": "KOM49363202511200103"
+        }
+    ]
+}
+Response:
+{"meta":{"message":"Success Request Pickup","code":201,"status":"success"},"data":[{"status":"failed","order_no":"KOM49363202511200103","awb":""}]}
+

@@ -1,0 +1,42 @@
+=== 2025-11-20 16:18:53 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM49363202511200103","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":5143,"receiver_address":"Taman Kopo Indah 69 Blok S","shipping":"JNE","shipping_type":"JNEFlat","payment_method":"COD","shipping_cost":9500,"shipping_cashback":0,"service_fee":53466,"additional_cost":0,"grand_total":1909500,"cod_value":1909500,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"Ducky One 3 Mini","product_variant_name":"Ducky One 3 Mini","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":1900000,"qty":1,"subtotal":1900000}]}}
+
+=== 2025-11-20 16:19:29 ===
+order_id: ORD-20251119175057-997
+order_no: KOM71875202511200051
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM71875202511200051","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":448,"receiver_address":"da","shipping":"NINJA","shipping_type":"Standard","payment_method":"COD","shipping_cost":8000,"shipping_cashback":0,"service_fee":112224,"additional_cost":0,"grand_total":4008000,"cod_value":4008000,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"TET Keyboard With PBTfans Count Dracula","product_variant_name":"TET Keyboard With PBTfans Count Dracula","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":4000000,"qty":1,"subtotal":4000000}]}}
+
+=== 2025-11-20 16:20:30 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM49363202511200103","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":5143,"receiver_address":"Taman Kopo Indah 69 Blok S","shipping":"JNE","shipping_type":"JNEFlat","payment_method":"COD","shipping_cost":9500,"shipping_cashback":0,"service_fee":53466,"additional_cost":0,"grand_total":1909500,"cod_value":1909500,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"Ducky One 3 Mini","product_variant_name":"Ducky One 3 Mini","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":1900000,"qty":1,"subtotal":1900000}]}}
+
+=== 2025-11-20 16:20:40 ===
+order_id: ORD-20251119173845-706
+order_no: KOM12714202511200038
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM12714202511200038","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":5143,"receiver_address":"Taman Kopo Indah 69 Blok S","shipping":"JNE","shipping_type":"JNEFlat","payment_method":"COD","shipping_cost":19000,"shipping_cashback":0,"service_fee":53732,"additional_cost":0,"grand_total":1919000,"cod_value":1919000,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"Magnum65","product_variant_name":"Magnum65","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":1250000,"qty":1,"subtotal":1250000},{"product_name":"Quartz Stone Wrist Rest","product_variant_name":"Quartz Stone Wrist Rest","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":650000,"qty":1,"subtotal":650000}]}}
+
+=== 2025-11-20 16:27:57 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM49363202511200103","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":5143,"receiver_address":"Taman Kopo Indah 69 Blok S","shipping":"JNE","shipping_type":"JNEFlat","payment_method":"COD","shipping_cost":9500,"shipping_cashback":0,"service_fee":53466,"additional_cost":0,"grand_total":1909500,"cod_value":1909500,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"Ducky One 3 Mini","product_variant_name":"Ducky One 3 Mini","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":1900000,"qty":1,"subtotal":1900000}]}}
+
+=== 2025-11-20 16:28:35 ===
+order_id: ORD-20251119180311-111
+order_no: KOM49363202511200103
+HTTP: 200
+Response:
+{"meta":{"message":"Success get order detail","code":200,"status":"success"},"data":{"order_no":"KOM49363202511200103","awb":"","order_status":"Diajukan","order_date":"20-11-2025","brand_name":"Styrk Industries","shipper_name":"Styrk Industries Official Store","shipper_phone":"6281312663058","shipper_destination_id":4944,"shipper_address":"Jl, Prof, drg, Surya Sumantri, M,P,H, No, 65, Bandung,","receiver_name":"Jeremia","receiver_phone":"081312663058","receiver_destination_id":5143,"receiver_address":"Taman Kopo Indah 69 Blok S","shipping":"JNE","shipping_type":"JNEFlat","payment_method":"COD","shipping_cost":9500,"shipping_cashback":0,"service_fee":53466,"additional_cost":0,"grand_total":1909500,"cod_value":1909500,"notes":"","insurance_value":0,"origin_pin_point":"","destination_pin_point":"","booking_id":"","driver_name":"","driver_phone":"","cancelation_reason":"","live_tracking_url":"","commodity_code":"","order_details":[{"product_name":"Ducky One 3 Mini","product_variant_name":"Ducky One 3 Mini","product_weight":1000,"product_height":2,"product_width":1,"product_length":20,"product_price":1900000,"qty":1,"subtotal":1900000}]}}
+

@@ -2,9 +2,6 @@
 include 'koneksi.php';
 include 'header_admin.php';
 
-// Komship helper (pastikan path ini bener ke file lu)
-require_once __DIR__ . '/create_order_komship.php';
-
 // --- Hapus Order ---
 if (isset($_GET['hapus'])) {
   $id = mysqli_real_escape_string($conn, $_GET['hapus']);
@@ -13,29 +10,6 @@ if (isset($_GET['hapus'])) {
   exit();
 }
 
-// --- TRIGGER CREATE ORDER KE KOMSHIP (Orders tab / Payment tab) ---
-if (isset($_POST['create_komship'])) {
-  $order_id = mysqli_real_escape_string($conn, $_POST['order_id']);
-
-  // Fungsi ini lu handle di create_order_komship.php
-  // return array:
-  // ['success'=>true, 'komship_order_no'=>..., 'komship_awb'=>..., 'http_code'=>..., 'meta_message'=>...]
-  $kom = createKomshipOrderFromDb($conn, $order_id);
-
-  if (!empty($kom['success'])) {
-    $awb = $kom['komship_awb']     ?? '-';
-    $ono = $kom['komship_order_no'] ?? '-';
-    $msg = "Order Komship berhasil dibuat.\nOrder No: $ono\nAWB: $awb";
-    echo "<script>alert(" . json_encode($msg) . "); window.location='order_admin.php';</script>";
-    exit();
-  } else {
-    $http = $kom['http_code']    ?? '-';
-    $meta = $kom['meta_message'] ?? 'Gagal create order ke Komship.';
-    $msg  = "Komship Error (HTTP $http): $meta";
-    echo "<script>alert(" . json_encode($msg) . "); window.location='order_admin.php';</script>";
-    exit();
-  }
-}
 
 // --- Update Payment Status (handler lama, skrg ga kepake krn form-nya dihapus) ---
 if (isset($_POST['update_payment_status'])) {
@@ -284,18 +258,8 @@ if (isset($_GET['view_payments'])) {
                 <?php endif; ?>
               </td>
 
-              <!-- AKSI -->
               <td class="py-3 px-4 text-center">
-                <div class="flex flex-col items-center space-y-2">
-                  <!-- Tombol Create Komship -->
-                  <form method="POST">
-                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($row['order_id']) ?>">
-                    <button type="submit" name="create_komship"
-                      class="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1 rounded text-sm"
-                      <?= $alreadyKomship ? 'disabled' : '' ?>>
-                      <?= $alreadyKomship ? 'Sudah ke Komship' : 'Create Komship Order' ?>
-                    </button>
-                  </form>
+                <div class="flex flex-col items-center space-y-2">             
 
                   <div class="flex space-x-2">
                     <a href="order_admin.php?view_payments=1&order_id=<?= urlencode($row['order_id']) ?>"
@@ -368,17 +332,6 @@ if (isset($_GET['view_payments'])) {
                     <br>AWB: <?= htmlspecialchars($payment['komship_awb'] ?? '-') ?>
                   <?php endif; ?>
                 </div>
-
-                <!-- tombol create order komship -->
-                <form method="POST">
-                  <input type="hidden" name="order_id" value="<?= htmlspecialchars($payment['order_id']) ?>">
-                  <button type="submit" name="create_komship"
-                    class="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1 rounded text-xs"
-                    <?= $alreadyKomship ? 'disabled' : '' ?>>
-                    <?= $alreadyKomship ? 'Sudah ke Komship' : 'Create Order' ?>
-                  </button>
-                </form>
-              </td>
 
               <!-- PROOF -->
               <td class="py-3 px-4">

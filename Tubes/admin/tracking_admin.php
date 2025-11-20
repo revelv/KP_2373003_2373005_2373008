@@ -1,365 +1,717 @@
 <?php
-// Koneksi database
-require_once __DIR__ . '/../koneksi.php';
-if (!$conn) {
-    die("Koneksi database gagal: " . mysqli_connect_error());
+// admin_komship_pickup.php
+declare(strict_types=1);
+
+session_start();
+include 'koneksi.php';
+include 'header_admin.php';
+
+/**
+ * ===========================
+ *  KONFIG KOMERCE / KOMSHIP
+ * ===========================
+ */
+
+if (!defined('KOMERCE_ORDER_BASE_URL')) {
+    define('KOMERCE_ORDER_BASE_URL', 'https://api-sandbox.collaborator.komerce.id');
 }
 
-$order_id = filter_input(INPUT_GET, 'order_id', FILTER_VALIDATE_INT);
-if ($order_id === null || $order_id <= 0) {
-    die("ID Order tidak valid");
+if (!defined('KOMERCE_API_KEY')) {
+    define('KOMERCE_API_KEY', '3I7kuf7B3e00fb2d23c692a69owo8BSW'); // sesuaikan kalau perlu
 }
 
-// Definisi konstanta tracking steps
-define('TRACKING_STEPS', [
-    'Pesanan masuk',
-    'Pesanan diproses',
-    'Pesanan dikemas',
-    'Pesanan dikirim ke gerai',
-    'Pesanan sampai di gerai',
-    'Pesanan keluar dari gerai',
-    'Pesanan dikirim ke customer',
-    'Pesanan diterima customer'
-]);
+/**
+ * Helper: Panggil Detail Order Komship lalu update AWB + status ke DB.
+ *
+ * @return array{success:bool,message:string}
+ */
+function syncKomshipDetailAndUpdateAwb(mysqli $conn, string $orderId, string $orderNo): array
+{
+    $url = KOMERCE_ORDER_BASE_URL . '/order/api/v1/orders/detail?order_no=' . urlencode($orderNo);
 
-// Inisialisasi variabel
-$order_id = 0;
-$order = null;
-$tracking_history = [];
-$next_statuses = [];
-$error_message = '';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => [
+            'Accept: application/json',
+            'x-api-key: ' . KOMERCE_API_KEY,
+        ],
+        CURLOPT_TIMEOUT        => 30,
+    ]);
 
-try {
-    // Ambil order_id dari URL
-    $order_id = intval($_GET['order_id'] ?? 0);
+    $responseBody = curl_exec($ch);
+    $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr      = curl_error($ch);
+    curl_close($ch);
 
-    if ($order_id <= 0) {
-        throw new Exception("ID Order tidak valid");
-    }
-
-    // Validasi order
-    $order_query = mysqli_prepare(
-        $conn,
-        "SELECT o.*, c.nama AS customer_name 
-         FROM orders o 
-         JOIN customer c ON o.customer_id = c.customer_id 
-         WHERE o.order_id = ?"
+    @file_put_contents(
+        __DIR__ . '/komship_detail_last_response.log',
+        "=== " . date('Y-m-d H:i:s') . " ===\n" .
+        "order_id: {$orderId}\n" .
+        "order_no: {$orderNo}\n" .
+        "HTTP: {$httpCode}\n" .
+        "Response:\n{$responseBody}\n\n",
+        FILE_APPEND
     );
 
-    if (!$order_query) {
-        throw new Exception("Query error: " . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($order_query, "i", $order_id);
-    mysqli_stmt_execute($order_query);
-    $order = mysqli_stmt_get_result($order_query)->fetch_assoc();
-
-    if (!$order) {
-        throw new Exception("Order tidak ditemukan");
-    }
-
-    // Handle form submission
-    if (isset($_POST['update_tracking'])) {
-        $status = $_POST['status'] ?? '';
-        $description = $_POST['description'] ?? null;
-
-        if (empty($status)) {
-            throw new Exception("Status tidak boleh kosong");
-        }
-
-        // Insert tracking data
-        $insert_query = mysqli_prepare(
-            $conn,
-            "INSERT INTO order_tracking (order_id, status, description) 
-             VALUES (?, ?, ?)"
-        );
-
-        if (!$insert_query) {
-            throw new Exception("Prepare error: " . mysqli_error($conn));
-        }
-
-        mysqli_stmt_bind_param($insert_query, "iss", $order_id, $status, $description);
-
-        if (!mysqli_stmt_execute($insert_query)) {
-            throw new Exception("Execute error: " . mysqli_stmt_error($insert_query));
-        }
-
-        // Update order status if final step
-        if ($status === 'Pesanan diterima customer') {
-            mysqli_query(
-                $conn,
-                "UPDATE orders SET status = 'selesai' 
-                 WHERE order_id = $order_id"
-            );
-        }
-
-        // Redirect to avoid form resubmission
-        header("Location: tracking_admin.php?order_id=$order_id&success=1");
-        exit();
-    }
-
-    // Get tracking history
-    $tracking_query = mysqli_prepare(
-        $conn,
-        "SELECT * FROM order_tracking 
-         WHERE order_id = ? 
-         ORDER BY timestamp ASC"
-    );
-
-    if (!$tracking_query) {
-        throw new Exception("Query error: " . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($tracking_query, "i", $order_id);
-    mysqli_stmt_execute($tracking_query);
-    $tracking_history = mysqli_stmt_get_result($tracking_query)->fetch_all(MYSQLI_ASSOC);
-
-    // Determine next available statuses
-    $completed_steps = array_column($tracking_history, 'status');
-    $last_status = end($completed_steps);
-
-    if (empty($completed_steps)) {
-        $next_statuses = ['Pesanan diterima'];
-    } elseif ($last_status === 'Pesanan diterima') {
-        $next_statuses = ['Pesanan diproses'];
-    } elseif ($last_status === 'Pesanan diproses') {
-        $next_statuses = ['Pesanan dikemas'];
-    } elseif ($last_status === 'Pesanan dikemas') {
-        $next_statuses = ['Pesanan dikirim ke gerai'];
-    } elseif ($last_status === 'Pesanan dikirim ke gerai') {
-        $next_statuses = ['Pesanan sampai di gerai'];
-    } elseif ($last_status === 'Pesanan sampai di gerai') {
-        $next_statuses = ['Pesanan keluar dari gerai'];
-    } elseif ($last_status === 'Pesanan keluar dari gerai') {
-        $next_statuses = [
-            'Pesanan dikirim ke gerai',
-            'Pesanan dikirim ke customer'
+    if ($curlErr) {
+        return [
+            'success' => false,
+            'message' => 'Sync AWB gagal: cURL error: ' . $curlErr,
         ];
-    } elseif ($last_status === 'Pesanan dikirim ke customer') {
-        $next_statuses = ['Pesanan diterima customer'];
-    } else {
-        $next_statuses = [];
     }
-} catch (Exception $e) {
-    $error_message = $e->getMessage();
+
+    $json = json_decode($responseBody, true);
+    if (!is_array($json)) {
+        return [
+            'success' => false,
+            'message' => 'Sync AWB gagal: respon bukan JSON valid (HTTP ' . $httpCode . ').',
+        ];
+    }
+
+    $meta = $json['meta'] ?? [];
+    $data = $json['data'] ?? [];
+
+    $code   = (int)($meta['code'] ?? 0);
+    $status = (string)($meta['status'] ?? '');
+    $msg    = (string)($meta['message'] ?? 'Unknown');
+
+    if ($code !== 200 || $status !== 'success') {
+        return [
+            'success' => false,
+            'message' => "Sync AWB gagal: {$msg} (HTTP {$httpCode})",
+        ];
+    }
+
+    // Asumsi struktur: data.awb & data.order_status
+    $awb         = isset($data['awb']) ? (string)$data['awb'] : '';
+    $orderStatus = isset($data['order_status']) ? (string)$data['order_status'] : '';
+
+    $sqlUpd = "
+        UPDATE orders
+        SET komship_awb      = ?,
+            komship_status   = ?,
+            komship_last_sync = NOW()
+        WHERE order_id = ?
+        LIMIT 1
+    ";
+    $stmtUpd = $conn->prepare($sqlUpd);
+    if (!$stmtUpd) {
+        return [
+            'success' => false,
+            'message' => 'Sync AWB gagal: tidak bisa prepare UPDATE: ' . $conn->error,
+        ];
+    }
+
+    $stmtUpd->bind_param('sss', $awb, $orderStatus, $orderId);
+    $stmtUpd->execute();
+    $affected = $stmtUpd->affected_rows;
+    $stmtUpd->close();
+
+    if ($awb === '') {
+        return [
+            'success' => true,
+            'message' => "Detail order Komship berhasil di-sync, tapi AWB masih kosong. Status: {$orderStatus} (rows updated: {$affected})",
+        ];
+    }
+
+    return [
+        'success' => true,
+        'message' => "AWB berhasil di-sync: {$awb} (status: {$orderStatus}, rows updated: {$affected})",
+    ];
 }
+
+// ============================
+// HANDLING FORM (PICKUP & SYNC)
+// ============================
+
+$flashMessage = '';
+$flashType    = ''; // 'success' / 'error'
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action      = $_POST['action'] ?? '';
+    $orderId     = trim((string)($_POST['order_id'] ?? ''));
+    $pickupDate  = trim((string)($_POST['pickup_date'] ?? ''));
+    $pickupTime  = trim((string)($_POST['pickup_time'] ?? ''));
+
+    if ($orderId === '') {
+        $flashMessage = 'Order ID tidak boleh kosong.';
+        $flashType    = 'error';
+    } else {
+        // Ambil komship_order_no dari DB
+        $sql = "SELECT komship_order_no FROM orders WHERE order_id = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            $flashMessage = 'Gagal prepare SELECT orders: ' . $conn->error;
+            $flashType    = 'error';
+        } else {
+            $stmt->bind_param('s', $orderId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res->fetch_assoc();
+            $stmt->close();
+
+            if (!$row || empty($row['komship_order_no'])) {
+                $flashMessage = 'Order ini belum memiliki komship_order_no (belum berhasil create order ke Komship).';
+                $flashType    = 'error';
+            } else {
+                $orderNo = (string)$row['komship_order_no'];
+
+                if ($action === 'pickup') {
+                    /**
+                     * ============
+                     *  PICKUP FLOW
+                     * ============
+                     */
+
+                    // Kalau admin tidak isi, default besok jam 10:00
+                    $tz  = new DateTimeZone('Asia/Jakarta');
+                    $now = new DateTime('now', $tz);
+
+                    if ($pickupDate === '') {
+                        $pickupDate = $now->modify('+1 day')->format('Y-m-d');
+                        // reset now biar ga lari 1 hari ke depan terus
+                        $now = new DateTime('now', $tz);
+                    }
+                    if ($pickupTime === '') {
+                        $pickupTime = '10:00';
+                    }
+
+                    // Build DateTime dari input
+                    $pickupDt = DateTime::createFromFormat('Y-m-d H:i', $pickupDate . ' ' . $pickupTime, $tz);
+                    if (!$pickupDt) {
+                        // kalau parsing gagal → fallback ke now + 2 jam
+                        $pickupDt = new DateTime('now', $tz);
+                        $pickupDt->modify('+2 hours');
+                    }
+
+                    // Minimal 90 menit dari sekarang
+                    $minDt = new DateTime('now', $tz);
+                    $minDt->modify('+90 minutes');
+                    if ($pickupDt < $minDt) {
+                        $pickupDt = $minDt;
+                    }
+
+                    $pickupDate = $pickupDt->format('Y-m-d');
+                    $pickupTime = $pickupDt->format('H:i'); // API harusnya terima HH:MM
+
+                    $payload = [
+                        'pickup_date'    => $pickupDate,
+                        'pickup_time'    => $pickupTime,
+                        'pickup_vehicle' => 'Motor',
+                        'orders'         => [
+                            ['order_no' => $orderNo],
+                        ],
+                    ];
+
+                    $url = KOMERCE_ORDER_BASE_URL . '/order/api/v1/pickup/request';
+
+                    $ch = curl_init($url);
+                    curl_setopt_array($ch, [
+                        CURLOPT_POST           => true,
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_HTTPHEADER     => [
+                            'Content-Type: application/json',
+                            'Accept: application/json',
+                            'x-api-key: ' . KOMERCE_API_KEY,
+                        ],
+                        CURLOPT_POSTFIELDS     => json_encode($payload),
+                        CURLOPT_TIMEOUT        => 30,
+                    ]);
+
+                    $responseBody = curl_exec($ch);
+                    $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    $curlErr      = curl_error($ch);
+                    curl_close($ch);
+
+                    @file_put_contents(
+                        __DIR__ . '/komship_pickup_last_response.log',
+                        "=== " . date('Y-m-d H:i:s') . " ===\n" .
+                        "order_id: {$orderId}\n" .
+                        "order_no: {$orderNo}\n" .
+                        "HTTP: {$httpCode}\n" .
+                        "Payload:\n" . json_encode($payload, JSON_PRETTY_PRINT) . "\n" .
+                        "Response:\n{$responseBody}\n\n",
+                        FILE_APPEND
+                    );
+
+                    if ($curlErr) {
+                        $flashMessage = 'Pickup gagal: cURL error: ' . $curlErr;
+                        $flashType    = 'error';
+                    } else {
+                        $json = json_decode($responseBody, true);
+
+                        if (!is_array($json)) {
+                            $flashMessage = 'Pickup gagal: respon bukan JSON valid (HTTP ' . $httpCode . ').';
+                            $flashType    = 'error';
+                        } else {
+                            $meta = $json['meta'] ?? [];
+                            $code   = (int)($meta['code'] ?? 0);
+                            $status = (string)($meta['status'] ?? '');
+                            $msg    = (string)($meta['message'] ?? 'Unknown');
+
+                            if (($code === 201 || $code === 200) && $status === 'success') {
+                                // Update status dasar: pickup_requested
+                                $sqlUpd = "
+                                    UPDATE orders
+                                    SET komship_status = ?,
+                                        komship_last_sync = NOW()
+                                    WHERE order_id = ?
+                                    LIMIT 1
+                                ";
+                                $stmtUpd = $conn->prepare($sqlUpd);
+                                if ($stmtUpd) {
+                                    $pickupStatusText = 'pickup_requested';
+                                    $stmtUpd->bind_param('ss', $pickupStatusText, $orderId);
+                                    $stmtUpd->execute();
+                                    $stmtUpd->close();
+                                }
+
+                                // Lanjut sync detail (AWB + status)
+                                $syncResult = syncKomshipDetailAndUpdateAwb($conn, $orderId, $orderNo);
+
+                                if ($syncResult['success']) {
+                                    $flashMessage = 'Pickup request sukses. ' . $syncResult['message'];
+                                    $flashType    = 'success';
+                                } else {
+                                    $flashMessage = 'Pickup request sukses, tapi sync AWB gagal: ' . $syncResult['message'];
+                                    $flashType    = 'error';
+                                }
+                            } else {
+                                $flashMessage = 'Pickup gagal: ' . $msg . ' (HTTP ' . $httpCode . ')';
+                                $flashType    = 'error';
+                            }
+                        }
+                    }
+                } elseif ($action === 'sync_awb') {
+                    /**
+                     * =====================
+                     *  HANYA SYNC DETAIL
+                     * =====================
+                     */
+                    $syncResult = syncKomshipDetailAndUpdateAwb($conn, $orderId, $orderNo);
+
+                    if ($syncResult['success']) {
+                        $flashMessage = $syncResult['message'];
+                        $flashType    = 'success';
+                    } else {
+                        $flashMessage = $syncResult['message'];
+                        $flashType    = 'error';
+                    }
+                } else {
+                    $flashMessage = 'Aksi tidak dikenal.';
+                    $flashType    = 'error';
+                }
+            }
+        }
+    }
+}
+
+// ============================
+// AMBIL LIST ORDER untuk TABEL
+// ============================
+$sqlList = "
+    SELECT 
+        o.order_id,
+        o.tgl_order,
+        o.komship_order_no,
+        o.komship_awb,
+        o.komship_status,
+        o.code_courier,
+        o.shipping_type,
+        c.nama AS customer_name
+    FROM orders o
+    JOIN customer c ON c.customer_id = o.customer_id
+    WHERE o.komship_order_no IS NOT NULL
+    ORDER BY o.tgl_order DESC
+    LIMIT 50
+";
+$resList = $conn->query($sqlList);
+
+$defaultPickupDate = date('Y-m-d', strtotime('+1 day'));
+$defaultPickupTime = '10:00';
+
 ?>
-
 <!DOCTYPE html>
-<html lang="id">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracking Order - Stryk Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Admin - Komship Pickup & AWB Sync</title>
     <style>
-        .timeline-dot {
-            @apply flex-shrink-0 w-4 h-4 rounded-full bg-gray-600;
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #111827;
+            --bg-table-header: #1f2937;
+            --bg-table-row: #020617;
+            --bg-table-row-alt: #020617;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --danger: #f87171;
+            --success: #34d399;
+            --border-subtle: #1f2933;
         }
 
-        .timeline-dot.active {
-            @apply bg-green-500;
+        * {
+            box-sizing: border-box;
         }
 
-        .timeline-connector {
-            @apply flex-shrink-0 w-0.5 h-6 bg-gray-600 mx-auto;
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+            color: var(--text-main);
         }
 
-        .timeline-connector.active {
-            @apply bg-green-500;
+        .page-wrapper {
+            padding: 24px;
         }
 
-        .form-input-dark {
-            @apply bg-gray-700 border-gray-600 text-white focus:ring-yellow-500 focus:border-yellow-500;
+        .card {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow:
+                0 18px 45px rgba(15, 23, 42, 0.9),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            padding: 20px 22px 24px;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 20px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #f9fafb;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            background: rgba(15, 118, 110, 0.12);
+            color: #6ee7b7;
+            border: 1px solid rgba(45, 212, 191, 0.35);
+            margin-bottom: 10px;
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #6ee7b7;
+            box-shadow: 0 0 10px rgba(45, 212, 191, 0.7);
+        }
+
+        .alert {
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .alert-success {
+            background: rgba(22, 163, 74, 0.14);
+            border: 1px solid rgba(34, 197, 94, 0.55);
+            color: #bbf7d0;
+        }
+        .alert-error {
+            background: rgba(185, 28, 28, 0.14);
+            border: 1px solid rgba(248, 113, 113, 0.6);
+            color: #fecaca;
+        }
+        .alert strong {
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.9);
+        }
+        thead {
+            background: var(--bg-table-header);
+        }
+        th, td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-subtle);
+            text-align: left;
+            white-space: nowrap;
+        }
+        th {
+            font-weight: 600;
+            color: #e5e7eb;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        tbody tr:nth-child(odd) {
+            background: rgba(15, 23, 42, 0.85);
+        }
+        tbody tr:nth-child(even) {
+            background: rgba(15, 23, 42, 0.75);
+        }
+        tbody tr:hover {
+            background: rgba(30, 64, 175, 0.28);
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            color: #cbd5f5;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .badge-status.success {
+            border-color: rgba(34, 197, 94, 0.7);
+            color: #bbf7d0;
+            background: rgba(21, 128, 61, 0.35);
+        }
+
+        .badge-status.pending {
+            border-color: rgba(234, 179, 8, 0.7);
+            color: #fef3c7;
+            background: rgba(202, 138, 4, 0.3);
+        }
+
+        .actions-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        form.inline-form {
+            display: inline-block;
+            margin: 0;
+        }
+
+        .btn {
+            border-radius: 999px;
+            border: 1px solid transparent;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            background: var(--accent);
+            color: #f9fafb;
+            transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+        }
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: transparent;
+            border-color: rgba(148, 163, 184, 0.7);
+            color: #e5e7eb;
+        }
+        .btn-outline:hover {
+            border-color: var(--accent);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .note {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            font-size: 11px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            color: #cbd5f5;
+        }
+
+        .pill-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22c55e;
+        }
+
+        input[type="date"],
+        input[type="time"] {
+            background: #020617;
+            border-radius: 999px;
+            border: 1px solid rgba(55, 65, 81, 0.9);
+            color: #e5e7eb;
+            padding: 3px 7px;
+            font-size: 11px;
+        }
+        input[type="date"]:focus,
+        input[type="time"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        @media (max-width: 960px) {
+            .card {
+                padding: 16px;
+            }
+            th, td {
+                font-size: 11px;
+                padding: 6px 8px;
+            }
+            .btn {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
         }
     </style>
 </head>
+<body>
+<div class="page-wrapper">
+    <div class="card">
+        <div class="badge">
+            <span class="badge-dot"></span>
+            KOMSHIP INTEGRATION · ADMIN
+        </div>
+        <h1>Pickup Request & AWB Sync</h1>
+        <div class="subtitle">
+            Halaman ini buat <strong>request pickup</strong> ke Komship dan
+            <strong>sync AWB + status</strong> dari Delivery API berdasarkan <code>komship_order_no</code>.
+        </div>
 
-<body class="bg-gray-900 text-gray-100">
-    <div class="container mx-auto p-4 max-w-4xl">
-        <?php if (!empty($error_message)) : ?>
-            <div class="bg-red-800/50 border border-red-600 text-red-100 px-4 py-3 rounded-lg mb-6 flex items-center">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                <?= htmlspecialchars($error_message) ?>
+        <?php if ($flashMessage !== ''): ?>
+            <div class="alert <?= $flashType === 'success' ? 'alert-success' : 'alert-error' ?>">
+                <strong><?= $flashType === 'success' ? 'OK' : 'Error' ?>:</strong>
+                <span><?= htmlspecialchars($flashMessage, ENT_QUOTES, 'UTF-8') ?></span>
             </div>
-            <a href="order_admin.php" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg inline-flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i> Kembali ke Daftar Order
-            </a>
-        <?php elseif ($order) : ?>
-            <!-- Header Card -->
-            <div class="bg-gray-800 rounded-lg shadow-lg p-6 mb-6 border border-gray-700">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-bold text-yellow-400">
-                            <i class="fas fa-truck mr-2"></i> Tracking Order #<?= $order_id ?>
-                        </h1>
-                        <div class="flex items-center mt-2 text-gray-400">
-                            <span><i class="fas fa-user mr-1"></i> <?= htmlspecialchars($order['customer_name']) ?></span>
-                            <span class="mx-3 text-gray-600">|</span>
-                            <span class="font-medium <?=
-                                                        $order['status'] === 'proses' ? 'text-blue-400' : ($order['status'] === 'selesai' ? 'text-green-400' : 'text-yellow-400')
-                                                        ?>">
-                                <i class="fas fa-<?=
-                                                    $order['status'] === 'proses' ? 'cog' : ($order['status'] === 'selesai' ? 'check-circle' : 'clock')
-                                                    ?> mr-1"></i>
-                                <?= ucfirst($order['status']) ?>
-                            </span>
-                        </div>
-                    </div>
-                    <a href="order_admin.php" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center">
-                        <i class="fas fa-arrow-left mr-2"></i> Kembali
-                    </a>
-                </div>
-            </div>
-
-            <!-- Success Notification -->
-            <?php if (isset($_GET['success'])) : ?>
-                <div class="bg-green-800/50 border border-green-600 text-green-100 px-4 py-3 rounded-lg mb-6 flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    Status tracking berhasil diperbarui!
-                </div>
-            <?php endif; ?>
-
-            <!-- Timeline Section -->
-            <div class="bg-gray-800 rounded-lg shadow-lg p-6 mb-6 border border-gray-700">
-                <h2 class="text-xl font-semibold text-yellow-400 mb-4 flex items-center">
-                    <i class="fas fa-history mr-2"></i> Riwayat Pengiriman
-                </h2>
-
-                <?php if (!empty($tracking_history)) : ?>
-                    <div class="space-y-6 pl-2">
-                        <?php foreach ($tracking_history as $index => $track) : ?>
-                            <div class="flex group">
-                                <div class="flex flex-col items-center mr-4">
-                                    <div class="timeline-dot active group-hover:scale-125 transition-transform"></div>
-                                    <?php if ($index < count($tracking_history) - 1) : ?>
-                                        <div class="timeline-connector active"></div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="flex-grow pb-6 group-hover:bg-gray-700/50 rounded-lg px-3 py-2 transition-colors">
-                                    <p class="font-medium text-white flex items-center">
-                                        <i class="fas fa-<?=
-                                                            strpos($track['status'], 'diterima') !== false ? 'check' : (strpos($track['status'], 'dikirim') !== false ? 'shipping-fast' : 'box')
-                                                            ?> mr-2 text-gray-400"></i>
-                                        <?= htmlspecialchars($track['status']) ?>
-                                    </p>
-                                    <p class="text-sm text-gray-400 mt-1 ml-6">
-                                        <i class="far fa-clock mr-1"></i>
-                                        <?= date('d/m/Y H:i', strtotime($track['timestamp'])) ?>
-                                    </p>
-                                    <?php if (!empty($track['description'])) : ?>
-                                        <div class="mt-2 p-3 bg-gray-700 rounded-lg text-sm ml-6 border-l-2 border-yellow-500">
-                                            <i class="fas fa-info-circle mr-2 text-yellow-400"></i>
-                                            <?= nl2br(htmlspecialchars($track['description'])) ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (!empty($next_statuses)) : ?>
-                    <div class="flex items-center pt-2">
-                        <div class="flex flex-col items-center mr-4">
-                            <div class="timeline-dot pulse-animation"></div>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-gray-400 italic">
-                                <i class="fas fa-arrow-right mr-2 text-yellow-400"></i>
-                                Menunggu: <?= implode(', ', $next_statuses) ?>
-                            </p>
-                        </div>
-                    </div>
-                <?php else : ?>
-                    <div class="flex items-center pt-2">
-                        <div class="flex flex-col items-center mr-4">
-                            <div class="timeline-dot bg-green-500">
-                                <i class="fas fa-check text-white text-xs"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-green-400 font-medium">
-                                <i class="fas fa-flag-checkered mr-2"></i>
-                                Semua tahap pengiriman telah selesai
-                            </p>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <?php if (!empty($next_statuses)) : ?>
-                <!-- Form Update -->
-                <div class="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-                    <h2 class="text-xl font-semibold text-yellow-400 mb-4 flex items-center">
-                        <i class="fas fa-edit mr-2"></i> Update Status Tracking
-                    </h2>
-
-                    <form method="POST" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-300 mb-2 flex items-center">
-                                <i class="fas fa-tag mr-2"></i> Status
-                            </label>
-                            <select name="status" style="background-color: #2c3545; color: #f0f0f0; border: 1px solid #444;" required
-                                class="w-full px-4 py-2 form-input-dark rounded-lg">
-                                <option value="">-- Pilih Status --</option>
-                                <?php foreach ($next_statuses as $status) : ?>
-                                    <option value="<?= htmlspecialchars($status) ?>">
-                                        <?= htmlspecialchars($status) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-300 mb-2 flex items-center">
-                                <i class="fas fa-align-left mr-2"></i> Keterangan (Opsional)
-                            </label>
-                            <textarea name="description" style="background-color: #2c3545; color: #f0f0f0; border: 1px solid #444;" rows="3"
-                                class="w-full px-4 py-2 form-input-dark rounded-lg"
-                                placeholder=" "></textarea>
-                        </div>
-
-                        <div class="flex space-x-3 pt-2">
-                            <button type="submit" name="update_tracking"
-                                class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg transition flex items-center">
-                                <i class="fas fa-save mr-2"></i> Update Status
-                            </button>
-                            <button type="reset"
-                                class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition flex items-center">
-                                <i class="fas fa-undo mr-2"></i> Reset
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            <?php endif; ?>
         <?php endif; ?>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Tanggal</th>
+                <th>Customer</th>
+                <th>Kurir</th>
+                <th>Service</th>
+                <th>Komship Order No</th>
+                <th>AWB</th>
+                <th>Status</th>
+                <th style="min-width: 240px;">Aksi</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php if ($resList && $resList->num_rows > 0): ?>
+                <?php while ($row = $resList->fetch_assoc()): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['order_id']) ?></td>
+                        <td><?= htmlspecialchars($row['tgl_order']) ?></td>
+                        <td><?= htmlspecialchars($row['customer_name']) ?></td>
+                        <td><?= htmlspecialchars(strtoupper($row['code_courier'])) ?></td>
+                        <td><?= htmlspecialchars($row['shipping_type']) ?></td>
+                        <td>
+                            <span class="pill">
+                                <span class="pill-dot"></span>
+                                <?= htmlspecialchars($row['komship_order_no']) ?>
+                            </span>
+                        </td>
+                        <td>
+                            <?php if (!empty($row['komship_awb'])): ?>
+                                <code><?= htmlspecialchars($row['komship_awb']) ?></code>
+                            <?php else: ?>
+                                <span class="text-muted">Belum ada</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php
+                            $status = $row['komship_status'] ?? '';
+                            $statusLower = strtolower($status);
+                            $statusClass = '';
+                            if (in_array($statusLower, ['pickup_success', 'delivered'], true)) {
+                                $statusClass = 'success';
+                            } elseif (in_array($statusLower, ['pickup_requested', 'diajukan'], true)) {
+                                $statusClass = 'pending';
+                            }
+                            ?>
+                            <span class="badge-status <?= $statusClass ?>">
+                                <?= $status !== '' ? htmlspecialchars($status) : '—' ?>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <!-- Pickup + auto sync AWB -->
+                                <form method="post" class="inline-form" style="margin-bottom:4px;">
+                                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($row['order_id']) ?>">
+                                    <input type="hidden" name="action" value="pickup">
+
+                                    <input type="date"
+                                           name="pickup_date"
+                                           value="<?= $defaultPickupDate ?>">
+                                    <input type="time"
+                                           name="pickup_time"
+                                           value="<?= $defaultPickupTime ?>">
+
+                                    <button type="submit" class="btn">
+                                        Pickup + Sync AWB
+                                    </button>
+                                </form>
+
+                                <!-- Hanya sync AWB / status dari Detail Order -->
+                                <form method="post" class="inline-form">
+                                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($row['order_id']) ?>">
+                                    <input type="hidden" name="action" value="sync_awb">
+                                    <button type="submit" class="btn btn-outline">
+                                        Sync AWB / Status
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="9" class="text-muted">Belum ada order yang punya <code>komship_order_no</code>.</td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+
+        <div class="note">
+            Catatan:
+            <ul>
+                <li>Kalau waktu pickup yang dipilih terlalu dekat, script otomatis geser ke minimal <strong>+90 menit</strong> dari sekarang.</li>
+                <li>AWB & status diambil dari endpoint <code>/order/api/v1/orders/detail?order_no=...</code>.</li>
+                <li>Log request tersimpan di <code>komship_pickup_last_response.log</code> dan <code>komship_detail_last_response.log</code>.</li>
+            </ul>
+        </div>
     </div>
-
-    <style>
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
-            }
-
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
-            }
-
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
-            }
-        }
-    </style>
+</div>
 </body>
-
 </html>
