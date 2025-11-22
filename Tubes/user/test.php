@@ -1,70 +1,76 @@
 <?php
-// pickup_test.php
-// File test sederhana untuk coba endpoint Pickup Request Komship (sandbox)
+// ====== CONFIG ======
+$apiKey = 'biteship_test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3R5cmtfaW5kdXN0cmllcyIsInVzZXJJZCI6IjY5MjA3ZmI0YzMxM2VmYTUyZTM5OThlNCIsImlhdCI6MTc2Mzc4NTQ0OH0.dBPLQHoBBV4gnXux-OMziAO5yr1TBzXTf4T-Js2b0ak'; // ganti sama API key lu
 
-// ====== KONFIGURASI ======
-$apiKey  = '3I7kuf7B3e00fb2d23c692a69owo8BSW'; // ganti kalau perlu
-$orderNo = 'KOM77918202511200024';                // GANTI ke komship_order_no lu sendiri (hasil create order)
+// Endpoint create order Biteship
+$url = 'https://api.biteship.com/v1/orders';
 
-// Biar ga kena error "pickup time at least 90 minutes before pickup",
-// kita set default pickup minimal +2 jam dari sekarang
-date_default_timezone_set('Asia/Jakarta');
-
-$now      = time();
-$pickupTs = $now + 2 * 3600; // +2 jam
-
-$pickupDate = date('Y-m-d', $pickupTs); // format YYYY-MM-DD
-$pickupTime = date('H:i',   $pickupTs); // format HH:MM
-
-
+// ====== DUMMY DATA ORDER UNTUK TEST ======
 $payload = [
-    "pickup_date"    => $pickupDate,
-    "pickup_time"    => $pickupTime,
-    "pickup_vehicle" => "Motor",        // atau "Mobil", "Truk"
-    "orders"         => [
+    "shipper_contact_name"   => "Styrk Industries",
+    "shipper_contact_phone"  => "081234567890",
+    "shipper_contact_email"  => "admin@styrk.test",
+    "shipper_organization"   => "Styrk Industries",
+    "origin_contact_name"    => "Gudang Styrk",
+    "origin_contact_phone"   => "081234567890",
+    "origin_address"         => "Jl. Gudang Styrk No. 10",
+    "origin_postal_code"     => "40212",        // Bandung (contoh, sesuaikan kalau mau)
+
+    "destination_contact_name"   => "Dylan Test",
+    "destination_contact_phone"  => "081234567891",
+    "destination_contact_email"  => "dylan@test.com",
+    "destination_address"        => "Jl. Test Order No. 123",
+    "destination_postal_code"    => "10210",    // Jakarta (contoh, Biteship butuh KODE POS)
+
+    "courier_company" => "jne",                // pastikan pakai salah satu yang muncul di list couriers lu
+    "courier_type"    => "reg",            // contoh: "regular" / "express" (lihat dari API Biteship)
+
+    "delivery_type"   => "now",                // atau "later"
+
+    // item wajib: name, value, quantity, weight
+    "items" => [
         [
-            "order_no" => $orderNo
+            "name"        => "Tofu60 Redux Case",
+            "description" => "Keyboard case test order",
+            "value"       => 1850000,  // harga per item (Rp)
+            "quantity"    => 1,
+            "weight"      => 1500,     // gram
         ]
-    ]
+    ],
+
+    // optional metadata
+    "order_note"      => "Test create order dari Styrk",
 ];
 
-$ch = curl_init();
+// ====== CURL REQUEST ======
+$ch = curl_init($url);
 
 curl_setopt_array($ch, [
-    CURLOPT_URL            => 'https://api-sandbox.collaborator.komerce.id/order/api/v1/pickup/request',
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_ENCODING       => '',
-    CURLOPT_MAXREDIRS      => 10,
-    CURLOPT_TIMEOUT        => 0,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-    CURLOPT_CUSTOMREQUEST  => 'POST',
-    CURLOPT_POSTFIELDS     => json_encode($payload),
+    CURLOPT_POST           => true,
     CURLOPT_HTTPHEADER     => [
         'Content-Type: application/json',
         'Accept: application/json',
-        'x-api-key: ' . $apiKey,
+        'Authorization: ' . $apiKey,
     ],
+    CURLOPT_POSTFIELDS     => json_encode($payload),
 ]);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$error    = curl_error($ch);
 
-curl_close($ch);
-
-// ====== OUTPUT HASIL TEST ======
-header('Content-Type: text/plain; charset=utf-8');
-
-echo "HTTP CODE: {$httpCode}\n\n";
-
-if ($error) {
-    echo "cURL ERROR:\n{$error}\n";
+if ($response === false) {
+    echo "cURL Error: " . curl_error($ch);
+    curl_close($ch);
     exit;
 }
 
-echo "PAYLOAD YANG DIKIRIM:\n";
-echo json_encode($payload, JSON_PRETTY_PRINT) . "\n\n";
+curl_close($ch);
 
-echo "RESPONSE DARI KOMSHIP:\n";
-echo $response . "\n";
+// ====== TAMPILKAN HASIL ======
+header('Content-Type: application/json; charset=utf-8');
+
+echo json_encode([
+    'http_code' => $httpCode,
+    'raw_response' => json_decode($response, true),
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

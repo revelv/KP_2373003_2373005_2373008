@@ -8,16 +8,17 @@ if ($conn->connect_error) {
 }
 
 // Ambil data dari form (pakai ?? '' biar nggak notice kalau key hilang)
-$nama       = trim($_POST['nama']       ?? '');
-$email      = trim($_POST['email']      ?? '');
-$provinsi   = trim($_POST['provinsi']   ?? '');   // NAMA provinsi
-$kota       = trim($_POST['kota']       ?? '');   // NAMA kota
-$kecamatan  = trim($_POST['kecamatan']  ?? '');   // NAMA kecamatan
-$kelurahan  = trim($_POST['kelurahan']  ?? '');   // NAMA kelurahan (BARU)
-$alamat     = trim($_POST['alamat']     ?? '');
-$no_telepon = trim($_POST['telp']       ?? '');
-$password   = $_POST['password']        ?? '';
-$konfirmasi = $_POST['konfirmasi']      ?? '';
+$nama        = trim($_POST['nama']       ?? '');
+$email       = trim($_POST['email']      ?? '');
+$provinsi    = trim($_POST['provinsi']   ?? '');   // NAMA provinsi
+$kota        = trim($_POST['kota']       ?? '');   // NAMA kota
+$kecamatan   = trim($_POST['kecamatan']  ?? '');   // NAMA kecamatan
+$kelurahan   = trim($_POST['kelurahan']  ?? '');   // NAMA kelurahan
+$alamat      = trim($_POST['alamat']     ?? '');
+$no_telepon  = trim($_POST['telp']       ?? '');
+$postal_code = trim($_POST['postal_code'] ?? '');  // KODE POS (BARU)
+$password    = $_POST['password']        ?? '';
+$konfirmasi  = $_POST['konfirmasi']      ?? '';
 
 $errors = [];
 
@@ -26,14 +27,20 @@ if (
     $nama === '' || $email === '' ||
     $provinsi === '' || $kota === '' || $kecamatan === '' || $kelurahan === '' ||
     $alamat === '' || $no_telepon === '' ||
+    $postal_code === '' ||             // WAJIB ADA KODE POS
     $password === '' || $konfirmasi === ''
 ) {
-    $errors[] = "Semua field wajib diisi.";
+    $errors[] = "Semua field wajib diisi, termasuk alamat lengkap dan kode pos.";
 }
 
 // Password harus sama
 if ($password !== $konfirmasi) {
     $errors[] = "Password dan konfirmasi password tidak sama.";
+}
+
+// (Opsional) Validasi sederhana kode pos 5 digit
+if ($postal_code !== '' && !preg_match('/^[0-9]{5}$/', $postal_code)) {
+    $errors[] = "Kode pos harus berupa 5 digit angka.";
 }
 
 // Cek email sudah terdaftar atau belum
@@ -66,6 +73,7 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
 // ================= INSERT CUSTOMER BARU =================
 // provinsi / kota / kecamatan / kelurahan disimpan sebagai NAMA (string)
+// postal_code disimpan sebagai KODE POS (bukan lagi destination_id komship)
 $stmt = $conn->prepare("
     INSERT INTO customer (
         nama, 
@@ -76,9 +84,10 @@ $stmt = $conn->prepare("
         kota, 
         kecamatan,
         kelurahan,
+        postal_code,
         alamat
     ) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 if (!$stmt) {
@@ -87,16 +96,18 @@ if (!$stmt) {
     exit;
 }
 
+// 10 kolom → 10 parameter string
 $stmt->bind_param(
-    "sssssssss",
+    "ssssssssss",
     $nama,
     $hashed_password,
     $email,
     $no_telepon,
-    $provinsi,   // NAMA provinsi
-    $kota,       // NAMA kota
-    $kecamatan,  // NAMA kecamatan
-    $kelurahan,  // NAMA kelurahan (BARU)
+    $provinsi,    // NAMA provinsi
+    $kota,        // NAMA kota
+    $kecamatan,   // NAMA kecamatan
+    $kelurahan,   // NAMA kelurahan
+    $postal_code, // KODE POS (BARU)
     $alamat
 );
 

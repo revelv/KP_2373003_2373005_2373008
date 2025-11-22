@@ -251,6 +251,10 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     </div>
                 </div>
 
+                <!-- Kode Pos (hidden, auto dari kelurahan) -->
+                <input type="hidden" id="postal_code" name="postal_code"
+                       value="<?= htmlspecialchars($old['postal_code'] ?? '') ?>">
+
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="alamat">Alamat</label>
@@ -292,13 +296,19 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
         document.addEventListener('DOMContentLoaded', () => {
             const selProv = document.getElementById('provinsi');
             const selKota = document.getElementById('kota');
-            const selKec = document.getElementById('kecamatan');
-            const selKel = document.getElementById('kelurahan');
+            const selKec  = document.getElementById('kecamatan');
+            const selKel  = document.getElementById('kelurahan');
+            const inpPostal = document.getElementById('postal_code');
 
-            const oldProv = <?= json_encode($old['provinsi'] ?? '') ?>;   // NAMA provinsi
-            const oldKota = <?= json_encode($old['kota'] ?? '') ?>;       // NAMA kota
-            const oldKec  = <?= json_encode($old['kecamatan'] ?? '') ?>;  // NAMA kecamatan
-            const oldKel  = <?= json_encode($old['kelurahan'] ?? '') ?>;  // NAMA kelurahan
+            const oldProv   = <?= json_encode($old['provinsi'] ?? '') ?>;   // NAMA provinsi
+            const oldKota   = <?= json_encode($old['kota'] ?? '') ?>;       // NAMA kota
+            const oldKec    = <?= json_encode($old['kecamatan'] ?? '') ?>;  // NAMA kecamatan
+            const oldKel    = <?= json_encode($old['kelurahan'] ?? '') ?>;  // NAMA kelurahan
+            const oldPostal = <?= json_encode($old['postal_code'] ?? '') ?>;
+
+            if (inpPostal && oldPostal) {
+                inpPostal.value = oldPostal;
+            }
 
             function selectByText(selectEl, text) {
                 if (!selectEl || !text) return;
@@ -311,9 +321,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 if (!selProv) return;
                 selProv.innerHTML = '<option value="">Loading…</option>';
                 try {
-                    const res = await fetch('../../user/rajaongkir/get-province.php', {
-                        cache: 'no-store'
-                    });
+                    const res = await fetch('../../user/rajaongkir/get-province.php', { cache: 'no-store' });
                     const text = await res.text();
                     let data;
                     try {
@@ -332,12 +340,12 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
 
                     selProv.innerHTML = '<option value="">-- Pilih Provinsi --</option>';
                     for (const p of list) {
-                        const id = p.id ?? p.province_id ?? '';
+                        const id   = p.id ?? p.province_id ?? '';
                         const name = p.name ?? p.province ?? '';
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name;         // ke PHP: NAMA
-                        opt.dataset.id = id;      // buat JS panggil RajaOngkir
+                        opt.value = name;    // ke PHP: nama
+                        opt.dataset.id = id; // ke JS: id
                         opt.textContent = name;
                         selProv.appendChild(opt);
                     }
@@ -368,6 +376,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                         selKel.disabled = true;
                     }
+                    if (inpPostal) inpPostal.value = '';
                     return;
                 }
 
@@ -382,6 +391,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                     selKel.disabled = true;
                 }
+                if (inpPostal) inpPostal.value = '';
 
                 try {
                     const res = await fetch('../../user/rajaongkir/get-cities.php?province=' + encodeURIComponent(provinceId), {
@@ -405,13 +415,14 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
 
                     selKota.innerHTML = '<option value="">-- Pilih Kota --</option>';
                     for (const c of list) {
-                        const id = c.id ?? c.city_id ?? '';
+                        const id   = c.id ?? c.city_id ?? '';
                         const name = (c.name ?? c.city_name ?? '').trim();
+                        const zip  = (c.zip_code ?? '').toString();
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name; // ke PHP: NAMA
-                        opt.dataset.id = id; // buat load district
-                        opt.textContent = name + (c.zip_code && c.zip_code !== '0' ? ` (${c.zip_code})` : '');
+                        opt.value = name;     // ke PHP: nama
+                        opt.dataset.id = id;  // id kota
+                        opt.textContent = name + (zip && zip !== '0' ? ` (${zip})` : '');
                         selKota.appendChild(opt);
                     }
                     selKota.disabled = false;
@@ -438,6 +449,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                         selKel.disabled = true;
                     }
+                    if (inpPostal) inpPostal.value = '';
                     return;
                 }
 
@@ -448,6 +460,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                     selKel.disabled = true;
                 }
+                if (inpPostal) inpPostal.value = '';
 
                 try {
                     const res = await fetch('../../user/rajaongkir/get-district.php?city=' + encodeURIComponent(cityId), {
@@ -471,12 +484,12 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
 
                     selKec.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
                     for (const d of list) {
-                        const id = d.subdistrict_id ?? d.id ?? d.district_id ?? '';
+                        const id   = d.subdistrict_id ?? d.id ?? d.district_id ?? '';
                         const name = (d.subdistrict_name ?? d.name ?? d.district_name ?? '').trim();
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name;   // ke PHP: NAMA
-                        opt.dataset.id = id; // buat load subdistrict
+                        opt.value = name;     // ke PHP: nama kecamatan
+                        opt.dataset.id = id;  // id utk load subdistrict
                         opt.textContent = name;
                         selKec.appendChild(opt);
                     }
@@ -502,6 +515,7 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 if (!districtId) {
                     selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                     selKel.disabled = true;
+                    if (inpPostal) inpPostal.value = '';
                     return;
                 }
 
@@ -526,6 +540,8 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     if (!root.success) {
                         console.error('Subdistrict API error:', root.message);
                         selKel.innerHTML = '<option value="">Gagal load kelurahan</option>';
+                        selKel.disabled = true;
+                        if (inpPostal) inpPostal.value = '';
                         return;
                     }
 
@@ -533,18 +549,22 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                     if (!list.length) {
                         selKel.innerHTML = '<option value="">(tidak ada kelurahan)</option>';
                         selKel.disabled = false;
+                        if (inpPostal) inpPostal.value = '';
                         return;
                     }
 
                     selKel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     for (const s of list) {
-                        const id = s.subdistrict_id ?? s.id ?? '';
+                        const id   = s.subdistrict_id ?? s.id ?? '';
                         const name = (s.subdistrict_name ?? s.name ?? '').trim();
+                        const zip  = (s.zip_code ?? s.postal_code ?? s.postcode ?? '').toString();
+
                         if (!id || !name) continue;
                         const opt = document.createElement('option');
-                        opt.value = name;      // ke PHP: NAMA
-                        opt.dataset.id = id;   // kalau mau dipakai lagi
-                        opt.textContent = name + (s.zip_code && s.zip_code !== '0' ? ` (${s.zip_code})` : '');
+                        opt.value = name;   // ke PHP: nama kelurahan
+                        opt.dataset.id = id;
+                        opt.dataset.postal = zip; // KODE POS buat ke hidden input
+                        opt.textContent = name + (zip && zip !== '0' ? ` (${zip})` : '');
                         selKel.appendChild(opt);
                     }
                     selKel.disabled = false;
@@ -553,10 +573,19 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                         selectByText(selKel, oldKel);
                     }
 
+                    // Setelah auto select / selesai load, set kode pos
+                    const selected = selKel.options[selKel.selectedIndex];
+                    if (selected && selected.dataset.postal && inpPostal) {
+                        inpPostal.value = selected.dataset.postal;
+                    } else if (inpPostal && oldPostal) {
+                        inpPostal.value = oldPostal;
+                    }
+
                 } catch (e) {
                     console.error('Subdistrict fetch error:', e);
                     selKel.innerHTML = '<option value="">Error load kelurahan</option>';
                     selKel.disabled = true;
+                    if (inpPostal) inpPostal.value = '';
                 }
             }
 
@@ -574,6 +603,8 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                 selKel.disabled = true;
 
+                if (inpPostal) inpPostal.value = '';
+
                 loadCities(provId, false);
             });
 
@@ -587,6 +618,8 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                 selKel.disabled = true;
 
+                if (inpPostal) inpPostal.value = '';
+
                 loadDistricts(cityId, false);
             });
 
@@ -597,7 +630,17 @@ unset($_SESSION['form_data'], $_SESSION['register_error']);
                 selKel.innerHTML = '<option value="">-- Pilih Kecamatan Dahulu --</option>';
                 selKel.disabled = true;
 
+                if (inpPostal) inpPostal.value = '';
+
                 loadSubDistricts(districtId, false);
+            });
+
+            selKel.addEventListener('change', () => {
+                const opt = selKel.options[selKel.selectedIndex];
+                const postal = opt && opt.dataset.postal ? opt.dataset.postal : '';
+                if (inpPostal) {
+                    inpPostal.value = postal;
+                }
             });
 
             // Init

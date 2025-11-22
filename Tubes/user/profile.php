@@ -15,7 +15,7 @@ if (!isset($_SESSION['kd_cs'])) {
     exit();
 }
 
-$customer_id = (int)$_SESSION['kd_cs'];
+$customer_id = (int) $_SESSION['kd_cs'];
 
 // ====== HANDLE UPDATE PROFIL (POST) ======
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -23,21 +23,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telepon   = trim($_POST['telepon'] ?? '');
     $alamat    = trim($_POST['alamat'] ?? '');
 
-    // DI SINI: yang dikirim dari form adalah NAMA (value option), bukan ID
+    // Dari form: value = NAMA (bukan ID)
     $provinsi  = trim($_POST['provinsi_id']   ?? '');
     $kota      = trim($_POST['kota_id']       ?? '');
     $kecamatan = trim($_POST['kecamatan_id']  ?? '');
     $kelurahan = trim($_POST['kelurahan_id']  ?? '');
 
-    // ====== TAMBAHAN: INFO FOTO PROFIL ======
+    // KODE POS (WAJIB) - diambil otomatis dari kelurahan
+    $postal_code = trim($_POST['postal_code'] ?? '');
+
+    // ====== FOTO PROFIL (OPSIONAL) ======
     $profile_image_path   = ''; // path foto baru (kalau upload)
     $old_profile_image    = trim($_POST['current_profile_image'] ?? '');
     $delete_photo         = isset($_POST['hapus_foto']) && $_POST['hapus_foto'] === '1';
 
-    // FOTO PROFIL (OPSIONAL)
     if (!empty($_FILES['profile_image']['name']) && is_uploaded_file($_FILES['profile_image']['tmp_name'])) {
         $fileTmp  = $_FILES['profile_image']['tmp_name'];
-        $fileSize = (int)$_FILES['profile_image']['size'];
+        $fileSize = (int) $_FILES['profile_image']['size'];
         $mime     = @mime_content_type($fileTmp);
 
         $allowedMime = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
@@ -78,24 +80,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $delete_photo = false;
     }
 
+    // Validasi wajib
     if (
         $nama === '' || $telepon === '' || $alamat === '' ||
-        $provinsi === '' || $kota === '' || $kecamatan === '' || $kelurahan === ''
+        $provinsi === '' || $kota === '' || $kecamatan === '' || $kelurahan === '' ||
+        $postal_code === ''
     ) {
-        $_SESSION['profile_error'] = 'Lengkapi semua data profil dan alamat (provinsi / kota / kecamatan / kelurahan).';
+        $_SESSION['profile_error'] = 'Lengkapi semua data profil, alamat (provinsi / kota / kecamatan / kelurahan) dan kode pos.';
         header('Location: profile.php');
         exit();
     }
 
-    // Simpan NAMA provinsi, kota, kecamatan, kelurahan ke DB
+    // Simpan NAMA wilayah + KODE POS ke DB
     $sql = "UPDATE customer 
-            SET nama = ?, 
-                no_telepon = ?, 
-                alamat = ?, 
-                provinsi = ?,   -- simpan NAMA provinsi
-                kota = ?,       -- simpan NAMA kota
-                kecamatan = ?,  -- simpan NAMA kecamatan
-                kelurahan = ?   -- simpan NAMA kelurahan
+            SET nama        = ?, 
+                no_telepon  = ?, 
+                alamat      = ?, 
+                provinsi    = ?,   -- NAMA provinsi
+                kota        = ?,   -- NAMA kota
+                kecamatan   = ?,   -- NAMA kecamatan
+                kelurahan   = ?,   -- NAMA kelurahan
+                postal_code = ?    -- KODE POS (dipakai Biteship)
             WHERE customer_id = ?";
 
     $stmt = $conn->prepare($sql);
@@ -105,8 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // 8 string + 1 int
     $stmt->bind_param(
-        "sssssssi",
+        "ssssssssi",
         $nama,
         $telepon,
         $alamat,
@@ -114,12 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $kota,
         $kecamatan,
         $kelurahan,
+        $postal_code,
         $customer_id
     );
 
     if ($stmt->execute()) {
-        // ====== UPDATE FOTO PROFIL (pisah biar query utama lu ga diubah) ======
-        // 1. Kalau ada foto baru → set profile_image ke path baru
+        // ====== UPDATE FOTO PROFIL JIKA PERLU ======
         if ($profile_image_path !== '') {
             $stmt2 = $conn->prepare("UPDATE customer SET profile_image = ? WHERE customer_id = ?");
             if ($stmt2) {
@@ -128,15 +134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt2->close();
             }
 
-            // Hapus file lama kalau ada
             if ($old_profile_image !== '') {
                 $oldFs = realpath(__DIR__ . '/' . $old_profile_image);
                 if ($oldFs && is_file($oldFs)) {
                     @unlink($oldFs);
                 }
             }
-
-        // 2. Kalau user centang "hapus foto" dan tidak upload foto baru
         } elseif ($delete_photo) {
             $stmt2 = $conn->prepare("UPDATE customer SET profile_image = NULL WHERE customer_id = ?");
             if ($stmt2) {
@@ -168,8 +171,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $nama = $telepon = $alamat = '';
 $provinsi_name = $kota_name = $kecamatan_name = $kelurahan_name = '';
 $profile_image = '';
+$postal_code = '';
 
-$query = "SELECT nama, no_telepon, alamat, provinsi, kota, kecamatan, kelurahan, profile_image
+$query = "SELECT nama, no_telepon, alamat, provinsi, kota, kecamatan, kelurahan, profile_image, postal_code
           FROM customer 
           WHERE customer_id = ?";
 
@@ -182,11 +186,12 @@ if ($row = $result->fetch_assoc()) {
     $nama            = $row['nama'] ?? '';
     $telepon         = $row['no_telepon'] ?? '';
     $alamat          = $row['alamat'] ?? '';
-    $provinsi_name   = $row['provinsi'] ?? '';   // NAMA provinsi
-    $kota_name       = $row['kota'] ?? '';       // NAMA kota
-    $kecamatan_name  = $row['kecamatan'] ?? '';  // NAMA kecamatan
-    $kelurahan_name  = $row['kelurahan'] ?? '';  // NAMA kelurahan
+    $provinsi_name   = $row['provinsi'] ?? '';
+    $kota_name       = $row['kota'] ?? '';
+    $kecamatan_name  = $row['kecamatan'] ?? '';
+    $kelurahan_name  = $row['kelurahan'] ?? '';
     $profile_image   = $row['profile_image'] ?? '';
+    $postal_code     = $row['postal_code'] ?? '';
 }
 $stmt->close();
 ?>
@@ -229,7 +234,6 @@ $stmt->close();
             <?php unset($_SESSION['profile_success']); ?>
         <?php endif; ?>
 
-        <!-- TAMBAHAN: enctype & field foto -->
         <form method="post" action="profile.php" enctype="multipart/form-data">
 
             <!-- FOTO PROFIL OPSIONAL -->
@@ -238,8 +242,8 @@ $stmt->close();
                 <?php if (!empty($profile_image)): ?>
                     <div class="mb-2">
                         <img src="<?= htmlspecialchars($profile_image) ?>"
-                             alt="Foto Profil"
-                             style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #ddd;">
+                            alt="Foto Profil"
+                            style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #ddd;">
                     </div>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" value="1" id="hapus_foto" name="hapus_foto">
@@ -249,7 +253,6 @@ $stmt->close();
                     </div>
                 <?php endif; ?>
 
-                <!-- selalu kirim path lama (bisa kosong) -->
                 <input type="hidden" name="current_profile_image" value="<?= htmlspecialchars($profile_image) ?>">
 
                 <input type="file" class="form-control" name="profile_image" accept="image/*">
@@ -302,6 +305,18 @@ $stmt->close();
                 </select>
             </div>
 
+            <div class="mb-3">
+                <label for="postal_code" class="form-label">Kode Pos</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="postal_code"
+                    name="postal_code"
+                    value="<?= htmlspecialchars($postal_code) ?>"
+                    required
+                    readonly>
+            </div>
+
             <button type="submit" class="btn btn-primary">Simpan Profil</button>
         </form>
     </div>
@@ -309,18 +324,24 @@ $stmt->close();
     <?php include 'footer.php'; ?>
 
     <script>
-        // Yang disimpan di DB: NAMA, jadi ke JS juga bawa NAMA
+        // Data dari PHP (nama wilayah + kode pos yang tersimpan)
         const currentProvName = <?= json_encode($provinsi_name) ?>;
         const currentCityName = <?= json_encode($kota_name) ?>;
         const currentDistName = <?= json_encode($kecamatan_name) ?>;
         const currentSubName = <?= json_encode($kelurahan_name) ?>;
+        const currentPostal = <?= json_encode($postal_code) ?>;
 
         const provSel = document.getElementById('provinsi');
         const kotaSel = document.getElementById('kota');
         const kecSel = document.getElementById('kecamatan');
         const kelSel = document.getElementById('kelurahan');
+        const postalInp = document.getElementById('postal_code');
 
-        // Helper: select option berdasarkan TEXT (nama), bukan value mentah
+        if (postalInp && currentPostal) {
+            postalInp.value = currentPostal;
+        }
+
+        // Helper: select option by TEXT
         function selectByText(selectEl, text) {
             if (!selectEl || !text) return;
             const options = Array.from(selectEl.options);
@@ -354,13 +375,11 @@ $stmt->close();
                     const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
                     const name = String(p.province ?? p.name ?? p.provinceName ?? '');
                     if (!id || !name) return '';
-                    // value = NAMA, data-id = ID buat hit API lanjut
                     return `<option value="${name}" data-id="${id}">${name}</option>`;
                 }).join('');
 
                 provSel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' + options;
 
-                // Prefill kalau di DB sudah ada nama provinsi
                 if (currentProvName) {
                     selectByText(provSel, currentProvName);
                     const opt = provSel.options[provSel.selectedIndex];
@@ -374,13 +393,12 @@ $stmt->close();
             }
         }
 
-        // ====== LOAD CITIES (berdasarkan province_id) ======
+        // ====== LOAD CITIES ======
         async function loadCities(provId, autoSelect = false) {
             if (!kotaSel) return;
             kotaSel.innerHTML = '<option value="">Loading...</option>';
             kotaSel.disabled = true;
 
-            // Reset kecamatan & kelurahan
             if (kecSel) {
                 kecSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
                 kecSel.disabled = true;
@@ -436,7 +454,7 @@ $stmt->close();
             }
         }
 
-        // ====== LOAD DISTRICTS (kecamatan) BERDASARKAN city_id ======
+        // ====== LOAD DISTRICTS (kecamatan) ======
         async function loadDistricts(cityId, autoSelect = false) {
             if (!kecSel) return;
             kecSel.innerHTML = '<option value="">Loading...</option>';
@@ -470,18 +488,8 @@ $stmt->close();
                     (Array.isArray(data.data) ? data.data : (data.rajaongkir?.results || []));
 
                 const options = list.map(d => {
-                    const id = String(
-                        d.subdistrict_id ??
-                        d.id ??
-                        d.district_id ??
-                        ''
-                    );
-                    const name = String(
-                        d.subdistrict_name ??
-                        d.name ??
-                        d.district_name ??
-                        ''
-                    ).trim();
+                    const id = String(d.subdistrict_id ?? d.id ?? d.district_id ?? '');
+                    const name = String(d.subdistrict_name ?? d.name ?? d.district_name ?? '').trim();
                     if (!id || !name) return '';
                     return `<option value="${name}" data-id="${id}">${name}</option>`;
                 }).join('');
@@ -509,7 +517,7 @@ $stmt->close();
             }
         }
 
-        // ====== LOAD SUB-DISTRICTS (kelurahan) BERDASARKAN district_id ======
+        // ====== LOAD SUB-DISTRICTS (kelurahan) ======
         async function loadSubDistricts(districtId, autoSelect = false) {
             if (!kelSel) return;
             kelSel.innerHTML = '<option value="">Loading...</option>';
@@ -533,10 +541,8 @@ $stmt->close();
 
                 let parsed;
                 try {
-                    // --- FIX PENTING: buang noise sebelum JSON ---
+                    // Buang noise sebelum JSON
                     let cleaned = txt.trim();
-
-                    // Cari posisi awal { atau [
                     const bracePos = cleaned.indexOf('{');
                     const bracketPos = cleaned.indexOf('[');
                     let start = -1;
@@ -552,7 +558,6 @@ $stmt->close();
                     }
 
                     cleaned = cleaned.slice(start);
-
                     parsed = JSON.parse(cleaned);
                 } catch (e) {
                     console.error('Subdistrict JSON parse error:', e);
@@ -561,7 +566,6 @@ $stmt->close();
                     return;
                 }
 
-                // ====== NORMALISASI BENTUK RESPON ======
                 let list = [];
 
                 if (Array.isArray(parsed)) {
@@ -586,29 +590,35 @@ $stmt->close();
                 }
 
                 const options = list.map(s => {
-                    const id = String(
-                        s.subdistrict_id ??
-                        s.id ??
-                        s.district_id ??
-                        ''
-                    );
-                    const name = String(
-                        s.subdistrict_name ??
-                        s.name ??
-                        s.district_name ??
+                    const id = String(s.subdistrict_id ?? s.id ?? s.district_id ?? '');
+                    const name = String(s.subdistrict_name ?? s.name ?? s.district_name ?? '').trim();
+
+                    const postal = String(
+                        s.postal_code ??
+                        s.postcode ??
+                        s.zip_code ?? // KOMSHIP / KOMERCE biasanya pakai ini
+                        s.zipcode ??
+                        s.zip ??
                         ''
                     ).trim();
+
                     if (!id || !name) return '';
-                    // value = NAMA kelurahan, data-id = ID-nya
-                    return `<option value="${name}" data-id="${id}">${name}</option>`;
+                    return `<option value="${name}" data-id="${id}" data-postal="${postal}">${name}</option>`;
                 }).join('');
 
                 kelSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>' + options;
                 kelSel.disabled = false;
 
-                // auto-select kalau di DB sudah ada nama kelurahan
                 if (autoSelect && currentSubName) {
                     selectByText(kelSel, currentSubName);
+                    const opt = kelSel.options[kelSel.selectedIndex];
+                    if (opt && opt.dataset.postal && opt.dataset.postal.trim() !== '') {
+                        if (postalInp) postalInp.value = opt.dataset.postal.trim();
+                    } else if (postalInp && currentPostal) {
+                        postalInp.value = currentPostal;
+                    }
+                } else if (postalInp && currentPostal) {
+                    postalInp.value = currentPostal;
                 }
 
             } catch (err) {
@@ -622,7 +632,6 @@ $stmt->close();
         document.addEventListener('change', (e) => {
             const t = e.target;
 
-            // Ganti provinsi → reload kota
             if (t === provSel) {
                 const opt = provSel.options[provSel.selectedIndex];
                 const provId = opt && opt.dataset.id ? opt.dataset.id : '';
@@ -639,11 +648,13 @@ $stmt->close();
                     kelSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     kelSel.disabled = true;
                 }
+                if (postalInp) {
+                    postalInp.value = '';
+                }
 
                 loadCities(provId, false);
             }
 
-            // Ganti kota → reload kecamatan
             if (t === kotaSel) {
                 const opt = kotaSel.options[kotaSel.selectedIndex];
                 const cityId = opt && opt.dataset.id ? opt.dataset.id : '';
@@ -656,11 +667,13 @@ $stmt->close();
                     kelSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     kelSel.disabled = true;
                 }
+                if (postalInp) {
+                    postalInp.value = '';
+                }
 
                 loadDistricts(cityId, false);
             }
 
-            // Ganti kecamatan → reload kelurahan
             if (t === kecSel) {
                 const opt = kecSel.options[kecSel.selectedIndex];
                 const districtId = opt && opt.dataset.id ? opt.dataset.id : '';
@@ -669,8 +682,19 @@ $stmt->close();
                     kelSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
                     kelSel.disabled = true;
                 }
+                if (postalInp) {
+                    postalInp.value = '';
+                }
 
                 loadSubDistricts(districtId, false);
+            }
+
+            if (t === kelSel) {
+                const opt = kelSel.options[kelSel.selectedIndex];
+                const postal = opt && opt.dataset.postal ? opt.dataset.postal.trim() : '';
+                if (postalInp) {
+                    postalInp.value = postal;
+                }
             }
         });
 
