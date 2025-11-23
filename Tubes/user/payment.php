@@ -19,6 +19,24 @@ $is_repay     = ($order_id_php !== '');
 $auction_id_php = isset($_GET['auction_id']) ? (int)$_GET['auction_id'] : 0;
 $is_auction     = (!$is_repay && $auction_id_php > 0);
 
+// ====================== CEK JIKA SUDAH BAYAR ======================
+if ($is_repay) {
+    $stmt = $conn->prepare("SELECT status FROM orders WHERE order_id = ? AND customer_id = ?");
+    if ($stmt) {
+        $stmt->bind_param('si', $order_id_php, $customer_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $order = $res->fetch_assoc();
+        $stmt->close();
+        
+        if ($order && $order['status'] !== 'pending') {
+            $_SESSION['message'] = 'Order ini sudah dibayar atau diproses.';
+            header('Location: riwayat_belanja.php');
+            exit();
+        }
+    }
+}
+
 // ====================== INISIALISASI ======================
 $profil_nama    = '';
 $profil_prov    = '';
@@ -151,28 +169,18 @@ if ($is_repay) {
             LIMIT 1
         ";
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            die('Gagal memuat data lelang.');
-        }
+        if (!$stmt) die('Gagal memuat data lelang.');
         $stmt->bind_param('i', $auction_id_php);
         $stmt->execute();
         $resAuc = $stmt->get_result();
         $auc    = $resAuc->fetch_assoc();
         $stmt->close();
 
-        if (!$auc) {
-            die('Lelang tidak ditemukan.');
-        }
-        if ((int)$auc['current_winner_id'] !== $customer_id) {
-            die('Anda bukan pemenang lelang ini.');
-        }
+        if (!$auc) die('Lelang tidak ditemukan.');
+        if ((int)$auc['current_winner_id'] !== $customer_id) die('Anda bukan pemenang lelang ini.');
         $endedTime = strtotime($auc['end_time']);
-        if ($endedTime === false || $endedTime < strtotime('-1 day')) {
-            die('Batas waktu pembayaran lelang (1×24 jam) sudah berakhir.');
-        }
-        if ((int)$auc['stok'] < 1) {
-            die('Stok produk lelang tidak cukup.');
-        }
+        if ($endedTime === false || $endedTime < strtotime('-1 day')) die('Batas waktu pembayaran lelang (1×24 jam) sudah berakhir.');
+        if ((int)$auc['stok'] < 1) die('Stok produk lelang tidak cukup.');
 
         $hargaLelang = (int)$auc['current_bid'];
         $rows[] = [
@@ -182,7 +190,7 @@ if ($is_repay) {
             'harga'         => $hargaLelang,
             'item_subtotal' => $hargaLelang,
         ];
-        $subtotal        = $hargaLelang;
+        $subtotal         = $hargaLelang;
         $voucher_discount = 0;
         $base_total       = max(0, $subtotal);
         $init_ongkir      = 0;
@@ -190,13 +198,26 @@ if ($is_repay) {
     } else {
         // ====== MODE 2b: CART NORMAL ======
         if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
-            $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
-            header('Location: cart.php');
-            exit();
+            // fallback dari session kalau payment dibuka ulang / refresh
+            $selected_cart_ids = $_SESSION['checkout_cart_ids'] ?? [];
+            if (empty($selected_cart_ids)) {
+                $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
+                header('Location: cart.php');
+                exit();
+            }
+        } else {
+            $selected_cart_ids = array_map('intval', $_POST['selected_items']);
+            $selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
+            if (!$selected_cart_ids) {
+                $_SESSION['message'] = 'Item tidak valid.';
+                header('Location: cart.php');
+                exit();
+            }
+            // simpan biar aman kalau payment ke-refresh
+            $_SESSION['checkout_cart_ids'] = $selected_cart_ids;
         }
-        $selected_cart_ids = array_map('intval', $_POST['selected_items']);
-        $in_clause         = implode(',', $selected_cart_ids);
-        $_SESSION['checkout_cart_ids'] = $selected_cart_ids;
+
+        $in_clause = implode(',', $selected_cart_ids);
 
         $query = "
             SELECT c.cart_id, c.product_id, c.jumlah_barang,
@@ -207,7 +228,6 @@ if ($is_repay) {
               AND c.cart_id IN ($in_clause)
         ";
         $result = mysqli_query($conn, $query);
-
         $rows     = [];
         $subtotal = 0;
         while ($row = mysqli_fetch_assoc($result)) {
@@ -262,6 +282,13 @@ if ($is_repay) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
+<div id="selectedItemsPool" style="display:none;">
+    <?php foreach ($selected_cart_ids as $cid): ?>
+        <input type="hidden" data-cart-id="<?= (int)$cid ?>" value="<?= (int)$cid ?>">
+    <?php endforeach; ?>
+</div>
+
+
 <body class="mt-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -276,11 +303,7 @@ if ($is_repay) {
                 }
                 ?>
             </h2>
-            <a href="<?=
-                        $is_repay
-                            ? 'riwayat_belanja.php'
-                            : ($auction_id_php > 0 ? 'auction_detail.php?id=' . (int)$auction_id_php : 'cart.php')
-                        ?>" class="btn btn-secondary">← Kembali</a>
+            <a href="<?= $is_repay ? 'riwayat_belanja.php' : ($auction_id_php > 0 ? 'auction_detail.php?id=' . (int)$auction_id_php : 'cart.php') ?>" class="btn btn-secondary">← Kembali</a>
         </div>
 
         <!-- ====================== BARANG YANG DIBAYAR ====================== -->
@@ -299,8 +322,8 @@ if ($is_repay) {
                 <tbody>
                     <?php foreach ($rows as $row): ?>
                         <tr>
-                            <td><img src="<?= htmlspecialchars($row['link_gambar']) ?>" width="80" alt=""></td>
-                            <td><?= htmlspecialchars($row['nama_produk']) ?></td>
+                            <td><img src="<?= htmlspecialchars((string)$row['link_gambar']) ?>" width="80" alt=""></td>
+                            <td><?= htmlspecialchars((string)$row['nama_produk']) ?></td>
                             <td><?= (int)$row['jumlah_barang'] ?></td>
                             <td>Rp <?= number_format((int)$row['harga'], 0, ',', '.') ?></td>
                             <td>Rp <?= number_format((int)$row['item_subtotal'], 0, ',', '.') ?></td>
@@ -350,10 +373,9 @@ if ($is_repay) {
                                 <?php if ($profil_postal !== ''): ?>
                                     Kode Pos: <?= htmlspecialchars((string)$profil_postal, ENT_QUOTES, 'UTF-8') ?>
                                 <?php endif; ?>
-
                             </div>
 
-                            <!-- ALAMAT LAIN: DISSEMBUNYIKAN DULU -->
+                            <!-- ALAMAT LAIN -->
                             <div class="border rounded p-3 mt-2 address-panel" id="formAlamatLain" style="display:none;">
                                 <div class="mb-2">
                                     <label for="provinsi_lain" class="form-label">Provinsi</label>
@@ -412,11 +434,11 @@ if ($is_repay) {
 
                     <tr>
                         <td colspan="4" class="text-end"><strong>Ongkir</strong></td>
-                        <td id="ongkirCell">Rp <?= number_format($init_ongkir, 0, ',', '.') ?></td>
+                        <td id="ongkirCell">Rp <?= number_format((int)$init_ongkir, 0, ',', '.') ?></td>
                     </tr>
                     <tr class="fw-bold table-group-divider" id="grandRow">
                         <td colspan="4" class="text-end"><strong>Total</strong></td>
-                        <td><strong id="grandTotalCell">Rp <?= number_format($grand_total, 0, ',', '.') ?></strong></td>
+                        <td><strong id="grandTotalCell">Rp <?= number_format((int)$grand_total, 0, ',', '.') ?></strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -495,10 +517,12 @@ if ($is_repay) {
         const alamatLainTextarea = document.getElementById('alamat_lain');
         const postalLainInput = document.getElementById('postal_lain');
 
+        // ==================== FIXED JAVASCRIPT PAYMENT ====================
         let currentShipping = {
             cost: 0,
             courier: '',
-            service: ''
+            service: '',
+            postal: ''
         };
 
         let shippingAddress = {
@@ -507,7 +531,8 @@ if ($is_repay) {
             kota: (profileAddress.kota || '').trim(),
             kecamatan: (profileAddress.kecamatan || '').trim(),
             kelurahan: (profileAddress.kelurahan || '').trim(),
-            alamat: (profileAddress.alamat || '').trim()
+            alamat: (profileAddress.alamat || '').trim(),
+            kodepos: (profileAddress.postal_code || '').trim()
         };
 
         const show = el => {
@@ -520,8 +545,7 @@ if ($is_repay) {
         // ================== KURIR BITESHIP ==================
         async function loadCouriers() {
             if (!courierSelect) return;
-            courierSelect.innerHTML =
-                '<option value="" disabled selected>Loading kurir...</option>';
+            courierSelect.innerHTML = '<option value="" disabled selected>Loading kurir...</option>';
             try {
                 const res = await fetch('biteship_list_couriers.php', {
                     cache: 'no-store'
@@ -534,25 +558,21 @@ if ($is_repay) {
                     data = JSON.parse(txt);
                 } catch (e) {
                     console.error('Parse JSON courier error:', e, txt);
-                    courierSelect.innerHTML =
-                        '<option value="" disabled>Gagal baca data kurir</option>';
+                    courierSelect.innerHTML = '<option value="" disabled>Gagal baca data kurir</option>';
                     return;
                 }
 
                 if (!data.success || !Array.isArray(data.couriers) || !data.couriers.length) {
-                    courierSelect.innerHTML =
-                        '<option value="" disabled>Tidak ada kurir tersedia</option>';
+                    courierSelect.innerHTML = '<option value="" disabled>Tidak ada kurir tersedia</option>';
                     return;
                 }
 
-                const allowed = ['jne', 'jnt', 'sicepat', 'tiki', 'pos',
-                    'wahana', 'lion', 'idexpress', 'sap', 'sentral', 'rex'
-                ];
-
+                const allowed = ['jne', 'jnt', 'sicepat', 'tiki', 'pos', 'wahana', 'lion', 'idexpress', 'sap', 'sentral', 'rex'];
                 let list = data.couriers.map(c => ({
                     code: String(c.courier_code || '').toLowerCase(),
                     name: c.courier_name || ''
                 }));
+
                 const seen = new Set();
                 list = list.filter(c => {
                     if (!c.code) return false;
@@ -562,8 +582,7 @@ if ($is_repay) {
                     return true;
                 });
 
-                courierSelect.innerHTML =
-                    '<option value="" disabled selected>-- Pilih Kurir --</option>';
+                courierSelect.innerHTML = '<option value="" disabled selected>-- Pilih Kurir --</option>';
                 list.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.code;
@@ -572,8 +591,7 @@ if ($is_repay) {
                 });
             } catch (err) {
                 console.error('Error loadCouriers:', err);
-                courierSelect.innerHTML =
-                    '<option value="" disabled>Gagal load kurir</option>';
+                courierSelect.innerHTML = '<option value="" disabled>Gagal load kurir</option>';
             }
         }
 
@@ -585,6 +603,7 @@ if ($is_repay) {
                 if (!shippingAddress.alamat) return false;
                 if (kecLainSel && !shippingAddress.kecamatan) return false;
                 if (kelLainSel && !shippingAddress.kelurahan) return false;
+                if (!shippingAddress.kodepos) return false;
                 return true;
             }
             if (shippingAddress.mode === 'profil') return true;
@@ -596,15 +615,29 @@ if ($is_repay) {
             const grand = Math.max(0, baseTotal + ongkir);
             if (ongkirCell) ongkirCell.textContent = 'Rp ' + ongkir.toLocaleString('id-ID');
             if (grandCell) grandCell.textContent = 'Rp ' + grand.toLocaleString('id-ID');
+
             currentShipping.cost = ongkir;
             currentShipping.courier = courierSelect?.value || '';
-            btnPay.disabled = !(currentShipping.service && isAddressValid());
+
+            // FIX: Mode repay boleh langsung bayar tanpa pilih kurir baru
+            if (isRepay && isAddressValid()) {
+                btnPay.disabled = false;
+            } else {
+                btnPay.disabled = !(currentShipping.service && isAddressValid());
+            }
         }
         updateTotals(0);
 
+        function getSelectedItemsSafe() {
+            if (Array.isArray(selectedItems) && selectedItems.length) {
+                return selectedItems.map(String);
+            }
+            const pool = document.querySelectorAll('#selectedItemsPool input[data-cart-id]');
+            return Array.from(pool).map(i => String(i.value)).filter(Boolean);
+        }
+
         function ensureHiddenInputs(formEl) {
             if (!formEl) return;
-            formEl.querySelectorAll('input[name="selected_items[]"]').forEach(i => i.remove());
 
             const put = (name, val) => {
                 let el = formEl.querySelector(`input[name="${name}"]`);
@@ -621,14 +654,15 @@ if ($is_repay) {
             put('provinsi', shippingAddress.provinsi || '');
             put('kota', shippingAddress.kota || '');
             put('kecamatan', shippingAddress.kecamatan || '');
-            put('kelurahan', shippingAddress.kelurahan || '');
             put('alamat', shippingAddress.alamat || '');
 
-            (selectedItems || []).forEach(id => {
+            // --- IMPORTANT: clear dulu biar gak dobel & biar aman ---
+            formEl.querySelectorAll('input[name="selected_items[]"]').forEach(i => i.remove());
+            getSelectedItemsSafe().forEach(id => {
                 const i = document.createElement('input');
                 i.type = 'hidden';
                 i.name = 'selected_items[]';
-                i.value = String(id);
+                i.value = id;
                 formEl.appendChild(i);
             });
 
@@ -636,55 +670,109 @@ if ($is_repay) {
             if (isAuction && auctionIdPHP) put('auction_id', auctionIdPHP);
 
             put('shipping_cost', String(currentShipping.cost || 0));
-            put('shipping_courier', currentShipping.courier || '');
-            put('shipping_service', currentShipping.service || '');
+            put('code_courier', currentShipping.courier || '');
+            put('service_courier', currentShipping.service || '');
         }
+
+        document.addEventListener('submit', (e) => {
+            const f = e.target;
+            if (f && (f.id === 'formQRIS' || f.id === 'formTransfer')) {
+                ensureHiddenInputs(f);
+            }
+        }, true);
+
 
         function resetOngkir(reload = false) {
             currentShipping.service = '';
             currentShipping.cost = 0;
             updateTotals(0);
-            btnPay.disabled = true;
+
+            // FIX: Jangan disable button kalau mode repay
+            if (!isRepay) {
+                btnPay.disabled = true;
+            }
+
             if (svcBox) svcBox.innerHTML = '';
             const cur = courierSelect?.value || '';
             if (reload && cur) loadServices(cur);
         }
 
-        // ====== RAJAONGKIR: PROV/KOTA/KEC/KEL ======
+        // ====== RAJAONGKIR: PROV/KOTA/KEC/KEL (FIXED) ======
         let provinceLoaded = false;
 
+        function normalizeList(root) {
+            if (!root) return [];
+            if (Array.isArray(root)) return root;
+            if (Array.isArray(root.data)) return root.data;
+            if (root.rajaongkir && Array.isArray(root.rajaongkir.results)) return root.rajaongkir.results;
+            if (root.success && Array.isArray(root.results)) return root.results;
+            return [];
+        }
+
+        function safeId(v) {
+            if (v === null || v === undefined) return '';
+            const s = String(v).trim();
+            if (!s || s.toLowerCase() === 'undefined' || s.toLowerCase() === 'null') return '';
+            return s;
+        }
+
+        function safeText(v) {
+            if (v === null || v === undefined) return '';
+            const s = String(v).trim();
+            if (!s || s.toLowerCase() === 'undefined' || s.toLowerCase() === 'null') return '';
+            return s;
+        }
+
         async function loadProvinces() {
-            if (provinceLoaded) return;
-            if (provinsiLainSel) provinsiLainSel.innerHTML = '<option value="">Loading...</option>';
-            const res = await fetch('./rajaongkir/get-province.php?t=' + Date.now());
-            const txt = await res.text();
-            let data;
+            if (provinceLoaded || !provinsiLainSel) return;
+
+            provinsiLainSel.innerHTML = '<option value="">Loading...</option>';
+
             try {
-                data = JSON.parse(txt);
-            } catch {
-                console.error('Province parse error:', txt);
-                return;
-            }
+                const res = await fetch('./rajaongkir/get-province.php?t=' + Date.now());
+                const txt = await res.text();
 
-            let list = [];
-            if (Array.isArray(data)) list = data;
-            else if (Array.isArray(data.data)) list = data.data;
-            else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) list = data.rajaongkir.results;
+                let root;
+                try {
+                    root = JSON.parse(txt);
+                } catch (e) {
+                    console.error('Province parse error:', e, txt);
+                    provinsiLainSel.innerHTML = '<option value="">Gagal load provinsi</option>';
+                    return;
+                }
 
-            const options = list.map(p => {
-                const id = String(p.province_id ?? p.id ?? p.provinceId ?? '');
-                const name = String(p.province ?? p.name ?? p.provinceName ?? '');
-                return (id && name) ? `<option value="${id}">${name}</option>` : '';
-            }).join('');
+                const list = normalizeList(root);
+                if (!list.length) {
+                    provinsiLainSel.innerHTML = '<option value="">(Provinsi kosong)</option>';
+                    return;
+                }
 
-            if (provinsiLainSel) {
+                const options = list.map(p => {
+                    const id = safeId(p.province_id ?? p.id ?? p.provinceId);
+                    const name = safeText(p.province ?? p.name ?? p.provinceName);
+                    if (!id || !name) return '';
+                    return `<option value="${id}">${name}</option>`;
+                }).join('');
+
                 provinsiLainSel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' + options;
                 provinceLoaded = true;
+
+            } catch (err) {
+                console.error('loadProvinces fetch error:', err);
+                provinsiLainSel.innerHTML = '<option value="">Error load provinsi</option>';
             }
         }
 
         async function loadCities(provId) {
             if (!kotaLainSel) return;
+
+            const pid = safeId(provId);
+            if (!pid) {
+                kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>';
+                kotaLainSel.disabled = true;
+                return;
+            }
+
             kotaLainSel.innerHTML = '<option value="">Loading...</option>';
             kotaLainSel.disabled = true;
 
@@ -696,39 +784,54 @@ if ($is_repay) {
                 kelLainSel.disabled = true;
                 kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
             }
+            if (postalLainInput) postalLainInput.value = '';
 
-            if (!provId) {
-                kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>';
-                return;
-            }
-            const res = await fetch('./rajaongkir/get-cities.php?province=' +
-                encodeURIComponent(provId) + '&t=' + Date.now());
-            const txt = await res.text();
-            let data;
             try {
-                data = JSON.parse(txt);
-            } catch {
-                console.error('City parse error:', txt);
-                return;
+                const res = await fetch('./rajaongkir/get-cities.php?province=' + encodeURIComponent(pid) + '&t=' + Date.now());
+                const txt = await res.text();
+
+                let root;
+                try {
+                    root = JSON.parse(txt);
+                } catch (e) {
+                    console.error('City parse error:', e, txt);
+                    kotaLainSel.innerHTML = '<option value="">Gagal load kota</option>';
+                    return;
+                }
+
+                const list = normalizeList(root);
+                if (!list.length) {
+                    kotaLainSel.innerHTML = '<option value="">(Tidak ada kota)</option>';
+                    kotaLainSel.disabled = false;
+                    return;
+                }
+
+                const options = list.map(c => {
+                    const id = safeId(c.city_id ?? c.id ?? c.cityId);
+                    const name = safeText(c.city_name ?? c.name ?? c.cityName);
+                    if (!id || !name) return '';
+                    return `<option value="${id}">${name}</option>`;
+                }).join('');
+
+                kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
+                kotaLainSel.disabled = false;
+
+            } catch (err) {
+                console.error('loadCities fetch error:', err);
+                kotaLainSel.innerHTML = '<option value="">Error load kota</option>';
             }
-
-            let list = [];
-            if (Array.isArray(data)) list = data;
-            else if (Array.isArray(data.data)) list = data.data;
-            else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) list = data.rajaongkir.results;
-
-            const options = list.map(c => {
-                const id = String(c.city_id ?? c.id ?? c.cityId ?? '');
-                const name = String(c.city_name ?? c.name ?? c.cityName ?? '').trim();
-                return (id && name) ? `<option value="${id}">${name}</option>` : '';
-            }).join('');
-
-            kotaLainSel.innerHTML = '<option value="">-- Pilih Kota --</option>' + options;
-            kotaLainSel.disabled = false;
         }
 
         async function loadDistricts(cityId) {
             if (!kecLainSel) return;
+
+            const cid = safeId(cityId);
+            if (!cid) {
+                kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+                kecLainSel.disabled = true;
+                return;
+            }
+
             kecLainSel.disabled = true;
             kecLainSel.innerHTML = '<option value="">Loading...</option>';
 
@@ -736,101 +839,78 @@ if ($is_repay) {
                 kelLainSel.disabled = true;
                 kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
             }
-
-            if (!cityId) {
-                kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
-                return;
-            }
+            if (postalLainInput) postalLainInput.value = '';
 
             try {
-                const res = await fetch('./rajaongkir/get-district.php?city=' +
-                    encodeURIComponent(cityId) + '&t=' + Date.now());
+                const res = await fetch('./rajaongkir/get-district.php?city=' + encodeURIComponent(cid) + '&t=' + Date.now());
                 const txt = await res.text();
-                let data;
+
+                let root;
                 try {
-                    data = JSON.parse(txt);
+                    root = JSON.parse(txt);
                 } catch (e) {
-                    console.error('District JSON parse error:', e);
-                    kecLainSel.innerHTML = '<option value="">Gagal baca data kecamatan</option>';
+                    console.error('District parse error:', e, txt);
+                    kecLainSel.innerHTML = '<option value="">Gagal load kecamatan</option>';
                     return;
                 }
 
-                let list = [];
-                if (Array.isArray(data)) list = data;
-                else if (Array.isArray(data.data)) list = data.data;
-                else if (data.rajaongkir && Array.isArray(data.rajaongkir.results)) list = data.rajaongkir.results;
-
-                if (!Array.isArray(list) || !list.length) {
-                    kecLainSel.innerHTML = '<option value="">(Tidak ada data kecamatan)</option>';
+                const list = normalizeList(root);
+                if (!list.length) {
+                    kecLainSel.innerHTML = '<option value="">(Tidak ada kecamatan)</option>';
+                    kecLainSel.disabled = false;
                     return;
                 }
 
                 const options = list.map(d => {
-                    const id = String(
-                        d.subdistrict_id ??
-                        d.id ??
-                        d.subdistrictId ??
-                        d.district_id ??
-                        ''
-                    );
-                    const name = String(
-                        d.subdistrict_name ??
-                        d.name ??
-                        d.subdistrictName ??
-                        d.district_name ??
-                        ''
-                    ).trim();
+                    const id = safeId(d.subdistrict_id ?? d.id ?? d.subdistrictId ?? d.district_id);
+                    const name = safeText(d.subdistrict_name ?? d.name ?? d.subdistrictName ?? d.district_name);
                     if (!id || !name) return '';
                     return `<option value="${id}">${name}</option>`;
                 }).join('');
-
-                if (!options) {
-                    kecLainSel.innerHTML = '<option value="">(Data kecamatan kosong)</option>';
-                    return;
-                }
 
                 kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + options;
                 kecLainSel.disabled = false;
 
             } catch (err) {
-                console.error('District fetch error:', err);
+                console.error('loadDistricts fetch error:', err);
                 kecLainSel.innerHTML = '<option value="">Error load kecamatan</option>';
-                kecLainSel.disabled = true;
             }
         }
 
         async function loadSubDistricts(districtId) {
             if (!kelLainSel) return;
-            kelLainSel.disabled = true;
-            kelLainSel.innerHTML = '<option value="">Loading...</option>';
 
-            if (!districtId) {
+            const did = safeId(districtId);
+            if (!did) {
                 kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
+                kelLainSel.disabled = true;
                 return;
             }
 
+            kelLainSel.disabled = true;
+            kelLainSel.innerHTML = '<option value="">Loading...</option>';
+            if (postalLainInput) postalLainInput.value = '';
+
             try {
-                const res = await fetch('./rajaongkir/get-subdistrict.php?district=' +
-                    encodeURIComponent(districtId) +
-                    '&t=' + Date.now());
+                const res = await fetch('./rajaongkir/get-subdistrict.php?district=' + encodeURIComponent(did) + '&t=' + Date.now());
                 const txt = await res.text();
-                console.log('SUBDIST RAW (payment):', txt);
+
                 let root;
                 try {
                     root = JSON.parse(txt);
                 } catch (e) {
-                    console.error('Subdistrict JSON parse error:', e, txt);
+                    console.error('Subdistrict parse error:', e, txt);
                     kelLainSel.innerHTML = '<option value="">Gagal load kelurahan</option>';
                     return;
                 }
 
                 if (!root.success) {
-                    console.error('Subdistrict API error:', root.message);
                     kelLainSel.innerHTML = '<option value="">Gagal load kelurahan</option>';
+                    kelLainSel.disabled = false;
                     return;
                 }
 
-                const list = Array.isArray(root.data) ? root.data : [];
+                const list = normalizeList(root);
                 if (!list.length) {
                     kelLainSel.innerHTML = '<option value="">(Tidak ada kelurahan)</option>';
                     kelLainSel.disabled = false;
@@ -838,125 +918,53 @@ if ($is_repay) {
                 }
 
                 const options = list.map(s => {
-                    const id = String(s.subdistrict_id ?? s.id ?? '');
-                    const name = String(s.subdistrict_name ?? s.name ?? '').trim();
-                    const zip = String(s.zip_code ?? s.postal_code ?? '').trim();
+                    const id = safeId(s.subdistrict_id ?? s.id);
+                    const name = safeText(s.subdistrict_name ?? s.name);
+                    const zip = safeText(s.zip_code ?? s.postal_code);
                     if (!id || !name) return '';
-                    return `<option value="${id}" data-zip="${zip}">${name}${zip ? ' (' + zip + ')' : ''}</option>`;
+                    return `<option value="${id}" data-zip="${zip}">${name}${zip ? ' ('+zip+')' : ''}</option>`;
                 }).join('');
 
                 kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>' + options;
                 kelLainSel.disabled = false;
-                shippingAddress.kelurahan = '';
 
             } catch (err) {
-                console.error('Subdistrict fetch error:', err);
-                kelLainSel.innerHTML = '<option value="">Gagal load kelurahan</option>';
-                kelLainSel.disabled = true;
+                console.error('loadSubDistricts fetch error:', err);
+                kelLainSel.innerHTML = '<option value="">Error load kelurahan</option>';
             }
         }
+
+
 
         function applyAddressMode(mode) {
             if (mode === 'profil') {
                 show(panelProfil);
                 hide(panelLain);
+
                 shippingAddress.mode = 'profil';
                 shippingAddress.provinsi = (profileAddress.provinsi || '').trim();
                 shippingAddress.kota = (profileAddress.kota || '').trim();
                 shippingAddress.kecamatan = (profileAddress.kecamatan || '').trim();
                 shippingAddress.kelurahan = (profileAddress.kelurahan || '').trim();
                 shippingAddress.alamat = (profileAddress.alamat || '').trim();
+                shippingAddress.kodepos = (profileAddress.postal_code || '').trim();
+
                 if (postalLainInput) postalLainInput.value = '';
                 resetOngkir(true);
-            } else if (mode === 'custom') {
-                hide(panelProfil);
-                show(panelLain);
-                shippingAddress.mode = 'custom';
-                if (!provinceLoaded) loadProvinces().catch(console.error);
-                const pOpt = provinsiLainSel?.selectedOptions?.[0];
-                const cOpt = kotaLainSel?.selectedOptions?.[0];
-                const kOpt = kecLainSel?.selectedOptions?.[0];
-                const lOpt = kelLainSel?.selectedOptions?.[0];
-                shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
-                shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
-                shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
-                shippingAddress.kelurahan = (lOpt && kelLainSel.value) ? lOpt.text : '';
-                shippingAddress.alamat = (alamatLainTextarea?.value || '');
-                resetOngkir(true);
+                return;
             }
+
+            // custom
+            hide(panelProfil);
+            show(panelLain);
+            shippingAddress.mode = 'custom';
+            if (!provinceLoaded) loadProvinces().catch(console.error);
+
+            resetOngkir(true);
         }
 
-        // INIT: alamat profil langsung aktif + load kurir
-        applyAddressMode('profil');
-        loadCouriers().catch(console.error);
-
-        document.addEventListener('change', (e) => {
-            const t = e.target;
-
-            if (t && t.name === 'alamat_mode') {
-                applyAddressMode(t.value === 'profil' ? 'profil' : 'custom');
-            }
-
-            if (t === provinsiLainSel) {
-                loadCities(provinsiLainSel.value).then(() => {
-                    const pOpt = provinsiLainSel.selectedOptions[0];
-                    shippingAddress.provinsi = (pOpt && provinsiLainSel.value) ? pOpt.text : '';
-                    shippingAddress.kecamatan = '';
-                    shippingAddress.kelurahan = '';
-                    if (kecLainSel) {
-                        kecLainSel.disabled = true;
-                        kecLainSel.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
-                    }
-                    if (kelLainSel) {
-                        kelLainSel.disabled = true;
-                        kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
-                    }
-                    if (postalLainInput) postalLainInput.value = '';
-                    resetOngkir(true);
-                });
-            }
-
-            if (t === kotaLainSel) {
-                const cOpt = kotaLainSel.selectedOptions[0];
-                shippingAddress.kota = (cOpt && kotaLainSel.value) ? cOpt.text : '';
-                loadDistricts(kotaLainSel.value).then(() => {
-                    shippingAddress.kecamatan = '';
-                    shippingAddress.kelurahan = '';
-                    if (kelLainSel) {
-                        kelLainSel.disabled = true;
-                        kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
-                    }
-                    if (postalLainInput) postalLainInput.value = '';
-                    resetOngkir(true);
-                }).catch(() => resetOngkir(true));
-            }
-
-            if (t === kecLainSel) {
-                const kOpt = kecLainSel.selectedOptions[0];
-                shippingAddress.kecamatan = (kOpt && kecLainSel.value) ? kOpt.text : '';
-                shippingAddress.kelurahan = '';
-                if (postalLainInput) postalLainInput.value = '';
-                resetOngkir(true);
-                loadSubDistricts(kecLainSel.value).catch(console.error);
-            }
-
-            if (t === kelLainSel) {
-                const lOpt = kelLainSel.selectedOptions[0];
-                shippingAddress.kelurahan = (lOpt && kelLainSel.value) ? lOpt.text : '';
-                if (postalLainInput && lOpt) {
-                    const zip = lOpt.getAttribute('data-zip') || '';
-                    postalLainInput.value = zip;
-                }
-                resetOngkir(true);
-            }
-
-            if (t === alamatLainTextarea) {
-                shippingAddress.alamat = (alamatLainTextarea.value || '');
-                resetOngkir(true);
-            }
-        });
-
-        document.addEventListener('click', (e) => {
+        // klik label radio
+        document.addEventListener('click', e => {
             const t = e.target;
             if (t && t.matches('label[for="alamatProfil"], #alamatProfil')) {
                 if (rProfil) rProfil.checked = true;
@@ -967,6 +975,70 @@ if ($is_repay) {
                 applyAddressMode('custom');
             }
         });
+
+        // change event semua dropdown custom
+        document.addEventListener('change', e => {
+            const t = e.target;
+
+            if (t === provinsiLainSel) {
+                const provId = provinsiLainSel.value || '';
+                if (!provId) {
+                    resetOngkir(true);
+                    return;
+                }
+                loadCities(provId).then(() => {
+                    const pOpt = provinsiLainSel.selectedOptions[0];
+                    shippingAddress.provinsi = pOpt ? pOpt.text : '';
+                    shippingAddress.kota = '';
+                    shippingAddress.kecamatan = '';
+                    shippingAddress.kelurahan = '';
+                    shippingAddress.kodepos = '';
+                    resetOngkir(true);
+                });
+            }
+
+
+            if (t === kotaLainSel) {
+                const cOpt = kotaLainSel.selectedOptions[0];
+                shippingAddress.kota = cOpt ? cOpt.text : '';
+                loadDistricts(kotaLainSel.value).then(() => {
+                    shippingAddress.kecamatan = '';
+                    shippingAddress.kelurahan = '';
+                    shippingAddress.kodepos = '';
+                    resetOngkir(true);
+                });
+            }
+
+            if (t === kecLainSel) {
+                const kOpt = kecLainSel.selectedOptions[0];
+                shippingAddress.kecamatan = kOpt ? kOpt.text : '';
+                shippingAddress.kelurahan = '';
+                shippingAddress.kodepos = '';
+                resetOngkir(true);
+                loadSubDistricts(kecLainSel.value).catch(console.error);
+            }
+
+            if (t === kelLainSel) {
+                const lOpt = kelLainSel.selectedOptions[0];
+                shippingAddress.kelurahan = lOpt ? lOpt.text : '';
+
+                const zip = lOpt?.getAttribute('data-zip') || '';
+                shippingAddress.kodepos = zip.trim();
+                if (postalLainInput) postalLainInput.value = zip;
+
+                resetOngkir(true);
+            }
+        });
+
+        // realtime alamat
+        alamatLainTextarea?.addEventListener('input', () => {
+            shippingAddress.alamat = (alamatLainTextarea.value || '').trim();
+            resetOngkir(true);
+        });
+
+        // INIT
+        applyAddressMode('profil');
+        loadCouriers().catch(console.error);
 
         // ====================== ONGKIR / LAYANAN (BITESHIP) ======================
         async function loadServices(courier) {
@@ -989,36 +1061,32 @@ if ($is_repay) {
             formData.append('kecamatan', shippingAddress.kecamatan || '');
             formData.append('alamat', shippingAddress.alamat || '');
 
-            // ====== KODE POS TUJUAN (KUNCI UNTUK BITESHIP) ======
             let destPostal = '';
-
             if (shippingAddress.mode === 'profil') {
-                // dari profil, kita pakai postal_code yang sudah disimpan di DB
                 destPostal = (profileAddress.postal_code || '').trim();
-            } else if (shippingAddress.mode === 'custom') {
-                // dari input "Kode Pos" yang ada di form alamat lain
-                destPostal = (postalLainInput && postalLainInput.value) ?
-                    postalLainInput.value.trim() :
-                    '';
+            } else {
+                destPostal = (shippingAddress.kodepos || '').trim();
             }
-
-            // kalau masih kosong, jangan tembak Biteship → pasti 400
             if (!destPostal) {
                 svcBox.innerHTML = '<div class="text-danger">Kode pos tujuan belum terisi atau tidak valid.</div>';
                 updateTotals(0);
                 return;
             }
-
             formData.append('destination_postal_code', destPostal);
-
 
             formData.append('code_courier', courier);
             formData.append('base_total', String(baseTotal));
 
             svcBox.textContent = 'Menghitung ongkir...';
             currentShipping.service = '';
+            currentShipping.cost = 0;
+            currentShipping.postal = destPostal;
             updateTotals(0);
-            btnPay.disabled = true;
+
+            // FIX: Jangan disable button kalau mode repay
+            if (!isRepay) {
+                btnPay.disabled = true;
+            }
 
             try {
                 const res = await fetch('biteship_calc_ongkir.php', {
@@ -1031,7 +1099,7 @@ if ($is_repay) {
                 let data;
                 try {
                     data = JSON.parse(txt);
-                } catch (e) {
+                } catch {
                     throw new Error('Respon tidak valid dari biteship_calc_ongkir.php');
                 }
 
@@ -1042,26 +1110,24 @@ if ($is_repay) {
                 }
 
                 svcBox.innerHTML = `
-                <label class="form-label">Pilih Layanan</label>
-                <select id="serviceSelect" class="form-select">
-                    ${data.services.map(s => `
-                        <option value="${s.service}" data-cost="${s.cost}">
-                            ${(s.courier || courier).toUpperCase()} - ${s.service}
-                            ${s.etd ? `(ETD ${s.etd})` : ''}
-                            - Rp ${Number(s.cost).toLocaleString('id-ID')}
-                        </option>
-                    `).join('')}
-                </select>
-                <small class="text-muted">Harga & estimasi berdasarkan API Biteship.</small>
-            `;
+    <label class="form-label">Pilih Layanan</label>
+    <select id="serviceSelect" class="form-select">
+        ${data.services.map(s => `
+        <option value="${s.service}" data-cost="${s.cost}">
+            ${(s.courier || courier).toUpperCase()} - ${s.service}
+            ${s.etd ? `(ETD ${s.etd})` : ''}
+            - Rp ${Number(s.cost).toLocaleString('id-ID')}
+        </option>
+        `).join('')}
+    </select>
+    <small class="text-muted">Harga & estimasi berdasarkan API Biteship.</small>
+    `;
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
                     const cost = parseInt(svc.selectedOptions[0]?.dataset.cost || '0', 10);
                     currentShipping.service = svc.value || '';
                     updateTotals(cost);
-                    ensureHiddenInputs(document.getElementById('formQRIS'));
-                    ensureHiddenInputs(document.getElementById('formTransfer'));
                 };
                 applyCost();
                 svc.addEventListener('change', applyCost);
@@ -1088,7 +1154,8 @@ if ($is_repay) {
         }
 
         function mulaiPembayaran() {
-            if (!currentShipping.service) {
+            // FIX: Mode repay ga perlu validasi kurir lagi
+            if (!isRepay && !currentShipping.service) {
                 alert("Pilih kurir & layanan pengiriman dulu ya bro.");
                 return;
             }
@@ -1108,41 +1175,50 @@ if ($is_repay) {
             if (metode.value === "QRIS") {
                 qrContent = generateQRContent();
                 html = `
-                <div class="payment-box">
-                    <h5>QRIS</h5>
-                    <img id="qrImage"
-                         src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}"
-                         alt="QRIS"><br>
-                    <div class="qris-timer" id="timer">02:00</div>
-                    <form id="formQRIS" action="checkout.php" method="post">
-                        <input type="hidden" name="metode" value="QRIS">
-                        <input type="hidden" name="kode_transaksi" value="${qrContent}">
-                        <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
-                    </form>
-                </div>`;
+    <div class="payment-box">
+        <h5>QRIS</h5>
+        <img id="qrImage"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrContent}"
+            alt="QRIS"><br>
+        <div class="qris-timer" id="timer">02:00</div>
+        <form id="formQRIS" action="checkout.php" method="post">
+            <input type="hidden" name="metode" value="QRIS">
+            <input type="hidden" name="kode_transaksi" value="${qrContent}">
+            <button type="submit" class="btn btn-primary mt-2">Cek Pembayaran</button>
+        </form>
+    </div>`;
                 container.innerHTML = html;
-                ensureHiddenInputs(document.getElementById('formQRIS'));
+
+                // FIX: Delay execution sampai DOM ready
+                setTimeout(() => {
+                    ensureHiddenInputs(document.getElementById('formQRIS'));
+                }, 100);
+
                 startQRISTimer();
             } else {
                 html = `
-                <div class="payment-box">
-                    <h5>Transfer Bank</h5>
-                    <p>Silakan transfer ke rekening:</p>
-                    <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
-                    <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="metode" value="Transfer">
-                        <div class="mb-3">
-                            <label for="bukti" class="form-label">Upload Bukti Transfer</label>
-                            <input type="file" name="bukti" class="form-control" required accept="image/*">
-                            <div class="form-text">Format: JPG, PNG (max 2MB)</div>
-                        </div>
-                        <button type="submit" name="pay_bank" class="btn btn-success w-100">
-                            <i class="fas fa-upload me-2"></i> Upload & Cek Pembayaran
-                        </button>
-                    </form>
-                </div>`;
+    <div class="payment-box">
+        <h5>Transfer Bank</h5>
+        <p>Silakan transfer ke rekening:</p>
+        <p><strong>BANK BCA 1234567890 a.n STYRK INDUSTRIES</strong></p>
+        <form id="formTransfer" action="checkout.php" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="metode" value="Transfer">
+            <div class="mb-3">
+                <label for="bukti" class="form-label">Upload Bukti Transfer</label>
+                <input type="file" name="bukti" class="form-control" required accept="image/*">
+                <div class="form-text">Format: JPG, PNG (max 2MB)</div>
+            </div>
+            <button type="submit" name="pay_bank" class="btn btn-success w-100">
+                <i class="fas fa-upload me-2"></i> Upload & Cek Pembayaran
+            </button>
+        </form>
+    </div>`;
                 container.innerHTML = html;
-                ensureHiddenInputs(document.getElementById('formTransfer'));
+
+                // FIX: Delay execution sampai DOM ready
+                setTimeout(() => {
+                    ensureHiddenInputs(document.getElementById('formTransfer'));
+                }, 100);
             }
         }
 
@@ -1161,8 +1237,14 @@ if ($is_repay) {
                     const qrImg = document.getElementById("qrImage");
                     if (qrImg)
                         qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
-                    const kodeInput = document.querySelector("#formQRIS input[name='kode_transaksi']");
+                    const kodeInput = document.querySelector("#formQRIS input[name='kode_transaksi' ]");
                     if (kodeInput) kodeInput.value = qrContent;
+
+                    // FIX: Re-inject hidden inputs setelah QR refresh
+                    setTimeout(() => {
+                        ensureHiddenInputs(document.getElementById('formQRIS'));
+                    }, 100);
+
                     startQRISTimer();
                     alert("QR baru telah digenerate karena timeout.");
                 }

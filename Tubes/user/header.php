@@ -42,20 +42,7 @@ foreach ($scripts_to_run as $script) {
 // Buang semua teks sampah (hasil echo dari skrip otomatis) biar header bersih
 ob_end_clean(); 
 
-// ==================================================================
-// [PENGAMAN KONEKSI]
-// Karena skrip di atas mungkin menutup koneksi ($conn->close()), 
-// kita pastikan koneksi hidup lagi buat sisa halaman ini.
-if (!isset($conn) || !($conn instanceof mysqli)) {
-    include $root_dir . 'koneksi.php';
-} else {
-    try {
-        if (!$conn->ping()) include $root_dir . 'koneksi.php';
-    } catch (Exception $e) {
-        include $root_dir . 'koneksi.php';
-    }
-}
-// ==================================================================
+
 
 
 // --- KODE ASLI LU ---

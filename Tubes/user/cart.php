@@ -46,7 +46,7 @@ if ($res && mysqli_num_rows($res) > 0) {
 mysqli_stmt_close($stmt);
 
 // ==== Voucher session data ====
-$voucher_code   = $_SESSION['voucher_code']         ?? null;   
+$voucher_code   = $_SESSION['voucher_code']         ?? null;
 $voucher_tipe   = $_SESSION['voucher_tipe']         ?? null;   // 'persen' | 'rupiah' | null
 $voucher_persen = (float)($_SESSION['voucher_nilai_persen'] ?? 0);
 $voucher_rupiah = (float)($_SESSION['voucher_nilai_rupiah'] ?? 0);
@@ -214,15 +214,16 @@ if ($total_setelah_diskon < 0) $total_setelah_diskon = 0;
 
                 <div class="pay-col">
                     <button
-                        type="submit"
-                        name="proceed_payment"
+                        type="button"
                         class="btn btn-success d-inline-flex align-items-center gap-2 px-4 py-2 fw-semibold"
-                        form="cart-form"
                         id="proceed-payment-btn"
-                        style="min-width:230px;">
+                        style="min-width:230px;"
+                        onclick="proceedPayment()">
                         <i class="bi bi-credit-card"></i>
                         <span>Lanjut ke Pembayaran</span>
                     </button>
+
+
                 </div>
             </div>
 
@@ -357,6 +358,41 @@ if ($total_setelah_diskon < 0) $total_setelah_diskon = 0;
             updateUI();
         });
     </script>
+
+    <script>
+        function proceedPayment() {
+            const form = document.getElementById('cart-form');
+            if (!form) {
+                alert('Form cart tidak ditemukan.');
+                return;
+            }
+
+            // ambil checkbox TERBARU (jangan pake cache)
+            const boxes = Array.from(document.querySelectorAll('input.item-checkbox'));
+            const checked = boxes.filter(b => b.checked);
+
+            if (checked.length === 0) {
+                alert('Pilih setidaknya satu barang untuk checkout.');
+                return;
+            }
+
+            // bersihin selected_items[] di form biar gak dobel
+            form.querySelectorAll('input[name="selected_items[]"]').forEach(x => x.remove());
+
+            // inject hidden dari yang dicentang (source of truth)
+            checked.forEach(b => {
+                const h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'selected_items[]';
+                h.value = b.value; // cart_id
+                form.appendChild(h);
+            });
+
+            // submit langsung
+            form.submit();
+        }
+    </script>
+
 
 </body>
 
