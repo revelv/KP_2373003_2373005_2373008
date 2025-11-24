@@ -16,7 +16,7 @@ $sql = "
         o.order_id,
         o.tgl_order,
         o.total_harga,
-        o.komship_status,
+        o.shipping_status,
         GROUP_CONCAT(
             CONCAT(p.nama_produk, ' (x', od.jumlah, ')')
             SEPARATOR '||'
@@ -27,7 +27,7 @@ $sql = "
     WHERE 
         o.customer_id = ?
         -- SEMBUNYIKAN ORDER LELANG YG MASIH PENDING
-        AND NOT (o.komship_status = 'pending' AND o.order_id LIKE 'STYRK_AUC_%')
+        AND NOT (o.shipping_status = 'pending' AND o.order_id LIKE 'STYRK_AUC_%')
     GROUP BY o.order_id
     ORDER BY o.tgl_order DESC
 ";
@@ -50,6 +50,7 @@ $stmt->close();
     <meta charset="UTF-8" />
     <title>Riwayat Belanja</title>
     <link rel="stylesheet" href="./css/riwayat_belanja.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
 
 <body>
@@ -93,8 +94,7 @@ $stmt->close();
                                         $tgl   = date('d M Y H:i', strtotime($o['tgl_order']));
                                         $total = (float) $o['total_harga'];
 
-                                        // pakai kolom komship_status
-                                        $statusRaw = (string) ($o['komship_status'] ?? '');
+                                        $statusRaw = (string) ($o['shipping_status'] ?? '');
                                         $status    = strtolower($statusRaw);
 
                                         // olah list barang
@@ -123,10 +123,12 @@ $stmt->close();
                                         };
                                     ?>
                                     <tr>
+                                        <!-- Tanggal -->
                                         <td class="nowrap">
                                             <?= htmlspecialchars($tgl) ?>
                                         </td>
 
+                                        <!-- Order ID -->
                                         <td class="text-mono nowrap">
                                             <?= htmlspecialchars($o['order_id']) ?>
                                         </td>
@@ -148,7 +150,7 @@ $stmt->close();
                                             </strong>
                                         </td>
 
-                                        <!-- Status (pakai komship_status) -->
+                                        <!-- Status -->
                                         <td>
                                             <span class="<?= $badgeClass ?> px-2 py-1 rounded-2">
                                                 <?= htmlspecialchars($status) ?>
@@ -158,9 +160,8 @@ $stmt->close();
                                         <!-- Aksi -->
                                         <td class="td-aksi text-center">
                                             <?php if ($status === 'pending'): ?>
-                                                <!-- Pending: belum ada tombol apa-apa -->
+                                                <!-- Pending: bisa lu isi tombol Bayar Ulang nanti -->
                                             <?php else: ?>
-                                                <!-- Tombol Lacak -->
                                                 <button
                                                     type="button"
                                                     class="btn btn-outline-secondary btn-sm"
@@ -181,10 +182,72 @@ $stmt->close();
         </div>
     </section>
 
-    <!-- Modal tracking -->
-    <div class="modal fade" id="modalTrack" tabindex="-1" aria-hidden="true"></div>
+    <!-- Modal tracking: struktur FIX, cuma isi body yang diganti via fetch -->
+    <div class="modal fade" id="modalTrack" tabindex="-1" aria-hidden="true" aria-labelledby="modalTrackLabel">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTrackLabel">Tracking Pengiriman</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body" id="modalTrackBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning mb-2" role="status"></div>
+                        <div>Memuat data tracking...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalEl   = document.getElementById('modalTrack');
+            const modalBody = document.getElementById('modalTrackBody');
+
+            if (!modalEl || !modalBody) return;
+
+            modalEl.addEventListener('show.bs.modal', function (event) {
+                const button  = event.relatedTarget;
+                const orderId = button ? (button.getAttribute('data-order') || '') : '';
+
+                if (!orderId) {
+                    modalBody.innerHTML = `
+                        <div class="alert alert-danger mb-0">
+                            Order ID tidak valid.
+                        </div>`;
+                    return;
+                }
+
+                // state loading
+                modalBody.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning mb-2" role="status"></div>
+                        <div>Memuat data tracking...</div>
+                    </div>`;
+
+                fetch('track_biteship_modal.php?order_id=' + encodeURIComponent(orderId), {
+                    cache: 'no-store'
+                })
+                    .then(res => res.text())
+                    .then(html => {
+                        // track_biteship_modal.php boleh balikin HTML bebas (card, timeline, dll),
+                        // kita taruh mentah di dalam body modal.
+                        modalBody.innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error('Error load tracking:', err);
+                        modalBody.innerHTML = `
+                            <div class="alert alert-danger mb-0">
+                                Gagal memuat tracking: ${String(err.message || err)}
+                            </div>`;
+                    });
+            });
+        });
+    </script>
 
     <?php include __DIR__ . '/footer.php'; ?>
 </body>

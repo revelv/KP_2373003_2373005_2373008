@@ -16,7 +16,7 @@ $payload = [
     "origin_address"         => "Jl. Gudang Styrk No. 10",
     "origin_postal_code"     => "40212",        // Bandung (contoh, sesuaikan kalau mau)
 
-    "destination_contact_name"   => "Dylan Test",
+    "destination_contact_name"   => "Dylan",
     "destination_contact_phone"  => "081234567891",
     "destination_contact_email"  => "dylan@test.com",
     "destination_address"        => "Jl. Test Order No. 123",

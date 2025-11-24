@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 22, 2025 at 04:59 PM
+-- Generation Time: Nov 24, 2025 at 06:03 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -34,7 +34,7 @@ CREATE TABLE `admin` (
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kecamatan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `kelurahan` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `kelurahan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `postal_code` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -127,7 +127,7 @@ INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `u
 (70, 10, 'KB018', 1, '2025-11-18 17:23:43', '2025-11-18 17:23:43'),
 (79, 16, 'COMM-2', 1, '2025-11-18 17:23:47', '2025-11-18 17:23:47'),
 (92, 18, 'KB004', 1, '2025-11-19 15:57:33', '2025-11-19 15:57:33'),
-(118, 21, 'KB003', 1, '2025-11-22 16:51:32', NULL);
+(118, 21, 'KB003', 1, '2025-11-24 03:38:21', '2025-11-24 03:38:21');
 
 -- --------------------------------------------------------
 
@@ -222,7 +222,7 @@ CREATE TABLE `customer` (
 --
 
 INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `profile_image`, `postal_code`, `alamat`, `last_login`, `last_reengagement_sent`) VALUES
-(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 0, 'Jalan asmi no 123', '2025-11-18 16:26:10', NULL),
+(6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', NULL, 40218, 'Taman Kopo Indah 3 C2 no 4', '2025-11-24 03:39:45', NULL),
 (7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', '', '', NULL, 0, 'jalan tuhan kebenaran no. 100', NULL, NULL),
 (10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', '', '', NULL, 0, 'rumahsammy 123', '2025-11-15 13:36:31', NULL),
 (16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '../uploads/profile/profile_16_1763491478.jpg', 0, 'gunung gede 123', '2025-11-18 16:26:34', '2025-10-26 08:32:45'),
@@ -246,11 +246,11 @@ CREATE TABLE `orders` (
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kecamatan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kelurahan` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `postal_code` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `postal_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `alamat` varchar(10000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `shipping_provider_order_id` varchar(200) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `shipping_tracking_code` varchar(200) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `shipping_status` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `shipping_provider_order_id` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `shipping_tracking_code` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `shipping_status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `shipping_last_sync` datetime DEFAULT NULL,
   `code_courier` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `shipping_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -305,7 +305,10 @@ INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`
 ('ORD-20251121133657-752', 21, '2025-11-21 20:36:57', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: maximum cod value is 5000000', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 7809500.00),
 ('ORD-20251121133727-293', 21, '2025-11-21 20:37:27', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM51252202511212037', NULL, 'created', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 3609500.00),
 ('ORD-20251121134644-493', 21, '2025-11-21 20:46:44', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: Create Order failed', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 1309500.00),
-('ORD-20251122145838-651', 21, '2025-11-22 21:58:38', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'Reguler', 8000, 1858000.00);
+('ORD-20251122145838-651', 21, '2025-11-22 21:58:38', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'Reguler', 8000, 1858000.00),
+('ORD-20251124034140-472', 6, '2025-11-24 10:41:40', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '-', '40164', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'jne', 'reguler', 8000, 658000.00),
+('ORD-20251124043043-382', 6, '2025-11-24 11:30:43', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'sap', 'regular', 10000, 1910000.00),
+('ORD-20251124054310-973', 6, '2025-11-24 12:43:10', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', '6923f06fd58cd645b2973b34', 'WYB-1763962991033', 'confirmed', '2025-11-24 13:03:28', 'jne', 'reg', 8000, 1858000.00);
 
 -- --------------------------------------------------------
 
@@ -364,21 +367,10 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `h
 (86, 'ORD-20251121133657-752', 'KB003', 1, 7800000, 7800000),
 (87, 'ORD-20251121133727-293', 'KB013', 1, 3600000, 3600000),
 (88, 'ORD-20251121134644-493', 'KB007', 1, 1300000, 1300000),
-(89, 'ORD-20251122145838-651', 'CS001', 1, 1850000, 1850000);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `order_tracking`
---
-
-CREATE TABLE `order_tracking` (
-  `tracking_id` int NOT NULL,
-  `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `status` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-  `timestamp` datetime DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+(89, 'ORD-20251122145838-651', 'CS001', 1, 1850000, 1850000),
+(91, 'ORD-20251124034140-472', 'KB005', 1, 650000, 650000),
+(92, 'ORD-20251124043043-382', 'KB009', 1, 1900000, 1900000),
+(93, 'ORD-20251124054310-973', 'CS001', 1, 1850000, 1850000);
 
 -- --------------------------------------------------------
 
@@ -445,16 +437,16 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`, `weight`, `status_jual`) VALUES
 ('COMM-2', '[Press Play x Demon Slayer] ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hal', 'ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard\r\n\r\n\"I will fulfill my duty! I won\'t allow anyone here to die!\"\r\nESSENTIAL75 HE, hadir dengan tampilan dan keycaps eksklusif bertema Rengoku dari Demon Slayer.\r\n\r\nOnline software available here: ess75.pressplayid.com\r\n\r\n©Koyoharu Gotoge / SHUEISHA, Aniplex, ufotable', 4200000.00, 1, 'https://i.postimg.cc/Y0LscYqt/8abcdbe1-6c7c-442b-b9ca-81c3e7f04c9b.jpg', 2, 1000, 'dijual'),
-('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 4, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500, 'dijual'),
+('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 3, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500, 'dijual'),
 ('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 3200000.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2, 1000, 'dijual'),
 ('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 7500000.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2, 1000, 'dijual'),
 ('KB003', 'KBD8X MKIII Keyboard', 'A beloved full-sized mechanical keyboard featuring top mount design and premium aluminum construction. Now at half price, it\'s a steal for serious keyboard builders.', 7800000.00, 9, 'https://i.postimg.cc/JnhynC7d/4.jpg', 2, 1000, 'dijual'),
 ('KB004', 'Magnum65', 'A 65% layout keyboard with a bold design and exceptional build quality. The Magnum65 is for those who want a compact form factor without compromising on performance.', 1250000.00, 5, 'https://i.postimg.cc/sfqBVLkw/5.jpg', 2, 1000, 'dijual'),
-('KB005', 'Quartz Stone Wrist Rest', 'A solid quartz wrist rest designed to offer comfort and elegance. Its cool, stone finish adds a premium touch to your keyboard setup.', 650000.00, 6, 'https://i.postimg.cc/jSQC4SLF/7.jpg', 2, 1000, 'dijual'),
+('KB005', 'Quartz Stone Wrist Rest', 'A solid quartz wrist rest designed to offer comfort and elegance. Its cool, stone finish adds a premium touch to your keyboard setup.', 650000.00, 5, 'https://i.postimg.cc/jSQC4SLF/7.jpg', 2, 1000, 'dijual'),
 ('KB006', 'Odin 75 Hot-swap Keyboard with PBTfans Courage red', 'A ready-to-use Odin 75 keyboard with bold Courage Red keycaps. Hot-swap sockets make switch swapping easy without soldering.', 5750000.00, 9, 'https://i.postimg.cc/bwH9Mn60/17.jpg', 2, 1000, 'dijual'),
 ('KB007', 'Keychron K8 Wireless', 'A tenkeyless wireless mechanical keyboard compatible with Mac and Windows.', 1300000.00, 9, 'https://i.postimg.cc/mrPhMfFc/21.jpg', 2, 1000, 'dijual'),
 ('KB008', 'Akko 3068B Plus', 'A compact 65% keyboard with wireless connectivity and hot-swappable switches.', 1450000.00, 8, 'https://i.postimg.cc/0Nhj0WpV/22.png', 2, 1000, 'dijual'),
-('KB009', 'Ducky One 3 Mini', 'A 60% keyboard known for vibrant colors and premium build.', 1900000.00, 8, 'https://i.postimg.cc/vB9Bqrhb/23.jpg', 2, 1000, 'dijual'),
+('KB009', 'Ducky One 3 Mini', 'A 60% keyboard known for vibrant colors and premium build.', 1900000.00, 7, 'https://i.postimg.cc/vB9Bqrhb/23.jpg', 2, 1000, 'dijual'),
 ('KB010', 'Mode Sonnet Keyboard', 'A custom keyboard with a sleek design and premium materials.', 4800000.00, 9, 'https://i.postimg.cc/XqbvTr1F/25.jpg', 2, 1000, 'dijual'),
 ('KB011', 'Keychron Q1 V2', 'A customizable 75% keyboard with QMK/VIA support.', 2800000.00, 9, 'https://i.postimg.cc/KjDYFmCW/26.jpg', 2, 1000, 'dijual'),
 ('KB012', 'Ikki68 Aurora', 'A popular entry-level custom keyboard kit.', 2150000.00, 9, 'https://i.postimg.cc/J7N0jQtQ/27.jpg', 2, 1000, 'dijual'),
@@ -631,13 +623,6 @@ ALTER TABLE `order_details`
   ADD KEY `FK_product_id` (`product_id`);
 
 --
--- Indexes for table `order_tracking`
---
-ALTER TABLE `order_tracking`
-  ADD PRIMARY KEY (`tracking_id`),
-  ADD KEY `FK_ORDER_ID_TRACK` (`order_id`);
-
---
 -- Indexes for table `payments`
 --
 ALTER TABLE `payments`
@@ -698,7 +683,7 @@ ALTER TABLE `bids`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -728,13 +713,7 @@ ALTER TABLE `customer`
 -- AUTO_INCREMENT for table `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
-
---
--- AUTO_INCREMENT for table `order_tracking`
---
-ALTER TABLE `order_tracking`
-  MODIFY `tracking_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
 
 --
 -- AUTO_INCREMENT for table `payments`
@@ -805,12 +784,6 @@ ALTER TABLE `orders`
 ALTER TABLE `order_details`
   ADD CONSTRAINT `FK_ORDER_ID` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `order_tracking`
---
-ALTER TABLE `order_tracking`
-  ADD CONSTRAINT `FK_ODER_ID_TRACK` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `payments`

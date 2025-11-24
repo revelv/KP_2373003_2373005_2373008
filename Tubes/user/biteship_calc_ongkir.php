@@ -6,7 +6,7 @@ require_once '../koneksi.php';
 
 header('Content-Type: application/json');
 
-// ====== Cek login ======
+// ===================== CEK LOGIN =====================
 if (!isset($_SESSION['kd_cs'])) {
     echo json_encode([
         'success' => false,
@@ -17,10 +17,10 @@ if (!isset($_SESSION['kd_cs'])) {
 
 $customer_id = (int) $_SESSION['kd_cs'];
 
-// ====== Ambil data POST dari JS ======
-$destination_postal = trim($_POST['destination_postal_code'] ?? '');
-$courier_code       = trim($_POST['code_courier'] ?? '');
-$base_total         = (int)($_POST['base_total'] ?? 0);
+// ===================== AMBIL DATA POST =====================
+$destination_postal = trim((string)($_POST['destination_postal_code'] ?? ''));
+$courier_code       = trim((string)($_POST['code_courier'] ?? ''));
+$base_total         = (int)($_POST['base_total'] ?? 0); // kalau mau dipakai nanti, sekarang belum kepake
 
 // selected_items[] dari payment.php (cart)
 $selected_ids = $_POST['selected_items'] ?? [];
@@ -30,7 +30,7 @@ if (!is_array($selected_ids)) {
 $selected_ids = array_map('intval', $selected_ids);
 $selected_ids = array_values(array_filter($selected_ids, fn($v) => $v > 0));
 
-// ====== Validasi dasar ======
+// ===================== VALIDASI DASAR =====================
 if ($destination_postal === '') {
     echo json_encode([
         'success' => false,
@@ -38,6 +38,7 @@ if ($destination_postal === '') {
     ]);
     exit;
 }
+
 if ($courier_code === '') {
     echo json_encode([
         'success' => false,
@@ -45,6 +46,7 @@ if ($courier_code === '') {
     ]);
     exit;
 }
+
 if (empty($selected_ids)) {
     echo json_encode([
         'success' => false,
@@ -53,18 +55,13 @@ if (empty($selected_ids)) {
     exit;
 }
 
-// ====== CONFIG TOKO ======
-$origin_postal = '40161';
-
-// API key Biteship (sandbox)
+// ===================== CONFIG TOKO & API KEY =====================
+$origin_postal    = '40161'; // asal Bandung, sesuaikan kalau mau
 $BITESHIP_API_KEY = 'biteship_test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3R5cmtfaW5kdXN0cmllcyIsInVzZXJJZCI6IjY5MjA3ZmI0YzMxM2VmYTUyZTM5OThlNCIsImlhdCI6MTc2Mzc4NTQ0OH0.dBPLQHoBBV4gnXux-OMziAO5yr1TBzXTf4T-Js2b0ak';
 
-// ==========================
-// AMBIL DATA CART DARI DB
-// ==========================
+// ===================== AMBIL DATA CART DARI DB =====================
 $in_clause = implode(',', $selected_ids);
 
-// Ambil: nama_produk, harga, berat, qty
 $sql = "
     SELECT 
         c.cart_id,
@@ -86,6 +83,7 @@ if (!$stmt) {
     ]);
     exit;
 }
+
 $stmt->bind_param('i', $customer_id);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -97,18 +95,15 @@ while ($row = $res->fetch_assoc()) {
     $nama   = (string)($row['nama_produk'] ?? 'Item');
     $harga  = (int)($row['harga'] ?? 0);
     $qty    = max(1, (int)($row['jumlah_barang'] ?? 1));
-    // FIX: kolomnya weight, bukan berat
     $berat  = (int)($row['weight'] ?? 0); // gram per unit
 
-    // Fallback kalau berat belum diisi
+    // fallback kalau belum diisi
     if ($berat <= 0) {
-        $berat = 500; // 500 gram default per unit
+        $berat = 500; // default 500 gram per unit
     }
 
-    // Total berat = berat per unit * qty
     $total_weight_gram += $berat * $qty;
 
-    // Item per produk untuk dikirim ke Biteship
     $itemsPayload[] = [
         'name'        => $nama,
         'value'       => $harga,       // harga per unit
@@ -135,9 +130,7 @@ if ($total_weight_gram <= 0) {
     $total_weight_gram = 1000;
 }
 
-// ==========================
-// SUSUN PAYLOAD BITESHIP
-// ==========================
+// ===================== SUSUN PAYLOAD BITESHIP =====================
 $payload = [
     'origin_postal_code'      => $origin_postal,
     'destination_postal_code' => $destination_postal,
@@ -145,9 +138,7 @@ $payload = [
     'items'                   => $itemsPayload,
 ];
 
-// ==========================
-// PANGGIL API BITESHIP
-// ==========================
+// ===================== PANGGIL API BITESHIP =====================
 $ch = curl_init('https://api.biteship.com/v1/rates/couriers');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -166,7 +157,7 @@ $curlErr      = curl_error($ch);
 $httpCode     = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-// ====== Handle Error CURL ======
+// ===================== HANDLE ERROR CURL =====================
 if ($curlErr) {
     echo json_encode([
         'success' => false,
@@ -185,16 +176,17 @@ if (!is_array($decoded)) {
     exit;
 }
 
-// Kalau HTTP code bukan 200, lempar pesan dari Biteship
+// ===================== HANDLE HTTP ERROR DARI BITESHIP =====================
 if ($httpCode !== 200) {
     $msg = 'API Biteship gagal: HTTP ' . $httpCode;
+
     if (isset($decoded['errors'])) {
         $msgDetail = is_array($decoded['errors'])
             ? json_encode($decoded['errors'])
             : (string)$decoded['errors'];
         $msg .= ' | ' . $msgDetail;
     } elseif (isset($decoded['message'])) {
-        $msg .= ' | ' . $decoded['message'];
+        $msg .= ' | ' . (string)$decoded['message'];
     }
 
     echo json_encode([
@@ -205,42 +197,48 @@ if ($httpCode !== 200) {
     exit;
 }
 
-// ====== Ambil services dari Biteship ======
+// ===================== AMBIL LIST PRICING / RATES =====================
 $pricingList = [];
 if (isset($decoded['pricing']) && is_array($decoded['pricing'])) {
-    $pricingList = $decoded['pricing']; // format umum Biteship sandbox
+    $pricingList = $decoded['pricing'];      // format umum Biteship
 } elseif (isset($decoded['rates']) && is_array($decoded['rates'])) {
-    $pricingList = $decoded['rates'];   // jaga-jaga format lain
+    $pricingList = $decoded['rates'];        // jaga-jaga format lain
 }
 
+if (empty($pricingList)) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Tidak ada pricing/rates dari Biteship.',
+        'raw'     => $decoded,
+    ]);
+    exit;
+}
+
+// ===================== BENTUK SERVICES UNTUK FRONTEND =====================
 $services = [];
-
 foreach ($pricingList as $p) {
-    $rawName = trim((string)($p['courier_service_name'] ?? '')); // contoh: "REG PACK"
-
-    // ambil kata pertama aja → "REG PACK" => "reg"
-    $firstWord = '';
-    if ($rawName !== '') {
-        $parts = preg_split('/\s+/', $rawName);
-        $firstWord = strtolower($parts[0] ?? '');
-    }
-
-    // fallback, kalau entah kenapa kosong
-    if ($firstWord === '') {
-        $firstWord = strtolower((string)($p['courier_service_code'] ?? ''));
-    }
-
     $services[] = [
-        'courier'      => strtolower((string)($p['courier_code'] ?? '')), // jne, lion, jnt
-        'service'      => $firstWord,      // ← dipakai ke order, misal "reg"
-        'service_name' => $rawName,        // ← buat tampilan: "REG PACK"
-        'cost'         => (int)($p['price'] ?? 0),
-        'etd'          => trim(
-            (string)($p['shipment_duration_range'] ?? '') . ' ' .
-            (string)($p['shipment_duration_unit'] ?? '')
-        ),
+        'courier'      => strtolower((string)($p['courier_code'] ?? $courier_code)),
+        'courier_name' => (string)($p['courier_name'] ?? strtoupper($courier_code)),
+
+        // INI DIPAKAI SEBAGAI value DI <option> DAN DIKIRIM KE checkout.php → courier_type
+        'service_code' => (string)($p['courier_service_code'] ?? ''),
+
+        // INI CUMA LABEL YANG DILIHAT USER
+        'service_name' => (string)($p['courier_service_name'] ?? ($p['service_type'] ?? '')),
+
+        // HARGA ONGKIR
+        'cost'         => (int)($p['price'] ?? $p['final_price'] ?? 0),
+
+        // ESTIMASI
+        'etd'          => (string)($p['etd'] ?? ($p['courier_etd'] ?? '')),
     ];
 }
+
+// Filter kalau bener-bener kosong / gak valid
+$services = array_values(array_filter($services, fn($s) =>
+    !empty($s['service_code']) && $s['cost'] > 0
+));
 
 if (empty($services)) {
     echo json_encode([
@@ -251,9 +249,9 @@ if (empty($services)) {
     exit;
 }
 
-// ====== Sukses ======
+// ===================== KIRIM KE FRONTEND =====================
 echo json_encode([
     'success'  => true,
     'services' => $services,
-]);
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 exit;

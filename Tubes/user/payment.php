@@ -28,7 +28,7 @@ if ($is_repay) {
         $res = $stmt->get_result();
         $order = $res->fetch_assoc();
         $stmt->close();
-        
+
         if ($order && $order['status'] !== 'pending') {
             $_SESSION['message'] = 'Order ini sudah dibayar atau diproses.';
             header('Location: riwayat_belanja.php');
@@ -517,7 +517,7 @@ if ($is_repay) {
         const alamatLainTextarea = document.getElementById('alamat_lain');
         const postalLainInput = document.getElementById('postal_lain');
 
-        // ==================== FIXED JAVASCRIPT PAYMENT ====================
+        // ==================== STATE SHIPPING ====================
         let currentShipping = {
             cost: 0,
             courier: '',
@@ -542,7 +542,7 @@ if ($is_repay) {
             if (el) el.style.display = 'none';
         };
 
-        // ================== KURIR BITESHIP ==================
+        // ================== LIST KURIR (BITESHIP) ==================
         async function loadCouriers() {
             if (!courierSelect) return;
             courierSelect.innerHTML = '<option value="" disabled selected>Loading kurir...</option>';
@@ -567,7 +567,20 @@ if ($is_repay) {
                     return;
                 }
 
-                const allowed = ['jne', 'jnt', 'sicepat', 'tiki', 'pos', 'wahana', 'lion', 'idexpress', 'sap', 'sentral', 'rex'];
+                // sesuaikan dengan list couriers yang lu kirim tadi
+                const allowed = [
+                    'jne',
+                    'jnt',
+                    'sicepat',
+                    'tiki',
+                    'pos',
+                    'wahana',
+                    'lion',
+                    'idexpress',
+                    'sap',
+                    'sentralcargo'
+                ];
+
                 let list = data.couriers.map(c => ({
                     code: String(c.courier_code || '').toLowerCase(),
                     name: c.courier_name || ''
@@ -619,7 +632,7 @@ if ($is_repay) {
             currentShipping.cost = ongkir;
             currentShipping.courier = courierSelect?.value || '';
 
-            // FIX: Mode repay boleh langsung bayar tanpa pilih kurir baru
+            // Mode repay boleh langsung bayar tanpa pilih kurir lagi
             if (isRepay && isAddressValid()) {
                 btnPay.disabled = false;
             } else {
@@ -654,9 +667,11 @@ if ($is_repay) {
             put('provinsi', shippingAddress.provinsi || '');
             put('kota', shippingAddress.kota || '');
             put('kecamatan', shippingAddress.kecamatan || '');
+            put('kelurahan', shippingAddress.kelurahan || '');
             put('alamat', shippingAddress.alamat || '');
+            put('kodepos', shippingAddress.kodepos || '');
 
-            // --- IMPORTANT: clear dulu biar gak dobel & biar aman ---
+            // clear dulu biar gak dobel
             formEl.querySelectorAll('input[name="selected_items[]"]').forEach(i => i.remove());
             getSelectedItemsSafe().forEach(id => {
                 const i = document.createElement('input');
@@ -671,6 +686,7 @@ if ($is_repay) {
 
             put('shipping_cost', String(currentShipping.cost || 0));
             put('code_courier', currentShipping.courier || '');
+            // PENTING: ini nanti dipakai sebagai courier_type Biteship → harus service_code
             put('service_courier', currentShipping.service || '');
         }
 
@@ -681,13 +697,12 @@ if ($is_repay) {
             }
         }, true);
 
-
         function resetOngkir(reload = false) {
             currentShipping.service = '';
             currentShipping.cost = 0;
             updateTotals(0);
 
-            // FIX: Jangan disable button kalau mode repay
+            // Mode repay: jangan paksa disable tombol
             if (!isRepay) {
                 btnPay.disabled = true;
             }
@@ -697,7 +712,7 @@ if ($is_repay) {
             if (reload && cur) loadServices(cur);
         }
 
-        // ====== RAJAONGKIR: PROV/KOTA/KEC/KEL (FIXED) ======
+        // ====== RAJAONGKIR: PROV/KOTA/KEC/KEL (tetap) ======
         let provinceLoaded = false;
 
         function normalizeList(root) {
@@ -922,7 +937,7 @@ if ($is_repay) {
                     const name = safeText(s.subdistrict_name ?? s.name);
                     const zip = safeText(s.zip_code ?? s.postal_code);
                     if (!id || !name) return '';
-                    return `<option value="${id}" data-zip="${zip}">${name}${zip ? ' ('+zip+')' : ''}</option>`;
+                    return `<option value="${id}" data-zip="${zip}">${name}${zip ? ' (' + zip + ')' : ''}</option>`;
                 }).join('');
 
                 kelLainSel.innerHTML = '<option value="">-- Pilih Kelurahan --</option>' + options;
@@ -933,8 +948,6 @@ if ($is_repay) {
                 kelLainSel.innerHTML = '<option value="">Error load kelurahan</option>';
             }
         }
-
-
 
         function applyAddressMode(mode) {
             if (mode === 'profil') {
@@ -963,7 +976,6 @@ if ($is_repay) {
             resetOngkir(true);
         }
 
-        // klik label radio
         document.addEventListener('click', e => {
             const t = e.target;
             if (t && t.matches('label[for="alamatProfil"], #alamatProfil')) {
@@ -976,7 +988,6 @@ if ($is_repay) {
             }
         });
 
-        // change event semua dropdown custom
         document.addEventListener('change', e => {
             const t = e.target;
 
@@ -996,7 +1007,6 @@ if ($is_repay) {
                     resetOngkir(true);
                 });
             }
-
 
             if (t === kotaLainSel) {
                 const cOpt = kotaLainSel.selectedOptions[0];
@@ -1030,7 +1040,6 @@ if ($is_repay) {
             }
         });
 
-        // realtime alamat
         alamatLainTextarea?.addEventListener('input', () => {
             shippingAddress.alamat = (alamatLainTextarea.value || '').trim();
             resetOngkir(true);
@@ -1083,7 +1092,6 @@ if ($is_repay) {
             currentShipping.postal = destPostal;
             updateTotals(0);
 
-            // FIX: Jangan disable button kalau mode repay
             if (!isRepay) {
                 btnPay.disabled = true;
             }
@@ -1109,12 +1117,36 @@ if ($is_repay) {
                     return;
                 }
 
+                // NORMALISASI: support bentuk baru (courier_service_code) & lama (service/cost)
+                const servicesNorm = data.services
+                    .map(s => {
+                        const code = s.courier_service_code || s.service_code || s.service || '';
+                        const label = s.courier_service_name || s.service_name || s.service || code;
+                        const courierName = s.courier_name || s.courier || courier;
+                        const cost = Number(s.price ?? s.cost ?? 0);
+                        const etd = s.etd || s.duration || '';
+                        return {
+                            code,
+                            label,
+                            courierName,
+                            cost,
+                            etd
+                        };
+                    })
+                    .filter(s => s.code && s.cost > 0);
+
+                if (!servicesNorm.length) {
+                    svcBox.innerHTML = `<div class="text-danger">Tidak ada layanan yang valid.</div>`;
+                    updateTotals(0);
+                    return;
+                }
+
                 svcBox.innerHTML = `
     <label class="form-label">Pilih Layanan</label>
     <select id="serviceSelect" class="form-select">
-        ${data.services.map(s => `
-        <option value="${s.service}" data-cost="${s.cost}">
-            ${(s.courier || courier).toUpperCase()} - ${s.service}
+        ${servicesNorm.map(s => `
+        <option value="${s.code}" data-code="${s.code}" data-cost="${s.cost}">
+            ${String(s.courierName || courier).toUpperCase()} - ${s.label}
             ${s.etd ? `(ETD ${s.etd})` : ''}
             - Rp ${Number(s.cost).toLocaleString('id-ID')}
         </option>
@@ -1125,8 +1157,11 @@ if ($is_repay) {
 
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
-                    const cost = parseInt(svc.selectedOptions[0]?.dataset.cost || '0', 10);
-                    currentShipping.service = svc.value || '';
+                    const opt = svc.selectedOptions[0];
+                    const cost = parseInt(opt?.dataset.cost || '0', 10);
+                    const code = opt?.dataset.code || svc.value || '';
+                    // INI yang nanti dikirim ke checkout.php → courier_type
+                    currentShipping.service = code;
                     updateTotals(cost);
                 };
                 applyCost();
@@ -1154,9 +1189,9 @@ if ($is_repay) {
         }
 
         function mulaiPembayaran() {
-            // FIX: Mode repay ga perlu validasi kurir lagi
+            // Mode repay: gak wajib pilih kurir baru
             if (!isRepay && !currentShipping.service) {
-                alert("Pilih kurir & layanan pengiriman dulu ya bro.");
+                alert("Pilih kurir & layanan pengiriman dulu.");
                 return;
             }
             if (!isAddressValid()) {
@@ -1189,7 +1224,6 @@ if ($is_repay) {
     </div>`;
                 container.innerHTML = html;
 
-                // FIX: Delay execution sampai DOM ready
                 setTimeout(() => {
                     ensureHiddenInputs(document.getElementById('formQRIS'));
                 }, 100);
@@ -1215,7 +1249,6 @@ if ($is_repay) {
     </div>`;
                 container.innerHTML = html;
 
-                // FIX: Delay execution sampai DOM ready
                 setTimeout(() => {
                     ensureHiddenInputs(document.getElementById('formTransfer'));
                 }, 100);
@@ -1237,10 +1270,9 @@ if ($is_repay) {
                     const qrImg = document.getElementById("qrImage");
                     if (qrImg)
                         qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + qrContent;
-                    const kodeInput = document.querySelector("#formQRIS input[name='kode_transaksi' ]");
+                    const kodeInput = document.querySelector("#formQRIS input[name='kode_transaksi']");
                     if (kodeInput) kodeInput.value = qrContent;
 
-                    // FIX: Re-inject hidden inputs setelah QR refresh
                     setTimeout(() => {
                         ensureHiddenInputs(document.getElementById('formQRIS'));
                     }, 100);
@@ -1251,6 +1283,7 @@ if ($is_repay) {
             }, 1000);
         }
     </script>
+
 </body>
 
 </html>

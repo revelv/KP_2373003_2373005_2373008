@@ -17,7 +17,7 @@ $query_auctions = "
         a.*,
         c.nama AS seller_name,
         o.order_id AS linked_order_id,
-        o.komship_status   AS order_status
+        o.shipping_status   AS order_status
     FROM auctions a
     JOIN customer c ON a.customer_id = c.customer_id
     LEFT JOIN orders o
@@ -30,7 +30,7 @@ $query_auctions = "
         AND a.end_time <= NOW()                            -- lelang sudah benar-benar selesai
         AND a.end_time >= DATE_SUB(NOW(), INTERVAL 1 DAY)  -- max 1 hari dari kemenangan
         AND a.current_winner_id = ?                        -- user ini pemenangnya
-        AND (o.order_id IS NULL OR o.komship_status = 'pending')
+        AND (o.order_id IS NULL OR o.shipping_status = 'pending')
       )
     ORDER BY a.end_time ASC
 ";

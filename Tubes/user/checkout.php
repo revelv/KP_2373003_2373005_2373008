@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/../koneksi.php';
@@ -142,20 +143,20 @@ $subtotal_after_discount = $subtotal - $discount;
 // =====================================================
 // 5) DATA SHIPPING + COURIER
 // =====================================================
-$provinsi   = trim((string)($_POST['provinsi']   ?? ''));
-$kota       = trim((string)($_POST['kota']       ?? ''));
-$kecamatan  = trim((string)($_POST['kecamatan']  ?? ''));
-$kelurahan  = trim((string)($_POST['kelurahan']  ?? ''));
+$provinsi    = trim((string)($_POST['provinsi']   ?? ''));
+$kota        = trim((string)($_POST['kota']       ?? ''));
+$kecamatan   = trim((string)($_POST['kecamatan']  ?? ''));
+$kelurahan   = trim((string)($_POST['kelurahan']  ?? ''));
 $postal_code = trim((string)(
-    $_POST['kodepos']              // kalau JS lu kirim nama ini
-    ?? $_POST['postal_code']       // atau ini
+    $_POST['kodepos']                    // dari JS (alamat custom)
+    ?? $_POST['postal_code']             // fallback
     ?? $_POST['destination_postal_code'] // just in case
     ?? ''
 ));
-$alamat     = trim((string)($_POST['alamat']     ?? ''));
+$alamat      = trim((string)($_POST['alamat']     ?? ''));
 
-$code_courier  = trim((string)($_POST['code_courier']  ?? ''));
-$shipping_type = trim((string)($_POST['service_courier'] ?? ''));
+$code_courier  = trim((string)($_POST['code_courier']    ?? '')); // HARUS PERSIS courier_code biteship (jne, jnt, idexpress, dll)
+$shipping_type = trim((string)($_POST['service_courier'] ?? '')); // HARUS PERSIS courier_service_code (reg, ez, reg_half_kilo, dll)
 $ongkos_kirim  = (int)($_POST['shipping_cost'] ?? ($_SESSION['shipping_cost'] ?? 0));
 
 if ($provinsi === '' || $kota === '' || $kecamatan === '' || $alamat === '') {
@@ -164,7 +165,7 @@ if ($provinsi === '' || $kota === '' || $kecamatan === '' || $alamat === '') {
     exit();
 }
 if ($kelurahan === '')  $kelurahan  = '-';
-if ($postal_code === '') $postal_code = '40164'; // fallback: Bandung, tapi idealnya kirim beneran dari form
+if ($postal_code === '') $postal_code = ORIGIN_POSTAL_CODE; // fallback: Bandung
 
 if ($code_courier === '' || $shipping_type === '' || $ongkos_kirim <= 0) {
     $_SESSION['message'] = 'Pilih kurir dan service dulu sebelum bayar.';
@@ -190,10 +191,23 @@ if (!in_array($payment_method, ['Transfer', 'QRIS'], true)) {
 $grand_total = $subtotal_after_discount + $ongkos_kirim;
 
 // =====================================================
-// 8) HELPER: CALL BITESHIP CREATE ORDER
+// 8) HELPER: CALL BITESHIP CREATE ORDER  (DISAMAIN SAMA SCRIPT TEST)
 // =====================================================
-function createBiteshipOrder(array $payload): array {
-    $ch = curl_init(BITESHIP_CREATE_ORDER_URL);
+function createBiteshipOrder(array $payload): array
+{
+    $apiKey = BITESHIP_API_KEY;
+    $url    = BITESHIP_CREATE_ORDER_URL;
+
+    $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($jsonPayload === false) {
+        return [
+            'ok'        => false,
+            'http_code' => 0,
+            'error'     => 'json_encode gagal: ' . json_last_error_msg(),
+        ];
+    }
+
+    $ch = curl_init($url);
 
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -201,10 +215,11 @@ function createBiteshipOrder(array $payload): array {
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
             'Accept: application/json',
-            'Authorization: ' . BITESHIP_API_KEY,
+            'Authorization: ' . $apiKey,
         ],
-        CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_POSTFIELDS     => $jsonPayload,
+        // biar sama persis script test: tanpa timeout dulu
+        // CURLOPT_TIMEOUT        => 30,
     ]);
 
     $response = curl_exec($ch);
@@ -213,20 +228,29 @@ function createBiteshipOrder(array $payload): array {
     if ($response === false) {
         $err = curl_error($ch);
         curl_close($ch);
-        return ['ok' => false, 'http_code' => $httpCode, 'error' => $err];
+        return [
+            'ok'        => false,
+            'http_code' => $httpCode,
+            'error'     => 'cURL error: ' . $err,
+        ];
     }
 
     curl_close($ch);
-    $json = json_decode($response, true);
 
-    if (!is_array($json)) {
-        return ['ok' => false, 'http_code' => $httpCode, 'error' => 'Respon biteship bukan JSON', 'raw' => $response];
+    $decoded = json_decode($response, true);
+    if (!is_array($decoded)) {
+        return [
+            'ok'        => false,
+            'http_code' => $httpCode,
+            'error'     => 'Respon biteship bukan JSON',
+            'raw_body'  => $response,
+        ];
     }
 
     return [
         'ok'        => ($httpCode >= 200 && $httpCode < 300),
         'http_code' => $httpCode,
-        'data'      => $json,
+        'data'      => $decoded,
     ];
 }
 
@@ -246,6 +270,9 @@ foreach ($items as $it) {
 
 $order_id = 'ORD-' . date('YmdHis') . '-' . random_int(100, 999);
 
+// PENTING: courier_company & courier_type harus persis dengan list couriers Biteship
+// - courier_company    = courier_code  (jne, jnt, idexpress, dll)
+// - courier_type       = courier_service_code (reg, ez, reg_half_kilo, dll)
 $biteshipPayload = [
     "shipper_contact_name"   => ORIGIN_CONTACT_NAME,
     "shipper_contact_phone"  => ORIGIN_CONTACT_PHONE,
@@ -263,18 +290,18 @@ $biteshipPayload = [
     "destination_address"        => $alamat,
     "destination_postal_code"    => $postal_code,
 
-    "courier_company" => strtolower($code_courier),   // jne, jnt, pos, jne_regular, dst (sesuaikan sama data Biteship lu)
-    "courier_type"    => strtolower($shipping_type), // reg/yes/express dsb
+    "courier_company" => $code_courier,   // contoh: "jne"
+    "courier_type"    => $shipping_type,  // contoh: "reg"
 
-    "delivery_type" => "now",
+    "delivery_type"   => "now",
 
-    "items"        => $biteshipItems,
+    "items"           => $biteshipItems,
 
-    "order_note"   => "Order Styrk: $order_id",
-    "metadata"     => [
+    "order_note"      => "Order Styrk: $order_id",
+    "metadata"        => [
         "order_id"    => $order_id,
         "customer_id" => $customer_id,
-    ]
+    ],
 ];
 
 // =====================================================
@@ -296,7 +323,7 @@ try {
         throw new Exception("Gagal prepare orders: " . $conn->error);
     }
 
-    // FIX: type string harus 12 char (sissssssssii), sesuai 12 parameter
+    // 12 parameter → "sissssssssii"
     $stmtOrder->bind_param(
         "sissssssssii",
         $order_id,
@@ -382,10 +409,15 @@ unset(
 
 // =====================================================
 // 11) CALL BITESHIP SETELAH DB COMMIT
-//      - GAGAL BITESHIP TIDAK NGE-GAGALIN ORDER
 // =====================================================
 try {
     $bs = createBiteshipOrder($biteshipPayload);
+
+    // Simpan debug ke session biar bisa dicek di halaman berikut
+    $_SESSION['biteship_debug'] = [
+        'request_payload' => $biteshipPayload,
+        'response'        => $bs,
+    ];
 
     if (!empty($bs['ok']) && $bs['ok'] === true) {
         $bsData = $bs['data'];
@@ -394,7 +426,6 @@ try {
         $trackingCode    = $bsData['courier']['waybill_id'] ?? ($bsData['tracking_id'] ?? null);
         $statusShip      = $bsData['status'] ?? 'confirmed';
 
-        // kalau kolom ini belum ada di DB lu, ya tambahin dulu:
         $sqlUpd = "
             UPDATE orders
             SET shipping_provider_order_id = ?,
@@ -417,18 +448,15 @@ try {
             $stmtUpd->close();
         }
     } else {
-        // DI SINI LU SEBENARNYA UDAH BISA LOG, TAPI JANGAN DI-THROW
-        // Biar user tetap lanjut ke halaman pembayaran
-        // error detail: $bs['error'] ?? $bs['http_code']
+        // Kalau gagal Biteship: order lokal tetap ada, tinggal lu cek $_SESSION['biteship_debug']
     }
 } catch (Throwable $e) {
-    // diem bae; paling lu logging manual kalau mau
+    $_SESSION['biteship_debug_exception'] = $e->getMessage();
+    // jangan dibatalkan, biar user tetap punya order lokal
 }
 
 // =====================================================
-// 12) REDIRECT KE HALAMAN PEMBAYARAN SESUAI METODE
+// 12) REDIRECT KE HALAMAN RIWAYAT
 // =====================================================
-
-header("Location: riwayat.belanja.php");
-
+header("Location: riwayat_belanja.php");
 exit();
