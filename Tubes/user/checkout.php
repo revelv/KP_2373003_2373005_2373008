@@ -7,7 +7,7 @@ require_once __DIR__ . '/../koneksi.php';
 // =====================================================
 // CONFIG BITESHIP
 // =====================================================
-const BITESHIP_API_KEY = 'biteship_test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3R5cmtfaW5kdXN0cmllcyIsInVzZXJJZCI6IjY5MjA3ZmI0YzMxM2VmYTUyZTM5OThlNCIsImlhdCI6MTc2Mzc4NTQ0OH0.dBPLQHoBBV4gnXux-OMziAO5yr1TBzXTf4T-Js2b0ak'; // GANTI KE KEY LU
+const BITESHIP_API_KEY = 'biteship_test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3R5cmtfaW5kdXN0cmllcyIsInVzZXJJZCI6IjY5MjA3ZmI0YzMxM2VmYTUyZTM5OThlNCIsImlhdCI6MTc2Mzc4NTQ0OH0.dBPLQHoBBV4gnXux-OMziAO5yr1TBzXTf4T-Js2b0ak';
 const BITESHIP_CREATE_ORDER_URL = 'https://api.biteship.com/v1/orders';
 
 // Origin / shipper fixed (Bandung)
@@ -29,7 +29,7 @@ if (!isset($_SESSION['kd_cs'])) {
 $customer_id = (int)$_SESSION['kd_cs'];
 
 // =====================================================
-// 1) VALIDASI REQUEST + ITEM CART
+// 1) VALIDASI REQUEST & MODE (AUCTION vs CART)
 // =====================================================
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['message'] = 'Metode tidak valid.';
@@ -37,22 +37,29 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-if (empty($_POST['selected_items']) || !is_array($_POST['selected_items'])) {
-    $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
-    header('Location: cart.php');
-    exit();
+// Cek apakah ini pembayaran lelang?
+$auction_id = isset($_POST['auction_id']) ? (int)$_POST['auction_id'] : 0;
+$is_auction = ($auction_id > 0);
+
+$selected_cart_ids = [];
+
+// Jika BUKAN lelang, wajib ada item cart
+if (!$is_auction) {
+    if (empty($_POST['selected_items']) || !is_array($_POST['selected_items'])) {
+        $_SESSION['message'] = 'Pilih setidaknya satu barang untuk checkout.';
+        header('Location: cart.php');
+        exit();
+    }
+
+    $selected_cart_ids = array_map('intval', (array)$_POST['selected_items']);
+    $selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
+
+    if (!$selected_cart_ids) {
+        $_SESSION['message'] = 'Item cart tidak valid.';
+        header('Location: cart.php');
+        exit();
+    }
 }
-
-$selected_cart_ids = array_map('intval', (array)$_POST['selected_items']);
-$selected_cart_ids = array_values(array_filter($selected_cart_ids, fn($v) => $v > 0));
-
-if (!$selected_cart_ids) {
-    $_SESSION['message'] = 'Item cart tidak valid.';
-    header('Location: cart.php');
-    exit();
-}
-
-$in_clause = implode(',', $selected_cart_ids);
 
 // =====================================================
 // 2) AMBIL DATA CUSTOMER (DEST CONTACT UNTUK BITESHIP)
@@ -73,34 +80,85 @@ if ($c = $resCust->fetch_assoc()) {
 $stmtCust->close();
 
 // =====================================================
-// 3) AMBIL DATA CARTS + PRODUK
+// 3) AMBIL DATA BARANG (MODE AUCTION vs CART)
 // =====================================================
-$sqlCart = "
-    SELECT 
-        c.cart_id,
-        c.product_id,
-        c.jumlah_barang,
-        p.nama_produk,
-        p.harga,
-        p.weight
-    FROM carts c
-    INNER JOIN products p ON p.product_id = c.product_id
-    WHERE c.customer_id = ?
-      AND c.cart_id IN ($in_clause)
-";
-$stmtCart = $conn->prepare($sqlCart);
-$stmtCart->bind_param("i", $customer_id);
-$stmtCart->execute();
-$resCart = $stmtCart->get_result();
-
 $items        = [];
 $subtotal     = 0;
 $total_weight = 0;
 
-while ($row = $resCart->fetch_assoc()) {
+if ($is_auction) {
+    // --- QUERY LELANG ---
+    // Ambil data produk berdasarkan auction_id
+    // Harga diambil dari current_bid
+    $sqlAuction = "
+        SELECT 
+            p.product_id,
+            p.nama_produk,
+            p.weight,
+            a.current_bid as harga,
+            1 as jumlah_barang
+        FROM auctions a
+        JOIN products p ON a.product_id = p.product_id
+        WHERE a.auction_id = ? AND a.current_winner_id = ?
+    ";
+    $stmtAuc = $conn->prepare($sqlAuction);
+    $stmtAuc->bind_param("ii", $auction_id, $customer_id);
+    $stmtAuc->execute();
+    $resAuc = $stmtAuc->get_result();
+    
+    if ($row = $resAuc->fetch_assoc()) {
+        $row['nama_produk'] = $row['nama_produk'] . ' (Lelang #' . $auction_id . ')';
+        $items[] = $row;
+    } else {
+        $_SESSION['message'] = 'Data lelang tidak valid atau Anda bukan pemenang.';
+        header('Location: riwayat_belanja.php');
+        exit();
+    }
+    $stmtAuc->close();
+
+} else {
+    // --- QUERY CART (Logic Lama) ---
+    $in_clause = implode(',', $selected_cart_ids);
+    $sqlCart = "
+        SELECT 
+            c.cart_id,
+            c.product_id,
+            c.jumlah_barang,
+            p.nama_produk,
+            p.harga,
+            p.weight
+        FROM carts c
+        INNER JOIN products p ON p.product_id = c.product_id
+        WHERE c.customer_id = ?
+          AND c.cart_id IN ($in_clause)
+    ";
+    $stmtCart = $conn->prepare($sqlCart);
+    $stmtCart->bind_param("i", $customer_id);
+    $stmtCart->execute();
+    $resCart = $stmtCart->get_result();
+
+    while ($row = $resCart->fetch_assoc()) {
+        $items[] = $row;
+    }
+    $stmtCart->close();
+}
+
+// Hitung Subtotal & Weight Loop
+if (!$items) {
+    $_SESSION['message'] = 'Item tidak ditemukan.';
+    header('Location: cart.php');
+    exit();
+}
+
+// Loop ulang $items yang sudah distandarisasi untuk hitung total
+// Kita reset $items agar strukturnya konsisten valuenya
+$final_items = [];
+foreach ($items as $row) {
     $qty    = (int)$row['jumlah_barang'];
     $harga  = (int)$row['harga'];
     $weight = (int)$row['weight'];
+
+    if ($weight <= 0) $weight = 1000; // Default weight 1kg
 
     $line_total   = $harga * $qty;
     $subtotal    += $line_total;
@@ -109,16 +167,11 @@ while ($row = $resCart->fetch_assoc()) {
     $row['jumlah_barang'] = $qty;
     $row['harga']         = $harga;
     $row['weight']        = $weight;
-
-    $items[] = $row;
+    
+    $final_items[] = $row;
 }
-$stmtCart->close();
+$items = $final_items;
 
-if (!$items) {
-    $_SESSION['message'] = 'Item tidak ditemukan di cart.';
-    header('Location: cart.php');
-    exit();
-}
 
 // =====================================================
 // 4) VOUCHER (SESSION)
@@ -129,6 +182,7 @@ $voucher_rp   = (int)($_SESSION['voucher_nilai_rupiah'] ?? 0);
 $voucher_pct  = (int)($_SESSION['voucher_nilai_persen'] ?? 0);
 
 $discount = 0;
+// Voucher biasanya gak berlaku buat lelang, tapi kalau mau dienable biarin aja logic ini
 if ($voucher_code) {
     if ($voucher_tipe === 'persen' && $voucher_pct > 0) {
         $discount = (int) round($subtotal * ($voucher_pct / 100));
@@ -143,20 +197,20 @@ $subtotal_after_discount = $subtotal - $discount;
 // =====================================================
 // 5) DATA SHIPPING + COURIER
 // =====================================================
-$provinsi    = trim((string)($_POST['provinsi']   ?? ''));
-$kota        = trim((string)($_POST['kota']       ?? ''));
-$kecamatan   = trim((string)($_POST['kecamatan']  ?? ''));
-$kelurahan   = trim((string)($_POST['kelurahan']  ?? ''));
+$provinsi    = trim((string)($_POST['provinsi']    ?? ''));
+$kota        = trim((string)($_POST['kota']        ?? ''));
+$kecamatan   = trim((string)($_POST['kecamatan']   ?? ''));
+$kelurahan   = trim((string)($_POST['kelurahan']   ?? ''));
 $postal_code = trim((string)(
     $_POST['kodepos']                    // dari JS (alamat custom)
     ?? $_POST['postal_code']             // fallback
     ?? $_POST['destination_postal_code'] // just in case
     ?? ''
 ));
-$alamat      = trim((string)($_POST['alamat']     ?? ''));
+$alamat      = trim((string)($_POST['alamat']      ?? ''));
 
-$code_courier  = trim((string)($_POST['code_courier']    ?? '')); // HARUS PERSIS courier_code biteship (jne, jnt, idexpress, dll)
-$shipping_type = trim((string)($_POST['service_courier'] ?? '')); // HARUS PERSIS courier_service_code (reg, ez, reg_half_kilo, dll)
+$code_courier  = trim((string)($_POST['code_courier']    ?? '')); 
+$shipping_type = trim((string)($_POST['service_courier'] ?? '')); 
 $ongkos_kirim  = (int)($_POST['shipping_cost'] ?? ($_SESSION['shipping_cost'] ?? 0));
 
 if ($provinsi === '' || $kota === '' || $kecamatan === '' || $alamat === '') {
@@ -165,7 +219,7 @@ if ($provinsi === '' || $kota === '' || $kecamatan === '' || $alamat === '') {
     exit();
 }
 if ($kelurahan === '')  $kelurahan  = '-';
-if ($postal_code === '') $postal_code = ORIGIN_POSTAL_CODE; // fallback: Bandung
+if ($postal_code === '') $postal_code = ORIGIN_POSTAL_CODE; 
 
 if ($code_courier === '' || $shipping_type === '' || $ongkos_kirim <= 0) {
     $_SESSION['message'] = 'Pilih kurir dan service dulu sebelum bayar.';
@@ -191,7 +245,7 @@ if (!in_array($payment_method, ['Transfer', 'QRIS'], true)) {
 $grand_total = $subtotal_after_discount + $ongkos_kirim;
 
 // =====================================================
-// 8) HELPER: CALL BITESHIP CREATE ORDER  (DISAMAIN SAMA SCRIPT TEST)
+// 8) HELPER: CALL BITESHIP CREATE ORDER
 // =====================================================
 function createBiteshipOrder(array $payload): array
 {
@@ -218,8 +272,6 @@ function createBiteshipOrder(array $payload): array
             'Authorization: ' . $apiKey,
         ],
         CURLOPT_POSTFIELDS     => $jsonPayload,
-        // biar sama persis script test: tanpa timeout dulu
-        // CURLOPT_TIMEOUT        => 30,
     ]);
 
     $response = curl_exec($ch);
@@ -270,9 +322,6 @@ foreach ($items as $it) {
 
 $order_id = 'ORD-' . date('YmdHis') . '-' . random_int(100, 999);
 
-// PENTING: courier_company & courier_type harus persis dengan list couriers Biteship
-// - courier_company    = courier_code  (jne, jnt, idexpress, dll)
-// - courier_type       = courier_service_code (reg, ez, reg_half_kilo, dll)
 $biteshipPayload = [
     "shipper_contact_name"   => ORIGIN_CONTACT_NAME,
     "shipper_contact_phone"  => ORIGIN_CONTACT_PHONE,
@@ -297,10 +346,11 @@ $biteshipPayload = [
 
     "items"           => $biteshipItems,
 
-    "order_note"      => "Order Styrk: $order_id",
+    "order_note"      => "Order Styrk: $order_id" . ($is_auction ? " (Lelang)" : ""),
     "metadata"        => [
         "order_id"    => $order_id,
         "customer_id" => $customer_id,
+        "is_auction"  => $is_auction
     ],
 ];
 
@@ -323,7 +373,6 @@ try {
         throw new Exception("Gagal prepare orders: " . $conn->error);
     }
 
-    // 12 parameter → "sissssssssii"
     $stmtOrder->bind_param(
         "sissssssssii",
         $order_id,
@@ -357,9 +406,9 @@ try {
     }
 
     foreach ($items as $it) {
-        $pid   = (string)$it['product_id'];   // asumsi product_id VARCHAR
+        $pid   = (string)$it['product_id']; 
         $jml   = (int)$it['jumlah_barang'];
-        $harga = (int)$it['harga'];
+        $harga = (int)$it['harga']; // Ini dinamis (kalau lelang pakai bid price)
         $sub   = $harga * $jml;
 
         $stmtDetail->bind_param("ssiii", $order_id, $pid, $jml, $harga, $sub);
@@ -367,7 +416,7 @@ try {
             throw new Exception("Gagal insert detail produk ID $pid: " . $stmtDetail->error);
         }
 
-        // Kurangi stok
+        // Kurangi stok (Baik lelang maupun normal tetap kurangi stok master product)
         $sqlStok = "UPDATE products SET stok = stok - ? WHERE product_id = ?";
         $stmtStok = $conn->prepare($sqlStok);
         if ($stmtStok) {
@@ -378,24 +427,32 @@ try {
     }
     $stmtDetail->close();
 
-    // --- hapus carts yang sudah checkout ---
-    $sqlDel = "DELETE FROM carts WHERE customer_id = ? AND cart_id IN ($in_clause)";
-    $stmtDel = $conn->prepare($sqlDel);
-    if (!$stmtDel) {
-        throw new Exception("Gagal prepare delete carts: " . $conn->error);
+    // --- hapus carts yang sudah checkout (HANYA JIKA BUKAN LELANG) ---
+    if (!$is_auction && !empty($selected_cart_ids)) {
+        $in_clause_del = implode(',', $selected_cart_ids);
+        $sqlDel = "DELETE FROM carts WHERE customer_id = ? AND cart_id IN ($in_clause_del)";
+        $stmtDel = $conn->prepare($sqlDel);
+        if (!$stmtDel) {
+            throw new Exception("Gagal prepare delete carts: " . $conn->error);
+        }
+        $stmtDel->bind_param("i", $customer_id);
+        if (!$stmtDel->execute()) {
+            throw new Exception("Gagal hapus cart: " . $stmtDel->error);
+        }
+        $stmtDel->close();
     }
-    $stmtDel->bind_param("i", $customer_id);
-    if (!$stmtDel->execute()) {
-        throw new Exception("Gagal hapus cart: " . $stmtDel->error);
+    
+    // (Opsional) Update status lelang jadi 'completed' atau 'paid' jika perlu
+    if ($is_auction) {
+        // Contoh: $conn->query("UPDATE auctions SET status='completed' WHERE auction_id=$auction_id");
     }
-    $stmtDel->close();
 
     $conn->commit();
 
 } catch (Throwable $e) {
     $conn->rollback();
     $_SESSION['message'] = 'Gagal membuat order: ' . $e->getMessage();
-    header('Location: payment.php');
+    header('Location: payment.php' . ($is_auction ? '?auction_id='.$auction_id : ''));
     exit();
 }
 
@@ -413,7 +470,6 @@ unset(
 try {
     $bs = createBiteshipOrder($biteshipPayload);
 
-    // Simpan debug ke session biar bisa dicek di halaman berikut
     $_SESSION['biteship_debug'] = [
         'request_payload' => $biteshipPayload,
         'response'        => $bs,
@@ -447,12 +503,9 @@ try {
             $stmtUpd->execute();
             $stmtUpd->close();
         }
-    } else {
-        // Kalau gagal Biteship: order lokal tetap ada, tinggal lu cek $_SESSION['biteship_debug']
     }
 } catch (Throwable $e) {
     $_SESSION['biteship_debug_exception'] = $e->getMessage();
-    // jangan dibatalkan, biar user tetap punya order lokal
 }
 
 // =====================================================

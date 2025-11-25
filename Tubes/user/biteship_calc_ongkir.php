@@ -20,7 +20,10 @@ $customer_id = (int) $_SESSION['kd_cs'];
 // ===================== AMBIL DATA POST =====================
 $destination_postal = trim((string)($_POST['destination_postal_code'] ?? ''));
 $courier_code       = trim((string)($_POST['code_courier'] ?? ''));
-$base_total         = (int)($_POST['base_total'] ?? 0); // kalau mau dipakai nanti, sekarang belum kepake
+$base_total         = (int)($_POST['base_total'] ?? 0);
+
+// --- [BARU] Ambil auction_id ---
+$auction_id         = isset($_POST['auction_id']) ? (int)$_POST['auction_id'] : 0;
 
 // selected_items[] dari payment.php (cart)
 $selected_ids = $_POST['selected_items'] ?? [];
@@ -47,80 +50,129 @@ if ($courier_code === '') {
     exit;
 }
 
-if (empty($selected_ids)) {
+// --- [REVISI] Validasi Item (Bisa Cart ATAU Lelang) ---
+if (empty($selected_ids) && $auction_id <= 0) {
     echo json_encode([
         'success' => false,
-        'message' => 'Tidak ada item cart yang dikirim ke kalkulasi ongkir.'
+        'message' => 'Tidak ada item cart atau lelang yang dikirim ke kalkulasi ongkir.'
     ]);
     exit;
 }
 
 // ===================== CONFIG TOKO & API KEY =====================
-$origin_postal    = '40161'; // asal Bandung, sesuaikan kalau mau
+$origin_postal    = '40161'; // asal Bandung
 $BITESHIP_API_KEY = 'biteship_test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiU3R5cmtfaW5kdXN0cmllcyIsInVzZXJJZCI6IjY5MjA3ZmI0YzMxM2VmYTUyZTM5OThlNCIsImlhdCI6MTc2Mzc4NTQ0OH0.dBPLQHoBBV4gnXux-OMziAO5yr1TBzXTf4T-Js2b0ak';
 
-// ===================== AMBIL DATA CART DARI DB =====================
-$in_clause = implode(',', $selected_ids);
-
-$sql = "
-    SELECT 
-        c.cart_id,
-        c.jumlah_barang,
-        p.nama_produk,
-        p.harga,
-        p.weight
-    FROM carts c
-    JOIN products p ON p.product_id = c.product_id
-    WHERE c.customer_id = ?
-      AND c.cart_id IN ($in_clause)
-";
-
-$stmt = $conn->prepare($sql);
-if (!$stmt) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Gagal prepare query cart: ' . $conn->error
-    ]);
-    exit;
-}
-
-$stmt->bind_param('i', $customer_id);
-$stmt->execute();
-$res = $stmt->get_result();
-
+// ===================== AMBIL DATA BARANG =====================
 $itemsPayload      = [];
 $total_weight_gram = 0;
 
-while ($row = $res->fetch_assoc()) {
-    $nama   = (string)($row['nama_produk'] ?? 'Item');
-    $harga  = (int)($row['harga'] ?? 0);
-    $qty    = max(1, (int)($row['jumlah_barang'] ?? 1));
-    $berat  = (int)($row['weight'] ?? 0); // gram per unit
+// ================= SKENARIO 1: LELANG =================
+if ($auction_id > 0) {
+    // Ambil data dari tabel auctions join products
+    // Kita ambil current_bid sebagai harga value barang
+    $sql = "
+        SELECT 
+            p.nama_produk,
+            p.weight,
+            a.current_bid as harga
+        FROM auctions a
+        JOIN products p ON a.product_id = p.product_id
+        WHERE a.auction_id = ?
+    ";
+    
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Gagal prepare query lelang: ' . $conn->error]);
+        exit;
+    }
+    
+    $stmt->bind_param('i', $auction_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    if ($row = $res->fetch_assoc()) {
+        $nama  = (string)($row['nama_produk'] . ' (Lelang)');
+        $harga = (int)($row['harga'] ?? 0);
+        $qty   = 1; // Lelang selalu 1 item
+        $berat = (int)($row['weight'] ?? 0); 
 
-    // fallback kalau belum diisi
-    if ($berat <= 0) {
-        $berat = 500; // default 500 gram per unit
+        if ($berat <= 0) $berat = 1000; // Default 1kg
+
+        $total_weight_gram += $berat * $qty;
+
+        $itemsPayload[] = [
+            'name'        => $nama,
+            'value'       => $harga,
+            'weight'      => $berat,
+            'quantity'    => $qty,
+            'length'      => 10,
+            'width'       => 10,
+            'height'      => 10,
+            'description' => 'Produk Lelang Styrk Industries',
+        ];
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Data lelang tidak ditemukan di database.']);
+        exit;
+    }
+    $stmt->close();
+
+// ================= SKENARIO 2: CART BIASA =================
+} else {
+    $in_clause = implode(',', $selected_ids);
+    
+    $sql = "
+        SELECT 
+            c.cart_id,
+            c.jumlah_barang,
+            p.nama_produk,
+            p.harga,
+            p.weight
+        FROM carts c
+        JOIN products p ON p.product_id = c.product_id
+        WHERE c.customer_id = ?
+          AND c.cart_id IN ($in_clause)
+    ";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Gagal prepare query cart: ' . $conn->error]);
+        exit;
     }
 
-    $total_weight_gram += $berat * $qty;
+    $stmt->bind_param('i', $customer_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
 
-    $itemsPayload[] = [
-        'name'        => $nama,
-        'value'       => $harga,       // harga per unit
-        'weight'      => $berat,       // gram per unit
-        'quantity'    => $qty,
-        'length'      => 10,
-        'width'       => 10,
-        'height'      => 10,
-        'description' => 'Produk dari cart Styrk Industries',
-    ];
+    while ($row = $res->fetch_assoc()) {
+        $nama   = (string)($row['nama_produk'] ?? 'Item');
+        $harga  = (int)($row['harga'] ?? 0);
+        $qty    = max(1, (int)($row['jumlah_barang'] ?? 1));
+        $berat  = (int)($row['weight'] ?? 0); // gram per unit
+
+        if ($berat <= 0) $berat = 500; // default 500 gram
+
+        $total_weight_gram += $berat * $qty;
+
+        $itemsPayload[] = [
+            'name'        => $nama,
+            'value'       => $harga,
+            'weight'      => $berat,
+            'quantity'    => $qty,
+            'length'      => 10,
+            'width'       => 10,
+            'height'      => 10,
+            'description' => 'Produk dari cart Styrk Industries',
+        ];
+    }
+    $stmt->close();
 }
-$stmt->close();
 
+// Validasi Akhir Payload
 if (empty($itemsPayload)) {
     echo json_encode([
         'success' => false,
-        'message' => 'Cart kosong atau produk tidak ditemukan untuk kalkulasi ongkir.'
+        'message' => 'Tidak ada produk valid yang ditemukan (Stok/ID salah).'
     ]);
     exit;
 }

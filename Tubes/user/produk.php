@@ -124,10 +124,12 @@ if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
             <h2 id="judul">Lelang Berlangsung</h2>
             <p class="text-muted">Ikuti lelang spesial Styrk Industries, klik kartu untuk ikut bid.</p>
         </div>
+
         <div class="row">
             <?php while ($auc = mysqli_fetch_assoc($auction_result)): ?>
-                <div class="col-sm-6 col-md-4 mb-3">
-                    <div class="thumbnail" onclick="window.location='auction_detail.php?id=<?= (int)$auc['auction_id']; ?>'">
+                <div class="col-sm-6 col-md-4">
+                    <div class="thumbnail"
+                        onclick="window.location='auction_detail.php?id=<?= (int)$auc['auction_id']; ?>'">
                         <a href="auction_detail.php?id=<?= (int)$auc['auction_id']; ?>">
                             <img
                                 id="gambar"
@@ -153,6 +155,8 @@ if ($auction_result && mysqli_num_rows($auction_result) > 0): ?>
         </div>
     </div>
 <?php endif; ?>
+
+
 
 <div class="container_produk mb-4">
 

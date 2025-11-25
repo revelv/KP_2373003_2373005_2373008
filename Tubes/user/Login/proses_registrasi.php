@@ -73,7 +73,7 @@ $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
 // ================= INSERT CUSTOMER BARU =================
 // provinsi / kota / kecamatan / kelurahan disimpan sebagai NAMA (string)
-// postal_code disimpan sebagai KODE POS (bukan lagi destination_id komship)
+// postal_code disimpan sebagai KODE POS (bukan lagi destination_id shipping)
 $stmt = $conn->prepare("
     INSERT INTO customer (
         nama, 

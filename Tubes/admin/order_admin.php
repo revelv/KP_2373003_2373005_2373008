@@ -61,7 +61,13 @@ $search        = $_GET['search']     ?? '';
 $search_by     = $_GET['search_by']  ?? 'customer';
 $status_filter = $_GET['status']     ?? '';
 
-// Query Orders (pakai komship_status)
+/**
+ * QUERY ORDERS
+ * Kolom BITESHIP yang betul:
+ * - shipping_status
+ * - shipping_provider_order_id
+ * - shipping_tracking_code  (ini kita pakai sebagai AWB)
+ */
 $query = "
   SELECT 
     o.order_id,
@@ -69,9 +75,9 @@ $query = "
     c.nama AS customer,
     o.tgl_order,
     o.total_harga,
-    o.komship_status,
-    o.komship_order_no,
-    o.komship_awb,
+    o.shipping_status,
+    o.shipping_provider_order_id,
+    o.shipping_tracking_code,       -- *** PENTING: ganti shipping_awb ***
     o.provinsi,
     o.kota,
     o.kecamatan,
@@ -99,11 +105,12 @@ if (!empty($search)) {
 
 if (!empty($status_filter)) {
   $safe_status = mysqli_real_escape_string($conn, $status_filter);
-  $query .= " AND o.komship_status = '$safe_status'";
+  $query .= " AND o.shipping_status = '$safe_status'";
 }
 
 $query  .= " ORDER BY o.tgl_order DESC";
 $result = mysqli_query($conn, $query);
+
 
 // Query Payment Proofs kalau view_payments=1
 if (isset($_GET['view_payments'])) {
@@ -116,9 +123,9 @@ if (isset($_GET['view_payments'])) {
       p.*,
       c.nama AS customer,
       o.total_harga,
-      o.komship_order_no,
-      o.komship_status,
-      o.komship_awb
+      o.shipping_provider_order_id,
+      o.shipping_status,
+      o.shipping_tracking_code      -- *** PENTING: ganti shipping_awb ***
     FROM payments p
     JOIN orders o   ON p.order_id = o.order_id
     JOIN customer c ON o.customer_id = c.customer_id
@@ -162,7 +169,7 @@ if (isset($_GET['view_payments'])) {
     <div>
       <select name="status"
         class="w-full px-3 py-2 rounded bg-gray-700 text-white border border-gray-600">
-        <option value="">Semua Status Komship</option>
+        <option value="">Semua Status shipping</option>
         <option value="pending" <?= $status_filter === 'pending' ? 'selected' : '' ?>>pending</option>
         <option value="SUCCESS" <?= $status_filter === 'SUCCESS' ? 'selected' : '' ?>>SUCCESS</option>
         <option value="FAILED"  <?= $status_filter === 'FAILED'  ? 'selected' : '' ?>>FAILED</option>
@@ -203,14 +210,14 @@ if (isset($_GET['view_payments'])) {
             <th class="py-3 px-4 text-left">Tanggal Order</th>
             <th class="py-3 px-4 text-left">Total</th>
             <th class="py-3 px-4 text-left">Alamat</th>
-            <th class="py-3 px-4 text-left">Status Komship</th>
+            <th class="py-3 px-4 text-left">Status shipping</th>
             <th class="py-3 px-4 text-center">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-700">
           <?php while ($row = mysqli_fetch_assoc($result)) : ?>
             <?php
-              $kstat      = (string)($row['komship_status'] ?? '');
+              $kstat      = (string)($row['shipping_status'] ?? '');
               $kstatLower = strtolower($kstat);
               $badgeClass = match ($kstatLower) {
                   'pending'                    => 'bg-yellow-500 text-gray-900',
@@ -219,7 +226,9 @@ if (isset($_GET['view_payments'])) {
                   'canceled'                   => 'bg-red-500 text-white',
                   default                      => 'bg-gray-600 text-white',
               };
-              $alreadyKomship = !empty($row['komship_order_no']);
+
+              // *** PENTING: pakai shipping_provider_order_id, bukan shipping_order_no ***
+              $alreadyshipping = !empty($row['shipping_provider_order_id']);
 
               // Susun alamat lengkap
               $alamat = trim((string)($row['alamat'] ?? ''));
@@ -245,15 +254,15 @@ if (isset($_GET['view_payments'])) {
                 <?= nl2br(htmlspecialchars($alamatLengkap !== '' ? $alamatLengkap : '-')) ?>
               </td>
 
-              <!-- KOMSHIP STATUS + info -->
+              <!-- shipping STATUS + info -->
               <td class="py-3 px-4 text-sm">
                 <span class="inline-block px-2 py-1 rounded <?= $badgeClass ?>">
                   <?= $kstat !== '' ? htmlspecialchars($kstat) : 'belum dibuat' ?>
                 </span>
-                <?php if (!empty($row['komship_order_no'])): ?>
+                <?php if (!empty($row['shipping_provider_order_id'])): ?>
                   <div class="mt-1 text-xs text-gray-300">
-                    Order No: <?= htmlspecialchars($row['komship_order_no']) ?><br>
-                    AWB: <?= htmlspecialchars($row['komship_awb'] ?? '-') ?>
+                    Order No: <?= htmlspecialchars($row['shipping_provider_order_id']) ?><br>
+                    AWB: <?= htmlspecialchars($row['shipping_tracking_code'] ?? '-') ?>
                   </div>
                 <?php endif; ?>
               </td>
@@ -292,7 +301,7 @@ if (isset($_GET['view_payments'])) {
             <th class="py-3 px-4 text-left">Payment Method</th>
             <th class="py-3 px-4 text-left">Amount</th>
             <th class="py-3 px-4 text-left">Payment Date</th>
-            <th class="py-3 px-4 text-left">Status & Komship</th>
+            <th class="py-3 px-4 text-left">Status & shipping</th>
             <th class="py-3 px-4 text-left">Proof</th>
           </tr>
         </thead>
@@ -307,8 +316,8 @@ if (isset($_GET['view_payments'])) {
                 default    => 'bg-gray-600 text-white',
               };
 
-              $kstat         = (string)($payment['komship_status'] ?? '');
-              $alreadyKomship = !empty($payment['komship_order_no']);
+              $kstat           = (string)($payment['shipping_status'] ?? '');
+              $alreadyshipping = !empty($payment['shipping_provider_order_id']);
             ?>
             <tr class="hover:bg-gray-700">
               <td class="py-3 px-4"><?= htmlspecialchars($payment['order_id']) ?></td>
@@ -317,7 +326,7 @@ if (isset($_GET['view_payments'])) {
               <td class="py-3 px-4">Rp <?= number_format($payment['jumlah_dibayar'], 0, ',', '.') ?></td>
               <td class="py-3 px-4"><?= date('d-m-Y H:i', strtotime($payment['tanggal_bayar'])) ?></td>
 
-              <!-- STATUS + BUTTON CREATE ORDER -->
+              <!-- STATUS + INFO shipping -->
               <td class="py-3 px-4 text-sm">
                 <div class="mb-1">
                   <span class="inline-block px-2 py-1 rounded <?= $pBadge ?>">
@@ -325,13 +334,14 @@ if (isset($_GET['view_payments'])) {
                   </span>
                 </div>
                 <div class="text-xs text-gray-300 mb-2">
-                  Komship:
+                  shipping:
                   <?= $kstat !== '' ? htmlspecialchars($kstat) : 'belum dibuat' ?>
-                  <?php if (!empty($payment['komship_order_no'])): ?>
-                    <br>Order No: <?= htmlspecialchars($payment['komship_order_no']) ?>
-                    <br>AWB: <?= htmlspecialchars($payment['komship_awb'] ?? '-') ?>
+                  <?php if (!empty($payment['shipping_provider_order_id'])): ?>
+                    <br>Order No: <?= htmlspecialchars($payment['shipping_provider_order_id']) ?>
+                    <br>AWB: <?= htmlspecialchars($payment['shipping_tracking_code'] ?? '-') ?>
                   <?php endif; ?>
                 </div>
+              </td>
 
               <!-- PROOF -->
               <td class="py-3 px-4">

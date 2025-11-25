@@ -20,17 +20,25 @@ $query_auctions = "
         o.shipping_status   AS order_status
     FROM auctions a
     JOIN customer c ON a.customer_id = c.customer_id
+    -- Cari SATU order (kalau ada) milik user ini
+    -- yang di order_details-nya ada produk yang sama dengan lelang ini
     LEFT JOIN orders o
-       ON o.customer_id = ?
-      AND o.order_id LIKE CONCAT('STYRK_AUC_', a.auction_id, '_%')
+      ON o.order_id = (
+          SELECT MIN(o2.order_id)
+          FROM orders o2
+          JOIN order_details od2 ON od2.order_id = o2.order_id
+          WHERE o2.customer_id = ?
+            AND od2.product_id = a.product_id
+            AND o2.tgl_order >= a.end_time
+      )
     WHERE
       (a.status = 'active' AND a.end_time > NOW())
       OR (
-            a.status <> 'active'
-        AND a.end_time <= NOW()                            -- lelang sudah benar-benar selesai
-        AND a.end_time >= DATE_SUB(NOW(), INTERVAL 1 DAY)  -- max 1 hari dari kemenangan
-        AND a.current_winner_id = ?                        -- user ini pemenangnya
-        AND (o.order_id IS NULL OR o.shipping_status = 'pending')
+           a.status <> 'active'
+        AND a.end_time <= NOW()
+        AND a.end_time >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+        AND a.current_winner_id = ?
+        AND o.order_id IS NULL
       )
     ORDER BY a.end_time ASC
 ";
@@ -76,13 +84,14 @@ $result_auctions = $stmt_auc->get_result();
 
         .auction-card {
             border: 1px solid #eee;
-            border-radius: 8px;
+            border-radius: 12px;
             background: #fff;
             transition: all 0.25s ease-in-out;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             height: 100%;
+            overflow: hidden;
         }
 
         .auction-card:hover {
@@ -93,10 +102,11 @@ $result_auctions = $stmt_auc->get_result();
         }
 
         .auction-img {
-            height: 200px;
             width: 100%;
+            height: 220px;
             object-fit: cover;
-            border-radius: 8px 8px 0 0;
+            object-position: center;
+            background-color: #f0f0f0;
         }
 
         .auction-card .card-body {
@@ -108,6 +118,14 @@ $result_auctions = $stmt_auc->get_result();
             background: none;
             border-top: 1px solid #eee;
             padding: 1rem;
+        }
+
+        /* GRID BARU – tidak pakai row/col Bootstrap lagi */
+        .auction-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
 
         .countdown-timer {
@@ -126,59 +144,59 @@ $result_auctions = $stmt_auc->get_result();
             </h2>
         </div>
 
-        <div class="row g-4">
-            <?php if ($result_auctions && mysqli_num_rows($result_auctions) > 0): ?>
+        <?php if ($result_auctions && mysqli_num_rows($result_auctions) > 0): ?>
+            <div class="auction-grid">
                 <?php while ($auction = mysqli_fetch_assoc($result_auctions)):
                     $ended    = (strtotime($auction['end_time']) <= time());
                     $isWinner = ((int)$auction['current_winner_id'] === $customer_id);
                     $hasOrder = !empty($auction['linked_order_id']);
                 ?>
-                    <div class="col-md-6 col-lg-4">
-                        <div class="auction-card"
-                             onclick="window.location='auction_detail.php?id=<?= $auction['auction_id']; ?>'">
-                            <img src="<?= htmlspecialchars($auction['image_url'] ?? 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
-                                 class="auction-img"
-                                 alt="<?= htmlspecialchars($auction['title']); ?>">
-                            <div class="card-body">
-                                <h5 class="mb-1">
-                                    <a href="auction_detail.php?id=<?= $auction['auction_id']; ?>">
-                                        <?= htmlspecialchars($auction['title']); ?>
-                                    </a>
-                                </h5>
-                                <h6 class="mb-1" style="font-size: 0.9rem;">Tawaran Saat Ini:</h6>
-                                <h4 class="fw-bold" style="color: #28a745;">
-                                    Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?>
-                                </h4>
-                            </div>
-                            <div class="card-footer">
-                                <?php if (!$ended): ?>
-                                    <!-- Lelang masih berjalan: countdown -->
-                                    <p class="mb-1" style="font-size: 0.85rem; color: #6c757d;">Berakhir dalam:</p>
-                                    <div class="countdown-timer" data-endtime="<?= htmlspecialchars($auction['end_time']); ?>">
-                                        Menghitung...
-                                    </div>
+                    <div class="auction-card"
+                        onclick="window.location='auction_detail.php?id=<?= $auction['auction_id']; ?>'">
+                        <img src="<?= htmlspecialchars($auction['image_url'] ?? 'https://i.postimg.cc/855ZSty7/no-bg.png'); ?>"
+                            class="auction-img"
+                            alt="<?= htmlspecialchars($auction['title']); ?>">
+
+                        <div class="card-body">
+                            <h5 class="mb-1">
+                                <a href="auction_detail.php?id=<?= $auction['auction_id']; ?>">
+                                    <?= htmlspecialchars($auction['title']); ?>
+                                </a>
+                            </h5>
+                            <h6 class="mb-1" style="font-size: 0.9rem;">Tawaran Saat Ini:</h6>
+                            <h4 class="fw-bold" style="color: #28a745;">
+                                Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?>
+                            </h4>
+                        </div>
+
+                        <div class="card-footer">
+                            <?php if (!$ended): ?>
+                                <!-- Lelang masih berjalan: countdown -->
+                                <p class="mb-1" style="font-size: 0.85rem; color: #6c757d;">Berakhir dalam:</p>
+                                <div class="countdown-timer" data-endtime="<?= htmlspecialchars($auction['end_time']); ?>">
+                                    Menghitung...
+                                </div>
+                            <?php else: ?>
+                                <!-- Lelang sudah berakhir -->
+                                <span class="badge bg-danger mb-1">Lelang berakhir</span>
+                                <?php if ($isWinner && !$hasOrder): ?>
+                                    <p class="mb-0" style="font-size: 0.85rem;">
+                                        Kamu pemenang. Klik kartu ini untuk proses pembayaran
+                                        (batas 1×24 jam).
+                                    </p>
                                 <?php else: ?>
-                                    <!-- Lelang sudah berakhir -->
-                                    <span class="badge bg-danger mb-1">Lelang berakhir</span>
-                                    <?php if ($isWinner && !$hasOrder): ?>
-                                        <p class="mb-0" style="font-size: 0.85rem;">
-                                            Kamu pemenang. Klik kartu ini untuk proses pembayaran
-                                            (batas 1×24 jam).
-                                        </p>
-                                    <?php else: ?>
-                                        <p class="mb-0" style="font-size: 0.85rem;">
-                                            Lelang sudah selesai.
-                                        </p>
-                                    <?php endif; ?>
+                                    <p class="mb-0" style="font-size: 0.85rem;">
+                                        Lelang sudah selesai.
+                                    </p>
                                 <?php endif; ?>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endwhile; ?>
-            <?php else: ?>
-                <p class="text-center text-muted mt-3">Belum ada barang yang dilelang saat ini.</p>
-            <?php endif; ?>
-        </div>
+            </div>
+        <?php else: ?>
+            <p class="text-center text-muted mt-3">Belum ada barang yang dilelang saat ini.</p>
+        <?php endif; ?>
     </div>
 
     <?php
@@ -225,4 +243,5 @@ $result_auctions = $stmt_auc->get_result();
     </script>
 
 </body>
+
 </html>

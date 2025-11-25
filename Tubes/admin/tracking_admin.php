@@ -1,5 +1,5 @@
 <?php
-// admin_komship_pickup.php
+// admin_shipping_pickup.php
 declare(strict_types=1);
 
 session_start();
@@ -8,7 +8,7 @@ include 'header_admin.php';
 
 /**
  * ===========================
- *  KONFIG KOMERCE / KOMSHIP
+ *  KONFIG KOMERCE / shipping
  * ===========================
  */
 
@@ -21,11 +21,11 @@ if (!defined('KOMERCE_API_KEY')) {
 }
 
 /**
- * Helper: Panggil Detail Order Komship lalu update AWB + status ke DB.
+ * Helper: Panggil Detail Order shipping lalu update AWB + status ke DB.
  *
  * @return array{success:bool,message:string}
  */
-function syncKomshipDetailAndUpdateAwb(mysqli $conn, string $orderId, string $orderNo): array
+function syncshippingDetailAndUpdateAwb(mysqli $conn, string $orderId, string $orderNo): array
 {
     $url = KOMERCE_ORDER_BASE_URL . '/order/api/v1/orders/detail?order_no=' . urlencode($orderNo);
 
@@ -45,7 +45,7 @@ function syncKomshipDetailAndUpdateAwb(mysqli $conn, string $orderId, string $or
     curl_close($ch);
 
     @file_put_contents(
-        __DIR__ . '/komship_detail_last_response.log',
+        __DIR__ . '/shipping_detail_last_response.log',
         "=== " . date('Y-m-d H:i:s') . " ===\n" .
         "order_id: {$orderId}\n" .
         "order_no: {$orderNo}\n" .
@@ -89,9 +89,9 @@ function syncKomshipDetailAndUpdateAwb(mysqli $conn, string $orderId, string $or
 
     $sqlUpd = "
         UPDATE orders
-        SET komship_awb      = ?,
-            komship_status   = ?,
-            komship_last_sync = NOW()
+        SET shipping_awb      = ?,
+            shipping_status   = ?,
+            shipping_last_sync = NOW()
         WHERE order_id = ?
         LIMIT 1
     ";
@@ -111,7 +111,7 @@ function syncKomshipDetailAndUpdateAwb(mysqli $conn, string $orderId, string $or
     if ($awb === '') {
         return [
             'success' => true,
-            'message' => "Detail order Komship berhasil di-sync, tapi AWB masih kosong. Status: {$orderStatus} (rows updated: {$affected})",
+            'message' => "Detail order shipping berhasil di-sync, tapi AWB masih kosong. Status: {$orderStatus} (rows updated: {$affected})",
         ];
     }
 
@@ -138,8 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flashMessage = 'Order ID tidak boleh kosong.';
         $flashType    = 'error';
     } else {
-        // Ambil komship_order_no dari DB
-        $sql = "SELECT komship_order_no FROM orders WHERE order_id = ? LIMIT 1";
+        // Ambil shipping_order_no dari DB
+        $sql = "SELECT shipping_order_no FROM orders WHERE order_id = ? LIMIT 1";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             $flashMessage = 'Gagal prepare SELECT orders: ' . $conn->error;
@@ -151,11 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $row = $res->fetch_assoc();
             $stmt->close();
 
-            if (!$row || empty($row['komship_order_no'])) {
-                $flashMessage = 'Order ini belum memiliki komship_order_no (belum berhasil create order ke Komship).';
+            if (!$row || empty($row['shipping_order_no'])) {
+                $flashMessage = 'Order ini belum memiliki shipping_order_no (belum berhasil create order ke shipping).';
                 $flashType    = 'error';
             } else {
-                $orderNo = (string)$row['komship_order_no'];
+                $orderNo = (string)$row['shipping_order_no'];
 
                 if ($action === 'pickup') {
                     /**
@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     curl_close($ch);
 
                     @file_put_contents(
-                        __DIR__ . '/komship_pickup_last_response.log',
+                        __DIR__ . '/shipping_pickup_last_response.log',
                         "=== " . date('Y-m-d H:i:s') . " ===\n" .
                         "order_id: {$orderId}\n" .
                         "order_no: {$orderNo}\n" .
@@ -254,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update status dasar: pickup_requested
                                 $sqlUpd = "
                                     UPDATE orders
-                                    SET komship_status = ?,
-                                        komship_last_sync = NOW()
+                                    SET shipping_status = ?,
+                                        shipping_last_sync = NOW()
                                     WHERE order_id = ?
                                     LIMIT 1
                                 ";
@@ -268,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 }
 
                                 // Lanjut sync detail (AWB + status)
-                                $syncResult = syncKomshipDetailAndUpdateAwb($conn, $orderId, $orderNo);
+                                $syncResult = syncshippingDetailAndUpdateAwb($conn, $orderId, $orderNo);
 
                                 if ($syncResult['success']) {
                                     $flashMessage = 'Pickup request sukses. ' . $syncResult['message'];
@@ -289,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      *  HANYA SYNC DETAIL
                      * =====================
                      */
-                    $syncResult = syncKomshipDetailAndUpdateAwb($conn, $orderId, $orderNo);
+                    $syncResult = syncshippingDetailAndUpdateAwb($conn, $orderId, $orderNo);
 
                     if ($syncResult['success']) {
                         $flashMessage = $syncResult['message'];
@@ -314,15 +314,15 @@ $sqlList = "
     SELECT 
         o.order_id,
         o.tgl_order,
-        o.komship_order_no,
-        o.komship_awb,
-        o.komship_status,
+        o.shipping_order_no,
+        o.shipping_awb,
+        o.shipping_status,
         o.code_courier,
         o.shipping_type,
         c.nama AS customer_name
     FROM orders o
     JOIN customer c ON c.customer_id = o.customer_id
-    WHERE o.komship_order_no IS NOT NULL
+    WHERE o.shipping_order_no IS NOT NULL
     ORDER BY o.tgl_order DESC
     LIMIT 50
 ";
@@ -336,7 +336,7 @@ $defaultPickupTime = '10:00';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Komship Pickup & AWB Sync</title>
+    <title>Admin - shipping Pickup & AWB Sync</title>
     <style>
         :root {
             --bg-main: #0f172a;
@@ -598,12 +598,12 @@ $defaultPickupTime = '10:00';
     <div class="card">
         <div class="badge">
             <span class="badge-dot"></span>
-            KOMSHIP INTEGRATION · ADMIN
+            shipping INTEGRATION · ADMIN
         </div>
         <h1>Pickup Request & AWB Sync</h1>
         <div class="subtitle">
-            Halaman ini buat <strong>request pickup</strong> ke Komship dan
-            <strong>sync AWB + status</strong> dari Delivery API berdasarkan <code>komship_order_no</code>.
+            Halaman ini buat <strong>request pickup</strong> ke shipping dan
+            <strong>sync AWB + status</strong> dari Delivery API berdasarkan <code>shipping_order_no</code>.
         </div>
 
         <?php if ($flashMessage !== ''): ?>
@@ -621,7 +621,7 @@ $defaultPickupTime = '10:00';
                 <th>Customer</th>
                 <th>Kurir</th>
                 <th>Service</th>
-                <th>Komship Order No</th>
+                <th>shipping Order No</th>
                 <th>AWB</th>
                 <th>Status</th>
                 <th style="min-width: 240px;">Aksi</th>
@@ -639,19 +639,19 @@ $defaultPickupTime = '10:00';
                         <td>
                             <span class="pill">
                                 <span class="pill-dot"></span>
-                                <?= htmlspecialchars($row['komship_order_no']) ?>
+                                <?= htmlspecialchars($row['shipping_order_no']) ?>
                             </span>
                         </td>
                         <td>
-                            <?php if (!empty($row['komship_awb'])): ?>
-                                <code><?= htmlspecialchars($row['komship_awb']) ?></code>
+                            <?php if (!empty($row['shipping_awb'])): ?>
+                                <code><?= htmlspecialchars($row['shipping_awb']) ?></code>
                             <?php else: ?>
                                 <span class="text-muted">Belum ada</span>
                             <?php endif; ?>
                         </td>
                         <td>
                             <?php
-                            $status = $row['komship_status'] ?? '';
+                            $status = $row['shipping_status'] ?? '';
                             $statusLower = strtolower($status);
                             $statusClass = '';
                             if (in_array($statusLower, ['pickup_success', 'delivered'], true)) {
@@ -697,7 +697,7 @@ $defaultPickupTime = '10:00';
                 <?php endwhile; ?>
             <?php else: ?>
                 <tr>
-                    <td colspan="9" class="text-muted">Belum ada order yang punya <code>komship_order_no</code>.</td>
+                    <td colspan="9" class="text-muted">Belum ada order yang punya <code>shipping_order_no</code>.</td>
                 </tr>
             <?php endif; ?>
             </tbody>
@@ -708,7 +708,7 @@ $defaultPickupTime = '10:00';
             <ul>
                 <li>Kalau waktu pickup yang dipilih terlalu dekat, script otomatis geser ke minimal <strong>+90 menit</strong> dari sekarang.</li>
                 <li>AWB & status diambil dari endpoint <code>/order/api/v1/orders/detail?order_no=...</code>.</li>
-                <li>Log request tersimpan di <code>komship_pickup_last_response.log</code> dan <code>komship_detail_last_response.log</code>.</li>
+                <li>Log request tersimpan di <code>shipping_pickup_last_response.log</code> dan <code>shipping_detail_last_response.log</code>.</li>
             </ul>
         </div>
     </div>

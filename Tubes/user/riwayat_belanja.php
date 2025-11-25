@@ -91,36 +91,36 @@ $stmt->close();
                             <?php else: ?>
                                 <?php foreach ($orders as $o): ?>
                                     <?php
-                                        $tgl   = date('d M Y H:i', strtotime($o['tgl_order']));
-                                        $total = (float) $o['total_harga'];
+                                    $tgl   = date('d M Y H:i', strtotime($o['tgl_order']));
+                                    $total = (float) $o['total_harga'];
 
-                                        $statusRaw = (string) ($o['shipping_status'] ?? '');
-                                        $status    = strtolower($statusRaw);
+                                    $statusRaw = (string) ($o['shipping_status'] ?? '');
+                                    $status    = strtolower($statusRaw);
 
-                                        // olah list barang
-                                        $itemsRaw   = (string) ($o['items'] ?? '');
-                                        $firstItem  = '—';
-                                        $otherCount = 0;
+                                    // olah list barang
+                                    $itemsRaw   = (string) ($o['items'] ?? '');
+                                    $firstItem  = '—';
+                                    $otherCount = 0;
 
-                                        if ($itemsRaw !== '') {
-                                            $barangList = explode('||', $itemsRaw);
-                                            $barangList = array_filter(
-                                                $barangList,
-                                                fn($v) => trim($v) !== ''
-                                            );
-                                            if ($barangList) {
-                                                $firstItem  = $barangList[0];
-                                                $otherCount = count($barangList) - 1;
-                                            }
+                                    if ($itemsRaw !== '') {
+                                        $barangList = explode('||', $itemsRaw);
+                                        $barangList = array_filter(
+                                            $barangList,
+                                            fn($v) => trim($v) !== ''
+                                        );
+                                        if ($barangList) {
+                                            $firstItem  = $barangList[0];
+                                            $otherCount = count($barangList) - 1;
                                         }
+                                    }
 
-                                        $badgeClass = 'badge-status ' . match ($status) {
-                                            'pending' => 'badge-pending',
-                                            'proses'  => 'badge-proses',
-                                            'selesai' => 'badge-selesai',
-                                            'batal'   => 'badge-batal',
-                                            default   => 'bg-secondary',
-                                        };
+                                    $badgeClass = 'badge-status ' . match ($status) {
+                                        'pending' => 'badge-pending',
+                                        'proses'  => 'badge-proses',
+                                        'selesai' => 'badge-selesai',
+                                        'batal'   => 'badge-batal',
+                                        default   => 'bg-secondary',
+                                    };
                                     ?>
                                     <tr>
                                         <!-- Tanggal -->
@@ -204,14 +204,14 @@ $stmt->close();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const modalEl   = document.getElementById('modalTrack');
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalEl = document.getElementById('modalTrack');
             const modalBody = document.getElementById('modalTrackBody');
 
             if (!modalEl || !modalBody) return;
 
-            modalEl.addEventListener('show.bs.modal', function (event) {
-                const button  = event.relatedTarget;
+            modalEl.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
                 const orderId = button ? (button.getAttribute('data-order') || '') : '';
 
                 if (!orderId) {
@@ -230,8 +230,8 @@ $stmt->close();
                     </div>`;
 
                 fetch('track_biteship_modal.php?order_id=' + encodeURIComponent(orderId), {
-                    cache: 'no-store'
-                })
+                        cache: 'no-store'
+                    })
                     .then(res => res.text())
                     .then(html => {
                         // track_biteship_modal.php boleh balikin HTML bebas (card, timeline, dll),
@@ -249,7 +249,7 @@ $stmt->close();
         });
     </script>
 
-    <?php include __DIR__ . '/footer.php'; ?>
+<?php include 'footer.php'; ?>
 </body>
 
 </html>

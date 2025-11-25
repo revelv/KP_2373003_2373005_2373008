@@ -26,7 +26,8 @@ ob_start();
 // Daftar file yang mau dijalankan
 $scripts_to_run = [
     'abandoned_cart.php',
-    'otomatis_kirim.php'
+    'otomatis_kirim.php',
+    'proses_end_auctions.php'
 ];
 
 foreach ($scripts_to_run as $script) {
