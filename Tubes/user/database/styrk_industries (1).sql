@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 24, 2025 at 06:03 AM
--- Server version: 8.0.30
--- PHP Version: 8.1.10
+-- Waktu pembuatan: 25 Nov 2025 pada 14.30
+-- Versi server: 8.4.3
+-- Versi PHP: 8.3.16
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `admin`
+-- Struktur dari tabel `admin`
 --
 
 CREATE TABLE `admin` (
@@ -39,7 +39,7 @@ CREATE TABLE `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `admin`
+-- Dumping data untuk tabel `admin`
 --
 
 INSERT INTO `admin` (`admin_id`, `username`, `password`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `postal_code`) VALUES
@@ -48,7 +48,7 @@ INSERT INTO `admin` (`admin_id`, `username`, `password`, `provinsi`, `kota`, `ke
 -- --------------------------------------------------------
 
 --
--- Table structure for table `auctions`
+-- Struktur dari tabel `auctions`
 --
 
 CREATE TABLE `auctions` (
@@ -67,18 +67,24 @@ CREATE TABLE `auctions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `auctions`
+-- Dumping data untuk tabel `auctions`
 --
 
 INSERT INTO `auctions` (`auction_id`, `customer_id`, `product_id`, `title`, `description`, `image_url`, `start_price`, `current_bid`, `current_winner_id`, `start_time`, `end_time`, `status`) VALUES
-(3, 16, 'KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 'https://i.postimg.cc/6QCJFYkj/42.jpg', 1000000.00, 9999999.00, 18, '2025-11-15 09:49:41', '2025-11-17 09:42:00', 'active'),
-(4, 16, 'KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2000000.00, 2000008.00, 18, '2025-11-15 10:03:48', '2025-11-17 10:03:00', 'active'),
-(6, 16, 'KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 1000000.00, 1152000.00, 16, '2025-11-15 13:36:01', '2025-11-15 14:10:00', 'active');
+(3, 16, 'KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 'https://i.postimg.cc/6QCJFYkj/42.jpg', 1000000.00, 9999999.00, 18, '2025-11-15 09:49:41', '2025-11-17 09:42:00', 'ended'),
+(4, 16, 'KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2000000.00, 2000008.00, 18, '2025-11-15 10:03:48', '2025-11-17 10:03:00', 'ended'),
+(6, 16, 'KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 1000000.00, 1152000.00, 16, '2025-11-15 13:36:01', '2025-11-15 14:10:00', 'ended'),
+(7, 16, 'KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 'https://i.postimg.cc/pyMXKwxv/14.jpg', 750000.00, 1000000.00, 16, '2025-11-25 11:33:34', '2025-11-25 11:35:00', 'ended'),
+(8, 16, 'KC007', 'SA Bliss Keycap Set', 'A vibrant SA profile keycap set inspired by serene aesthetics.', 'https://i.postimg.cc/0yFPT6bQ/35.jpg', 500000.00, 750000.00, 16, '2025-11-25 12:38:51', '2025-11-26 12:38:00', 'active'),
+(9, 16, 'KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 100000.00, 100000.00, NULL, '2025-11-25 12:39:08', '2025-11-27 12:39:00', 'active'),
+(10, 16, 'ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 'https://i.postimg.cc/g2nGtycQ/31.jpg', 50000.00, 50000.00, NULL, '2025-11-25 13:10:58', '2025-12-01 13:10:00', 'active'),
+(11, 16, 'KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 2000000.00, 3000000.00, 16, '2025-11-25 13:34:07', '2025-11-25 13:36:00', 'ended'),
+(12, 16, 'KB021', 'Varmilo VA87M', 'Tenkeyless keyboard with a variety of themes and switches.', 'https://i.postimg.cc/vZgdtQ3d/44.jpg', 1000000.00, 1200000.00, 16, '2025-11-25 14:15:26', '2025-11-25 14:17:00', 'ended');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `bids`
+-- Struktur dari tabel `bids`
 --
 
 CREATE TABLE `bids` (
@@ -90,7 +96,7 @@ CREATE TABLE `bids` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `bids`
+-- Dumping data untuk tabel `bids`
 --
 
 INSERT INTO `bids` (`bid_id`, `auction_id`, `customer_id`, `bid_amount`, `bid_time`) VALUES
@@ -101,12 +107,16 @@ INSERT INTO `bids` (`bid_id`, `auction_id`, `customer_id`, `bid_amount`, `bid_ti
 (5, 4, 18, 2000002.00, '2025-11-15 14:20:27'),
 (6, 4, 18, 2000007.00, '2025-11-15 14:20:35'),
 (7, 4, 18, 2000008.00, '2025-11-17 06:11:11'),
-(8, 3, 18, 9999999.00, '2025-11-17 06:11:54');
+(8, 3, 18, 9999999.00, '2025-11-17 06:11:54'),
+(9, 7, 16, 1000000.00, '2025-11-25 11:33:45'),
+(10, 11, 16, 3000000.00, '2025-11-25 13:34:31'),
+(11, 8, 16, 750000.00, '2025-11-25 14:12:10'),
+(12, 12, 16, 1200000.00, '2025-11-25 14:15:50');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `carts`
+-- Struktur dari tabel `carts`
 --
 
 CREATE TABLE `carts` (
@@ -119,20 +129,19 @@ CREATE TABLE `carts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `carts`
+-- Dumping data untuk tabel `carts`
 --
 
 INSERT INTO `carts` (`cart_id`, `customer_id`, `product_id`, `jumlah_barang`, `updated_at`, `notified_at`) VALUES
 (34, 10, 'KB013', 2, '2025-11-18 17:23:43', '2025-11-18 17:23:43'),
 (70, 10, 'KB018', 1, '2025-11-18 17:23:43', '2025-11-18 17:23:43'),
-(79, 16, 'COMM-2', 1, '2025-11-18 17:23:47', '2025-11-18 17:23:47'),
 (92, 18, 'KB004', 1, '2025-11-19 15:57:33', '2025-11-19 15:57:33'),
 (118, 21, 'KB003', 1, '2025-11-24 03:38:21', '2025-11-24 03:38:21');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `category`
+-- Struktur dari tabel `category`
 --
 
 CREATE TABLE `category` (
@@ -141,7 +150,7 @@ CREATE TABLE `category` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `category`
+-- Dumping data untuk tabel `category`
 --
 
 INSERT INTO `category` (`category_id`, `category`) VALUES
@@ -156,7 +165,7 @@ INSERT INTO `category` (`category_id`, `category`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `community_articles`
+-- Struktur dari tabel `community_articles`
 --
 
 CREATE TABLE `community_articles` (
@@ -173,7 +182,7 @@ CREATE TABLE `community_articles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Dumping data for table `community_articles`
+-- Dumping data untuk tabel `community_articles`
 --
 
 INSERT INTO `community_articles` (`article_id`, `title`, `content`, `image_url`, `product_price`, `product_id`, `created_at`, `updated_at`, `is_published`, `linked_product_id`) VALUES
@@ -183,7 +192,7 @@ INSERT INTO `community_articles` (`article_id`, `title`, `content`, `image_url`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `community_article_comments`
+-- Struktur dari tabel `community_article_comments`
 --
 
 CREATE TABLE `community_article_comments` (
@@ -197,7 +206,7 @@ CREATE TABLE `community_article_comments` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `customer`
+-- Struktur dari tabel `customer`
 --
 
 CREATE TABLE `customer` (
@@ -218,14 +227,14 @@ CREATE TABLE `customer` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `customer`
+-- Dumping data untuk tabel `customer`
 --
 
 INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `profile_image`, `postal_code`, `alamat`, `last_login`, `last_reengagement_sent`) VALUES
 (6, 'Jeremia', '$2y$10$JK.Mo5XVtj0TCs2ikcXCBevbN5By6w9KYArlaRgMFBXFlpJK5gmFO', 'jeremiaethan05@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', NULL, 40218, 'Taman Kopo Indah 3 C2 no 4', '2025-11-24 03:39:45', NULL),
 (7, 'Aldy Taher', '$2y$10$EiyoeSPMZt2kKDkP5bB0h.7ae7fA5dvhz4uJpgwSFup5viqMXjIlK', 'guaganteng@123.com', '123456', '', '', '', '', NULL, 0, 'jalan tuhan kebenaran no. 100', NULL, NULL),
 (10, 'Tuyul Ganteng', '$2y$10$ERjVD1oOnWRikvY297secepKphheTL5UKAYmWeCtxMVO4wru7N2OG', '2373003@maranatha.ac.id', '298483924', '', '', '', '', NULL, 0, 'rumahsammy 123', '2025-11-15 13:36:31', NULL),
-(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '../uploads/profile/profile_16_1763491478.jpg', 0, 'gunung gede 123', '2025-11-18 16:26:34', '2025-10-26 08:32:45'),
+(16, 'Doni Salmanan', '$2y$10$7uuw.sFubujIPGy2KANG4.s20CN.w7uznjQxwWPtwfTCJ7zieh./C', 'styrk_industries@gmail.com', '08124272849', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '../uploads/profile/profile_16_1763491478.jpg', 40287, 'gunung gede 123', '2025-11-18 16:26:34', '2025-10-26 08:32:45'),
 (17, 'Aldy Taher', '$2y$10$FTxIp34ew5uky05iP7JtzuWmB.KHyTkJnOZaRkn0ze4yO9B6Pia56', 'kink.konk169@gmail.com', '081223830598', '3', '36', '', '', NULL, 0, 'banjaran 120', NULL, NULL),
 (18, 'JRMIA', '$2y$12$bl8jij7L3oJrrqI6cyDgWeEAFhTB/v7gH2.8dOIgFp/3ynWNt0ZQG', 'jeremiadylan15@gmail.com', '081312663058', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', NULL, 0, 'Taman Kopo Indah 69 Blok S', '2025-11-18 14:24:00', NULL),
 (20, 'JRMI4A', '$2y$10$iQo8aKUB1k/Wqf5ffP3wm.8lujrZZXVXvpTpiYqJJOQjThxcySQBi', 'jeremiadylan115@gmail.com', '0813213123', 'JAWA BARAT', 'BANDUNG', 'ANDIR', '', NULL, 0, 'Jalan andir no 15', '2025-11-17 11:36:01', NULL),
@@ -235,12 +244,13 @@ INSERT INTO `customer` (`customer_id`, `nama`, `password`, `email`, `no_telepon`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `orders`
+-- Struktur dari tabel `orders`
 --
 
 CREATE TABLE `orders` (
   `order_id` varchar(99) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `customer_id` int NOT NULL,
+  `auction_id` int DEFAULT NULL,
   `tgl_order` datetime NOT NULL,
   `provinsi` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `kota` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -259,61 +269,54 @@ CREATE TABLE `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `orders`
+-- Dumping data untuk tabel `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `customer_id`, `tgl_order`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `postal_code`, `alamat`, `shipping_provider_order_id`, `shipping_tracking_code`, `shipping_status`, `shipping_last_sync`, `code_courier`, `shipping_type`, `ongkos_kirim`, `total_harga`) VALUES
-('ORD-20251117050246-469', 18, '2025-11-17 12:02:46', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17 00:00:00', 'jne', '', 7000, 3707000.00),
-('ORD-20251117050534-242', 18, '2025-11-17 12:05:34', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17 00:00:00', 'jne', '', 7000, 2707000.00),
-('ORD-20251117051054-966', 18, '2025-11-17 12:10:54', '6', '64', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_404', '2025-11-17 00:00:00', 'jne', '', 7000, 357000.00),
-('ORD-20251117065225-781', 18, '2025-11-17 13:52:25', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17 00:00:00', 'pos', '', 9000, 2759000.00),
-('ORD-20251117065836-905', 18, '2025-11-17 13:58:36', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422 Create Order failed', '2025-11-17 00:00:00', 'pos', '', 9000, 329000.00),
-('ORD-20251117080623-619', 18, '2025-11-17 15:06:23', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, NULL, NULL, 'pos', '', 9000, 559000.00),
-('ORD-20251117081052-599', 18, '2025-11-17 15:10:52', '5', '55', '', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'ERROR_HTTP_422', '2025-11-17 00:00:00', 'pos', '', 9000, 559000.00),
-('ORD-20251118113958-116', 6, '2025-11-18 18:39:58', 'JAWA BARAT', 'BEKASI', '', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'ERROR_HTTP_404', '2025-11-18 00:00:00', 'jne', '', 9500, 1759500.00),
-('ORD-20251118124139-307', 6, '2025-11-18 19:41:39', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jne', '', 9500, 4659500.00),
-('ORD-20251118130310-367', 6, '2025-11-18 20:03:10', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'jnt', 'EZ', 11000, 2111000.00),
-('ORD-20251118131034-127', 6, '2025-11-18 20:10:34', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 361000.00),
-('ORD-20251118131201-556', 6, '2025-11-18 20:12:01', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, NULL, NULL, 'ninja', 'Standard', 11000, 1461000.00),
-('ORD-20251118134721-120', 6, '2025-11-18 20:47:21', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 4209500.00),
-('ORD-20251118142423-111', 18, '2025-11-18 21:24:23', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', '0', 8000, 2958000.00),
-('ORD-20251118142837-726', 18, '2025-11-18 21:28:37', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'lion', 'REGPACK', 7000, 1857000.00),
-('ORD-20251118143330-454', 18, '2025-11-18 21:33:30', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jnt', 'EZ', 8000, 1258000.00),
-('ORD-20251118143953-269', 18, '2025-11-18 21:39:53', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 1909500.00),
-('ORD-20251118145554-579', 18, '2025-11-18 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 3309500.00),
-('ORD-20251118151141-961', 18, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00),
-('ORD-20251119144410-583', 21, '2025-11-19 21:44:10', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1859500.00),
-('ORD-20251119144528-260', 21, '2025-11-19 21:45:28', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 7809500.00),
-('ORD-20251119145554-294', 21, '2025-11-19 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', 'Standard', 8000, 1308000.00),
-('ORD-20251119151428-755', 21, '2025-11-19 22:14:28', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 659500.00),
-('ORD-20251119152858-103', 21, '2025-11-19 22:28:58', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 3609500.00),
-('ORD-20251119153025-557', 21, '2025-11-19 22:30:25', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', '', NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1959500.00),
-('ORD-20251119153118-132', 21, '2025-11-19 22:31:18', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 2259500.00),
-('ORD-20251119155749-810', 21, '2025-11-19 22:57:49', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1259500.00),
-('ORD-20251119160357-489', 21, '2025-11-19 23:03:57', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 4209500.00),
-('ORD-20251119161111-830', 21, '2025-11-19 23:11:11', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 3009500.00),
-('ORD-20251119161619-830', 21, '2025-11-19 23:16:19', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 7809500.00),
-('ORD-20251119162347-733', 21, '2025-11-19 23:23:47', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1959500.00),
-('ORD-20251119163445-501', 21, '2025-11-19 23:34:45', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: Create Order failed', '2025-11-19 00:00:00', 'jne', 'JNEFlat', 9500, 659500.00),
-('ORD-20251119170708-787', 21, '2025-11-20 00:07:08', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM79935202511200007', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 1909500.00),
-('ORD-20251119171921-243', 21, '2025-11-20 00:19:21', 'JAWA BARAT', 'BANDUNG', 'SUKAJADI', 'PASTEUR', '448', 'Jl. Prof. drg. Surya Sumantri, M.P.H. No. 65, Bandung.', 'KOM94453202511200019', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 659500.00),
-('ORD-20251119172443-164', 21, '2025-11-20 00:24:43', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM77918202511200024', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 2159500.00),
-('ORD-20251119173845-706', 21, '2025-11-20 00:38:45', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM12714202511200038', '', 'Diajukan', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 19000, 1919000.00),
-('ORD-20251119175057-997', 21, '2025-11-20 00:50:57', 'JAWA BARAT', 'BANDUNG', 'SUKAJADI', 'PASTEUR', '448', 'da', 'KOM71875202511200051', '', 'Diajukan', '2025-11-20 00:00:00', 'ninja', 'Standard', 8000, 4008000.00),
-('ORD-20251119180234-328', 21, '2025-11-20 01:02:34', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: maximum cod value is 5000000', '2025-11-20 00:00:00', 'lion', 'REGPACK', 7000, 7807000.00),
-('ORD-20251119180311-111', 21, '2025-11-20 01:03:11', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM49363202511200103', '', 'Diajukan', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 1909500.00),
-('ORD-20251121133657-752', 21, '2025-11-21 20:36:57', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: maximum cod value is 5000000', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 7809500.00),
-('ORD-20251121133727-293', 21, '2025-11-21 20:37:27', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM51252202511212037', NULL, 'created', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 3609500.00),
-('ORD-20251121134644-493', 21, '2025-11-21 20:46:44', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: Create Order failed', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 1309500.00),
-('ORD-20251122145838-651', 21, '2025-11-22 21:58:38', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'Reguler', 8000, 1858000.00),
-('ORD-20251124034140-472', 6, '2025-11-24 10:41:40', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '-', '40164', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'jne', 'reguler', 8000, 658000.00),
-('ORD-20251124043043-382', 6, '2025-11-24 11:30:43', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'sap', 'regular', 10000, 1910000.00),
-('ORD-20251124054310-973', 6, '2025-11-24 12:43:10', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', '6923f06fd58cd645b2973b34', 'WYB-1763962991033', 'confirmed', '2025-11-24 13:03:28', 'jne', 'reg', 8000, 1858000.00);
+INSERT INTO `orders` (`order_id`, `customer_id`, `auction_id`, `tgl_order`, `provinsi`, `kota`, `kecamatan`, `kelurahan`, `postal_code`, `alamat`, `shipping_provider_order_id`, `shipping_tracking_code`, `shipping_status`, `shipping_last_sync`, `code_courier`, `shipping_type`, `ongkos_kirim`, `total_harga`) VALUES
+('ORD-20251118134721-120', 6, NULL, '2025-11-18 20:47:21', 'JAWA BARAT', 'BEKASI', 'BABELAN', '', NULL, 'Jalan asmi no 123', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 4209500.00),
+('ORD-20251118142423-111', 18, NULL, '2025-11-18 21:24:23', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', '0', 8000, 2958000.00),
+('ORD-20251118142837-726', 18, NULL, '2025-11-18 21:28:37', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'lion', 'REGPACK', 7000, 1857000.00),
+('ORD-20251118143330-454', 18, NULL, '2025-11-18 21:33:30', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jnt', 'EZ', 8000, 1258000.00),
+('ORD-20251118143953-269', 18, NULL, '2025-11-18 21:39:53', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 1909500.00),
+('ORD-20251118145554-579', 18, NULL, '2025-11-18 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', NULL, 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 3309500.00),
+('ORD-20251118151141-961', 18, NULL, '2025-11-18 22:11:41', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', '0', 9500, 7809500.00),
+('ORD-20251119144410-583', 21, NULL, '2025-11-19 21:44:10', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1859500.00),
+('ORD-20251119144528-260', 21, NULL, '2025-11-19 21:45:28', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 7809500.00),
+('ORD-20251119145554-294', 21, NULL, '2025-11-19 21:55:54', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'ninja', 'Standard', 8000, 1308000.00),
+('ORD-20251119151428-755', 21, NULL, '2025-11-19 22:14:28', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 659500.00),
+('ORD-20251119152858-103', 21, NULL, '2025-11-19 22:28:58', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 3609500.00),
+('ORD-20251119153025-557', 21, NULL, '2025-11-19 22:30:25', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', '', NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1959500.00),
+('ORD-20251119153118-132', 21, NULL, '2025-11-19 22:31:18', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 2259500.00),
+('ORD-20251119155749-810', 21, NULL, '2025-11-19 22:57:49', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1259500.00),
+('ORD-20251119160357-489', 21, NULL, '2025-11-19 23:03:57', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 4209500.00),
+('ORD-20251119161111-830', 21, NULL, '2025-11-19 23:11:11', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 3009500.00),
+('ORD-20251119161619-830', 21, NULL, '2025-11-19 23:16:19', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 7809500.00),
+('ORD-20251119162347-733', 21, NULL, '2025-11-19 23:23:47', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'JNEFlat', 9500, 1959500.00),
+('ORD-20251119163445-501', 21, NULL, '2025-11-19 23:34:45', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: Create Order failed', '2025-11-19 00:00:00', 'jne', 'JNEFlat', 9500, 659500.00),
+('ORD-20251119170708-787', 21, NULL, '2025-11-20 00:07:08', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM79935202511200007', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 1909500.00),
+('ORD-20251119171921-243', 21, NULL, '2025-11-20 00:19:21', 'JAWA BARAT', 'BANDUNG', 'SUKAJADI', 'PASTEUR', '448', 'Jl. Prof. drg. Surya Sumantri, M.P.H. No. 65, Bandung.', 'KOM94453202511200019', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 659500.00),
+('ORD-20251119172443-164', 21, NULL, '2025-11-20 00:24:43', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM77918202511200024', NULL, 'created', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 2159500.00),
+('ORD-20251119173845-706', 21, NULL, '2025-11-20 00:38:45', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM12714202511200038', '', 'Diajukan', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 19000, 1919000.00),
+('ORD-20251119175057-997', 21, NULL, '2025-11-20 00:50:57', 'JAWA BARAT', 'BANDUNG', 'SUKAJADI', 'PASTEUR', '448', 'da', 'KOM71875202511200051', '', 'Diajukan', '2025-11-20 00:00:00', 'ninja', 'Standard', 8000, 4008000.00),
+('ORD-20251119180234-328', 21, NULL, '2025-11-20 01:02:34', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: maximum cod value is 5000000', '2025-11-20 00:00:00', 'lion', 'REGPACK', 7000, 7807000.00),
+('ORD-20251119180311-111', 21, NULL, '2025-11-20 01:03:11', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM49363202511200103', '', 'Diajukan', '2025-11-20 00:00:00', 'jne', 'JNEFlat', 9500, 1909500.00),
+('ORD-20251121133657-752', 21, NULL, '2025-11-21 20:36:57', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: maximum cod value is 5000000', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 7809500.00),
+('ORD-20251121133727-293', 21, NULL, '2025-11-21 20:37:27', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', 'KOM51252202511212037', NULL, 'created', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 3609500.00),
+('ORD-20251121134644-493', 21, NULL, '2025-11-21 20:46:44', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '5143', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'error: Create Order failed', '2025-11-21 00:00:00', 'jne', 'JNEFlat', 9500, 1309500.00),
+('ORD-20251122145838-651', 21, NULL, '2025-11-22 21:58:38', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '0', 'Taman Kopo Indah 69 Blok S', NULL, NULL, 'pending', NULL, 'jne', 'Reguler', 8000, 1858000.00),
+('ORD-20251124034140-472', 6, NULL, '2025-11-24 10:41:40', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', '-', '40164', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'jne', 'reguler', 8000, 658000.00),
+('ORD-20251124043043-382', 6, NULL, '2025-11-24 11:30:43', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', NULL, NULL, NULL, NULL, 'sap', 'regular', 10000, 1910000.00),
+('ORD-20251124054310-973', 6, NULL, '2025-11-24 12:43:10', 'JAWA BARAT', 'BANDUNG', 'MARGAASIH', 'RAHAYU', '40218', 'Taman Kopo Indah 3 C2 no 4', '6923f06fd58cd645b2973b34', 'WYB-1763962991033', 'confirmed', '2025-11-24 13:03:28', 'jne', 'reg', 8000, 1858000.00),
+('ORD-20251125112635-203', 16, NULL, '2025-11-25 18:26:35', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '40287', 'gunung gede 123', '6925926cb11520ff119e5163', 'WYB-1764069996422', 'confirmed', '2025-11-25 18:26:39', 'lion', 'reg_pack', 7000, 4207000.00),
+('ORD-20251125123307-323', 16, NULL, '2025-11-25 19:33:07', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '40287', 'gunung gede 123', '6925a204b115208aca9ef3c6', 'WYB-1764073988210', 'confirmed', '2025-11-25 20:14:06', 'tiki', 'sds', 12000, 1012000.00),
+('ORD-20251125131440-489', 16, NULL, '2025-11-25 20:14:40', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '40287', 'gunung gede 123', '6925abc169ce233097309e49', 'WYB-1764076481699', 'confirmed', '2025-11-25 20:14:41', 'lion', 'reg_pack', 7000, 1007000.00),
+('ORD-20251125141037-669', 16, NULL, '2025-11-25 21:10:37', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '40287', 'gunung gede 123', '6925b8de11f9efbcfedd62df', 'WYB-1764079838612', 'confirmed', '2025-11-25 21:10:37', 'sentralcargo', 'land_electronic', 40000, 3040000.00),
+('ORD-20251125142244-569', 16, NULL, '2025-11-25 21:22:44', 'JAWA BARAT', 'BANDUNG', 'BOJONGSOANG', 'LENGKONG', '40287', 'gunung gede 123', '6925bbb511f9efe014dd7d19', 'WYB-1764080565842', 'confirmed', '2025-11-25 21:22:45', 'lion', 'reg_pack', 7000, 1207000.00);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `order_details`
+-- Struktur dari tabel `order_details`
 --
 
 CREATE TABLE `order_details` (
@@ -326,16 +329,10 @@ CREATE TABLE `order_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `order_details`
+-- Dumping data untuk tabel `order_details`
 --
 
 INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `harga_satuan`, `subtotal`) VALUES
-(52, 'ORD-20251117081052-599', 'SW004', 1, 550000, 550000),
-(53, 'ORD-20251118124139-307', 'KK005', 1, 1900000, 1900000),
-(54, 'ORD-20251118124139-307', 'KK007', 1, 2750000, 2750000),
-(55, 'ORD-20251118130310-367', 'KC007', 1, 2100000, 2100000),
-(56, 'ORD-20251118131034-127', 'ST001', 1, 350000, 350000),
-(57, 'ORD-20251118131201-556', 'KP001', 1, 1450000, 1450000),
 (58, 'ORD-20251118134721-120', 'COMM-2', 1, 4200000, 4200000),
 (59, 'ORD-20251118142423-111', 'KK009', 1, 2950000, 2950000),
 (60, 'ORD-20251118142837-726', 'CS001', 1, 1850000, 1850000),
@@ -370,12 +367,17 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `product_id`, `jumlah`, `h
 (89, 'ORD-20251122145838-651', 'CS001', 1, 1850000, 1850000),
 (91, 'ORD-20251124034140-472', 'KB005', 1, 650000, 650000),
 (92, 'ORD-20251124043043-382', 'KB009', 1, 1900000, 1900000),
-(93, 'ORD-20251124054310-973', 'CS001', 1, 1850000, 1850000);
+(93, 'ORD-20251124054310-973', 'CS001', 1, 1850000, 1850000),
+(94, 'ORD-20251125112635-203', 'COMM-2', 1, 4200000, 4200000),
+(95, 'ORD-20251125123307-323', 'KK005', 1, 1000000, 1000000),
+(96, 'ORD-20251125131440-489', 'KK005', 1, 1000000, 1000000),
+(97, 'ORD-20251125141037-669', 'KC003', 1, 3000000, 3000000),
+(98, 'ORD-20251125142244-569', 'KB021', 1, 1200000, 1200000);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `payments`
+-- Struktur dari tabel `payments`
 --
 
 CREATE TABLE `payments` (
@@ -391,7 +393,7 @@ CREATE TABLE `payments` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `posts`
+-- Struktur dari tabel `posts`
 --
 
 CREATE TABLE `posts` (
@@ -403,7 +405,7 @@ CREATE TABLE `posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `posts`
+-- Dumping data untuk tabel `posts`
 --
 
 INSERT INTO `posts` (`post_id`, `thread_id`, `customer_id`, `content`, `created_at`) VALUES
@@ -416,7 +418,7 @@ INSERT INTO `posts` (`post_id`, `thread_id`, `customer_id`, `content`, `created_
 -- --------------------------------------------------------
 
 --
--- Table structure for table `products`
+-- Struktur dari tabel `products`
 --
 
 CREATE TABLE `products` (
@@ -432,11 +434,11 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `products`
+-- Dumping data untuk tabel `products`
 --
 
 INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`, `stok`, `link_gambar`, `category_id`, `weight`, `status_jual`) VALUES
-('COMM-2', '[Press Play x Demon Slayer] ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hal', 'ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard\r\n\r\n\"I will fulfill my duty! I won\'t allow anyone here to die!\"\r\nESSENTIAL75 HE, hadir dengan tampilan dan keycaps eksklusif bertema Rengoku dari Demon Slayer.\r\n\r\nOnline software available here: ess75.pressplayid.com\r\n\r\n©Koyoharu Gotoge / SHUEISHA, Aniplex, ufotable', 4200000.00, 1, 'https://i.postimg.cc/Y0LscYqt/8abcdbe1-6c7c-442b-b9ca-81c3e7f04c9b.jpg', 2, 1000, 'dijual'),
+('COMM-2', '[Press Play x Demon Slayer] ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hal', 'ESSENTIAL75 HE RENGOKU Edition 75% Rapid Trigger Hall Effect Keyboard\r\n\r\n\"I will fulfill my duty! I won\'t allow anyone here to die!\"\r\nESSENTIAL75 HE, hadir dengan tampilan dan keycaps eksklusif bertema Rengoku dari Demon Slayer.\r\n\r\nOnline software available here: ess75.pressplayid.com\r\n\r\n©Koyoharu Gotoge / SHUEISHA, Aniplex, ufotable', 4200000.00, 0, 'https://i.postimg.cc/Y0LscYqt/8abcdbe1-6c7c-442b-b9ca-81c3e7f04c9b.jpg', 2, 1000, 'dijual'),
 ('CS001', 'Tofu60 Redux Case', 'An upgraded version of the classic Tofu60 case, offering improved materials, finish, and design features. Compatible with a wide range of 60% PCBs and plates.', 1850000.00, 3, 'https://i.postimg.cc/T1D3LRzQ/11.jpg', 1, 500, 'dijual'),
 ('KB001', 'Sirius Manta', 'A premium mechanical keyboard known for its elegant design and smooth typing experience. The Sirius Manta blends aesthetics with functionality, making it a favorite among hobbyists.', 3200000.00, 0, 'https://i.postimg.cc/zfxB42ww/10.jpg', 2, 1000, 'dijual'),
 ('KB002', 'Snake60 R2', 'A high-end 60% keyboard kit with sleek lines and robust build quality. The Snake60 R2 delivers a refined typing experience and top-tier customization options at a heavily discounted price.', 7500000.00, 0, 'https://i.postimg.cc/L5chNqtr/2.jpg', 2, 1000, 'dijual'),
@@ -454,35 +456,35 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 ('KB014', 'NK65 Entry Edition', 'A budget-friendly 65% mechanical keyboard with a polycarbonate case.', 1500000.00, 9, 'https://i.postimg.cc/ydzBNwhC/36.jpg', 2, 1000, 'dijual'),
 ('KB015', 'Keychron V4', 'A budget 60% keyboard with QMK/VIA support.', 1100000.00, 9, 'https://i.postimg.cc/43cssJ91/37.jpg', 2, 1000, 'dijual'),
 ('KB016', 'Ajazz AK966', '96% layout wireless mechanical keyboard with knob.', 1950000.00, 10, 'https://i.postimg.cc/ZRFmvVjB/38.jpg\r\n', 2, 1000, 'dijual'),
-('KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 2300000.00, 9, 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2, 1000, 'dilelang'),
+('KB017', 'Akko MOD 007 V2', 'A premium 75% keyboard with gasket mount design.', 2300000.00, 8, 'https://i.postimg.cc/QCfr0C2j/40.jpg', 2, 1000, 'dijual'),
 ('KB018', 'Rama M65-B', 'High-end aluminum 65% keyboard with elegant design.', 5800000.00, 10, 'https://i.postimg.cc/Qd2Z6RyK/41.jpg', 2, 1000, 'dijual'),
-('KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 3700000.00, 10, 'https://i.postimg.cc/6QCJFYkj/42.jpg', 2, 1000, 'dilelang'),
+('KB019', 'CannonKeys Savage65', '65% keyboard kit with a CNC aluminum case.', 3700000.00, 9, 'https://i.postimg.cc/6QCJFYkj/42.jpg', 2, 1000, 'dijual'),
 ('KB020', 'Drop ALT Keyboard', 'Compact mechanical keyboard with hot-swap sockets.', 2900000.00, 10, 'https://i.postimg.cc/bNFhnG0T/43.jpg', 2, 1000, 'dijual'),
-('KB021', 'Varmilo VA87M', 'Tenkeyless keyboard with a variety of themes and switches.', 2250000.00, 10, 'https://i.postimg.cc/vZgdtQ3d/44.jpg', 2, 1000, 'dijual'),
+('KB021', 'Varmilo VA87M', 'Tenkeyless keyboard with a variety of themes and switches.', 2250000.00, 9, 'https://i.postimg.cc/vZgdtQ3d/44.jpg', 2, 1000, 'dilelang'),
 ('KB022', 'Zoom65 V2', 'A versatile 65% keyboard with wireless features.', 2850000.00, 10, 'https://i.postimg.cc/63wJKCw9/45.jpg', 2, 1000, 'dijual'),
 ('KB023', 'MelGeek Pixel Keyboard', 'A customizable Lego-style keyboard.', 4200000.00, 10, 'https://i.postimg.cc/Jnqwzt4j/46.jpg', 2, 1000, 'dijual'),
 ('KB024', 'IDOBAO ID80', 'Gasket-mounted keyboard with a unique acrylic body.', 3000000.00, 10, 'https://i.postimg.cc/Zn716gNR/47.jpg', 2, 1000, 'dijual'),
-('KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 2100000.00, 10, 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 2, 1000, 'dilelang'),
+('KB025', 'EPOMAKER TH96', '96% keyboard with hot-swap, wireless and knob features.', 2100000.00, 9, 'https://i.postimg.cc/jdCVRxVJ/50.jpg', 2, 1000, 'dilelang'),
 ('KB026', 'Royal Kludge RK61', 'Budget 60% wireless mechanical keyboard.', 800000.00, 10, 'https://i.postimg.cc/RCg5r3YB/51.jpg', 2, 1000, 'dijual'),
 ('KC001', 'Circus PGA Profile Keycaps', 'A vibrant and playful set of PGA profile keycaps inspired by circus aesthetics. Perfect for mechanical keyboard enthusiasts looking to add a burst of color and uniqueness to their setup.', 1250000.00, 10, 'https://i.postimg.cc/zBPyH2VD/1.jpg', 3, 1000, 'dijual'),
 ('KC002', 'Dusk 67 with PBTfans Inkdrop', 'A beautifully themed 65% keyboard featuring the Dusk 67 case and PBTfans Inkdrop keycaps. This bundle is perfect for those who want a cohesive, stunning setup.', 3300000.00, 10, 'https://i.postimg.cc/WpC8JTFZ/13.jpg', 3, 1000, 'dijual'),
-('KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 4000000.00, 10, 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 3, 1000, 'dijual'),
+('KC003', 'TET Keyboard With PBTfans Count Dracula', 'A spooky and stylish keyboard pairing the TET layout with the popular PBTfans Count Dracula keycaps. Eye-catching and great for Halloween or gothic setups.', 4000000.00, 8, 'https://i.postimg.cc/7ZyNm9NY/16.jpg', 3, 1000, 'dijual'),
 ('KC004', 'KBD8X MKIII HE Gaming Keyboard with PBTfans Blush', 'A performance-focused version of the KBD8X MKIII featuring Hall Effect switches for rapid input and PBTfans Blush keycaps for soft, pastel aesthetics.', 4200000.00, 9, 'https://i.postimg.cc/HWXcBgvX/18.jpg', 3, 1000, 'dijual'),
 ('KC005', 'GMK Red Samurai Keycap Set', 'A premium GMK keycap set inspired by traditional samurai aesthetics.', 2400000.00, 9, 'https://i.postimg.cc/SKSfpK5B/19.jpg', 3, 1000, 'dijual'),
 ('KC006', 'KAT Milkshake Keycap Set', 'A colorful pastel keycap set with a unique KAT profile.', 1750000.00, 9, 'https://i.postimg.cc/c4DsckWf/34.jpg', 3, 1000, 'dijual'),
-('KC007', 'SA Bliss Keycap Set', 'A vibrant SA profile keycap set inspired by serene aesthetics.', 2100000.00, 10, 'https://i.postimg.cc/0yFPT6bQ/35.jpg', 3, 1000, 'dijual'),
+('KC007', 'SA Bliss Keycap Set', 'A vibrant SA profile keycap set inspired by serene aesthetics.', 2100000.00, 10, 'https://i.postimg.cc/0yFPT6bQ/35.jpg', 3, 1000, 'dilelang'),
 ('KC008', 'GMK Olivia Keycap Set', 'Elegant pink and black themed GMK keycap set.', 2400000.00, 10, 'https://i.postimg.cc/zXQsBs52/49.png', 3, 1000, 'dijual'),
 ('KK001', 'Tofu60 Redux Plate', 'A compatible plate for the Tofu60 Redux case, offering improved rigidity and mounting flexibility. Great for customizing your typing feel.', 320000.00, 10, 'https://i.postimg.cc/L6PJhTRR/6.jpg', 4, 200, 'dijual'),
 ('KK002', 'KBD67 Lite R4 Mechanical Keyboard Kit', 'A budget-friendly yet high-performing 65% keyboard kit. Ideal for newcomers and veterans alike, with hot-swap functionality and great acoustics.', 1900000.00, 10, 'https://i.postimg.cc/2SfVWZ8W/8.jpg', 4, 200, 'dijual'),
 ('KK003', 'KBDfans Odin 75 Mechanical Keyboard Kit', 'A compact 75% layout keyboard with a stylish and functional design. The Odin 75 offers great balance between form and usability.', 3800000.00, 9, 'https://i.postimg.cc/mrLkXW92/9.jpg', 4, 200, 'dijual'),
 ('KK004', 'Sebas Keyboard kit', 'A stylish and sturdy keyboard kit designed with premium materials. Its layout and build make it suitable for both work and play.', 3450000.00, 8, 'https://i.postimg.cc/2jVT6V6m/12.jpg', 4, 200, 'dijual'),
-('KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 1900000.00, 10, 'https://i.postimg.cc/pyMXKwxv/14.jpg', 4, 200, 'dijual'),
+('KK005', 'KBDfans GT-80 Case', 'A durable and elegant keyboard case designed for the GT-80 layout. Built with anodized aluminum and precision machining.', 1900000.00, 7, 'https://i.postimg.cc/pyMXKwxv/14.jpg', 4, 200, 'dijual'),
 ('KK006', 'Margo Case', 'A uniquely designed keyboard case with gentle curves and premium anodization. A great choice for custom keyboard builds looking to stand out.', 2150000.00, 10, 'https://i.postimg.cc/9F9pdKZn/15.jpg', 4, 200, 'dijual'),
 ('KK007', 'GMMK Pro Barebone', 'A 75% layout mechanical keyboard with a rotary knob and aluminum body.', 2750000.00, 10, 'https://i.postimg.cc/0NVd5s1b/20.jpg', 4, 200, 'dijual'),
 ('KK008', 'Tofu65 Kit', 'Aluminum 65% DIY keyboard kit with customizable options.', 2700000.00, 10, 'https://i.postimg.cc/m2Vr52Yz/28.jpg', 4, 200, 'dijual'),
 ('KK009', 'KBD75 V3 Kit', '75% aluminum keyboard with refined layout and features.', 2950000.00, 10, 'https://i.postimg.cc/Kjv6kFRw/48.jpg', 4, 200, 'dijual'),
 ('KP001', 'Taco Pad', 'A novelty macropad shaped like a taco. Fun, quirky, and useful for macros, shortcuts, or artisan display. A must-have desk companion for enthusiasts.', 1450000.00, 10, 'https://i.postimg.cc/C5BzGCqG/3.jpg', 5, 400, 'dijual'),
-('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 9, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6, 20, 'dijual'),
+('ST001', 'Durock V2 Stabilizers', 'Premium screw-in stabilizers for mechanical keyboards.', 350000.00, 9, 'https://i.postimg.cc/g2nGtycQ/31.jpg', 6, 20, 'dilelang'),
 ('SW001', 'Leopold FC660C', 'Topre electro-capacitive switches in a 65% layout.', 3700000.00, 10, 'https://i.postimg.cc/pLGppXyb/24.jpg', 7, 100, 'dijual'),
 ('SW002', 'NovelKeys Cream Switches (70 pcs)', 'Smooth linear switches with self-lubricating POM housing.', 900000.00, 10, 'https://i.postimg.cc/jS5j00c8/29.jpg', 7, 100, 'dijual'),
 ('SW003', 'Akko CS Jelly Purple (45 pcs)', 'Tactile mechanical switches with a unique jelly-like stem.', 320000.00, 10, 'https://i.postimg.cc/SKYNR6wC/30.jpg', 7, 100, 'dijual'),
@@ -493,7 +495,7 @@ INSERT INTO `products` (`product_id`, `nama_produk`, `deskripsi_produk`, `harga`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `threads`
+-- Struktur dari tabel `threads`
 --
 
 CREATE TABLE `threads` (
@@ -504,7 +506,7 @@ CREATE TABLE `threads` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `threads`
+-- Dumping data untuk tabel `threads`
 --
 
 INSERT INTO `threads` (`thread_id`, `customer_id`, `title`, `created_at`) VALUES
@@ -514,7 +516,7 @@ INSERT INTO `threads` (`thread_id`, `customer_id`, `title`, `created_at`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `vouchers`
+-- Struktur dari tabel `vouchers`
 --
 
 CREATE TABLE `vouchers` (
@@ -531,7 +533,7 @@ CREATE TABLE `vouchers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `vouchers`
+-- Dumping data untuk tabel `vouchers`
 --
 
 INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupiah`, `nilai_persen`, `tgl_dibuat`, `tgl_kadaluarsa`, `status`, `keterangan`, `tipe`) VALUES
@@ -550,13 +552,13 @@ INSERT INTO `vouchers` (`voucher_id`, `customer_id`, `kode_voucher`, `nilai_rupi
 --
 
 --
--- Indexes for table `admin`
+-- Indeks untuk tabel `admin`
 --
 ALTER TABLE `admin`
   ADD PRIMARY KEY (`admin_id`);
 
 --
--- Indexes for table `auctions`
+-- Indeks untuk tabel `auctions`
 --
 ALTER TABLE `auctions`
   ADD PRIMARY KEY (`auction_id`),
@@ -565,7 +567,7 @@ ALTER TABLE `auctions`
   ADD KEY `fk_auction_product` (`product_id`);
 
 --
--- Indexes for table `bids`
+-- Indeks untuk tabel `bids`
 --
 ALTER TABLE `bids`
   ADD PRIMARY KEY (`bid_id`),
@@ -573,7 +575,7 @@ ALTER TABLE `bids`
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indexes for table `carts`
+-- Indeks untuk tabel `carts`
 --
 ALTER TABLE `carts`
   ADD PRIMARY KEY (`cart_id`),
@@ -581,19 +583,19 @@ ALTER TABLE `carts`
   ADD KEY `FK_product_id_carts` (`product_id`);
 
 --
--- Indexes for table `category`
+-- Indeks untuk tabel `category`
 --
 ALTER TABLE `category`
   ADD PRIMARY KEY (`category_id`);
 
 --
--- Indexes for table `community_articles`
+-- Indeks untuk tabel `community_articles`
 --
 ALTER TABLE `community_articles`
   ADD PRIMARY KEY (`article_id`);
 
 --
--- Indexes for table `community_article_comments`
+-- Indeks untuk tabel `community_article_comments`
 --
 ALTER TABLE `community_article_comments`
   ADD PRIMARY KEY (`comment_id`),
@@ -601,13 +603,13 @@ ALTER TABLE `community_article_comments`
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indexes for table `customer`
+-- Indeks untuk tabel `customer`
 --
 ALTER TABLE `customer`
   ADD PRIMARY KEY (`customer_id`);
 
 --
--- Indexes for table `orders`
+-- Indeks untuk tabel `orders`
 --
 ALTER TABLE `orders`
   ADD PRIMARY KEY (`order_id`),
@@ -615,7 +617,7 @@ ALTER TABLE `orders`
   ADD KEY `FK_KURIR` (`code_courier`);
 
 --
--- Indexes for table `order_details`
+-- Indeks untuk tabel `order_details`
 --
 ALTER TABLE `order_details`
   ADD PRIMARY KEY (`detail_id`),
@@ -623,14 +625,14 @@ ALTER TABLE `order_details`
   ADD KEY `FK_product_id` (`product_id`);
 
 --
--- Indexes for table `payments`
+-- Indeks untuk tabel `payments`
 --
 ALTER TABLE `payments`
   ADD PRIMARY KEY (`payment_id`),
   ADD KEY `FK_order_id_payment` (`order_id`);
 
 --
--- Indexes for table `posts`
+-- Indeks untuk tabel `posts`
 --
 ALTER TABLE `posts`
   ADD PRIMARY KEY (`post_id`),
@@ -638,113 +640,113 @@ ALTER TABLE `posts`
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indexes for table `products`
+-- Indeks untuk tabel `products`
 --
 ALTER TABLE `products`
   ADD PRIMARY KEY (`product_id`),
   ADD KEY `FK_category_id_products` (`category_id`);
 
 --
--- Indexes for table `threads`
+-- Indeks untuk tabel `threads`
 --
 ALTER TABLE `threads`
   ADD PRIMARY KEY (`thread_id`),
   ADD KEY `customer_id` (`customer_id`);
 
 --
--- Indexes for table `vouchers`
+-- Indeks untuk tabel `vouchers`
 --
 ALTER TABLE `vouchers`
   ADD PRIMARY KEY (`voucher_id`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT untuk tabel yang dibuang
 --
 
 --
--- AUTO_INCREMENT for table `admin`
+-- AUTO_INCREMENT untuk tabel `admin`
 --
 ALTER TABLE `admin`
   MODIFY `admin_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
 
 --
--- AUTO_INCREMENT for table `auctions`
+-- AUTO_INCREMENT untuk tabel `auctions`
 --
 ALTER TABLE `auctions`
-  MODIFY `auction_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `auction_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT for table `bids`
+-- AUTO_INCREMENT untuk tabel `bids`
 --
 ALTER TABLE `bids`
-  MODIFY `bid_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `bid_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT for table `carts`
+-- AUTO_INCREMENT untuk tabel `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
+  MODIFY `cart_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
 
 --
--- AUTO_INCREMENT for table `category`
+-- AUTO_INCREMENT untuk tabel `category`
 --
 ALTER TABLE `category`
   MODIFY `category_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `community_articles`
+-- AUTO_INCREMENT untuk tabel `community_articles`
 --
 ALTER TABLE `community_articles`
   MODIFY `article_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT for table `community_article_comments`
+-- AUTO_INCREMENT untuk tabel `community_article_comments`
 --
 ALTER TABLE `community_article_comments`
   MODIFY `comment_id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `customer`
+-- AUTO_INCREMENT untuk tabel `customer`
 --
 ALTER TABLE `customer`
   MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
--- AUTO_INCREMENT for table `order_details`
+-- AUTO_INCREMENT untuk tabel `order_details`
 --
 ALTER TABLE `order_details`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
 
 --
--- AUTO_INCREMENT for table `payments`
+-- AUTO_INCREMENT untuk tabel `payments`
 --
 ALTER TABLE `payments`
   MODIFY `payment_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
--- AUTO_INCREMENT for table `posts`
+-- AUTO_INCREMENT untuk tabel `posts`
 --
 ALTER TABLE `posts`
   MODIFY `post_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT for table `threads`
+-- AUTO_INCREMENT untuk tabel `threads`
 --
 ALTER TABLE `threads`
   MODIFY `thread_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT for table `vouchers`
+-- AUTO_INCREMENT untuk tabel `vouchers`
 --
 ALTER TABLE `vouchers`
   MODIFY `voucher_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
--- Constraints for dumped tables
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
 
 --
--- Constraints for table `auctions`
+-- Ketidakleluasaan untuk tabel `auctions`
 --
 ALTER TABLE `auctions`
   ADD CONSTRAINT `fk_auction_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -752,60 +754,60 @@ ALTER TABLE `auctions`
   ADD CONSTRAINT `fk_auction_winner` FOREIGN KEY (`current_winner_id`) REFERENCES `customer` (`customer_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `bids`
+-- Ketidakleluasaan untuk tabel `bids`
 --
 ALTER TABLE `bids`
   ADD CONSTRAINT `fk_bid_auction` FOREIGN KEY (`auction_id`) REFERENCES `auctions` (`auction_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_bid_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `carts`
+-- Ketidakleluasaan untuk tabel `carts`
 --
 ALTER TABLE `carts`
   ADD CONSTRAINT `FK_customer_id_carts` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id_carts` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `community_article_comments`
+-- Ketidakleluasaan untuk tabel `community_article_comments`
 --
 ALTER TABLE `community_article_comments`
   ADD CONSTRAINT `community_article_comments_ibfk_1` FOREIGN KEY (`article_id`) REFERENCES `community_articles` (`article_id`),
   ADD CONSTRAINT `community_article_comments_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`);
 
 --
--- Constraints for table `orders`
+-- Ketidakleluasaan untuk tabel `orders`
 --
 ALTER TABLE `orders`
   ADD CONSTRAINT `FK_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `order_details`
+-- Ketidakleluasaan untuk tabel `order_details`
 --
 ALTER TABLE `order_details`
   ADD CONSTRAINT `FK_ORDER_ID` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `FK_product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `payments`
+-- Ketidakleluasaan untuk tabel `payments`
 --
 ALTER TABLE `payments`
   ADD CONSTRAINT `FK_ORDER_ID_PAYMENT` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `posts`
+-- Ketidakleluasaan untuk tabel `posts`
 --
 ALTER TABLE `posts`
   ADD CONSTRAINT `fk_post_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_post_thread` FOREIGN KEY (`thread_id`) REFERENCES `threads` (`thread_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `products`
+-- Ketidakleluasaan untuk tabel `products`
 --
 ALTER TABLE `products`
   ADD CONSTRAINT `FK_category_id_products` FOREIGN KEY (`category_id`) REFERENCES `category` (`category_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `threads`
+-- Ketidakleluasaan untuk tabel `threads`
 --
 ALTER TABLE `threads`
   ADD CONSTRAINT `fk_thread_customer` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE;
