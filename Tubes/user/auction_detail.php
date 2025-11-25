@@ -8,7 +8,7 @@ $auction_id = (int)$_GET['id'];
 
 // Ambil data lelang
 $query_auc = "
-    SELECT a.*, w.nama as winner_name
+    SELECT a.*, w.nama AS winner_name
     FROM auctions a
     LEFT JOIN customer w ON a.current_winner_id = w.customer_id
     WHERE a.auction_id = ?
@@ -24,7 +24,7 @@ if ($result_auc->num_rows === 0) {
 $auction = $result_auc->fetch_assoc();
 $stmt_auc->close();
 
-// -------------------- INFO USER & ORDER PENDING --------------------
+// -------------------- INFO USER & STATUS LELANG --------------------
 $current_customer_id = isset($_SESSION['kd_cs']) ? (int)$_SESSION['kd_cs'] : 0;
 
 $now        = time();
@@ -32,35 +32,9 @@ $isActive   = ($auction['status'] === 'active' && strtotime($auction['end_time']
 $isFinished = !$isActive;
 $isWinner   = $current_customer_id > 0 && ((int)$auction['current_winner_id'] === $current_customer_id);
 
-// cari order lelang pending (kalau ada)
-$pendingOrder = null;
-if ($isFinished && $isWinner && $current_customer_id > 0) {
-    // PERBAIKAN QUERY: Join ke payments untuk ambil status, karena di orders udah ga ada kolom status
-    $qPending = "
-        SELECT o.order_id, o.tgl_order, 
-               COALESCE(p.payment_status, 'pending') as status 
-        FROM orders o
-        LEFT JOIN payments p ON o.order_id = p.order_id
-        WHERE o.customer_id = ?
-          AND o.order_id LIKE CONCAT('STYRK_AUC_', ?, '_%')
-        ORDER BY o.tgl_order DESC
-        LIMIT 1
-    ";
-    $stmtP = $conn->prepare($qPending);
-    if ($stmtP) {
-        $stmtP->bind_param('ii', $current_customer_id, $auction_id);
-        $stmtP->execute();
-        $resP = $stmtP->get_result();
-        if ($rowP = $resP->fetch_assoc()) {
-            $pendingOrder = $rowP;
-        }
-        $stmtP->close();
-    }
-}
-
 // Ambil data bid history
 $query_bids = "
-    SELECT b.*, c.nama as bidder_name
+    SELECT b.*, c.nama AS bidder_name
     FROM bids b
     JOIN customer c ON b.customer_id = c.customer_id
     WHERE b.auction_id = ?
@@ -116,6 +90,7 @@ $result_bids = $stmt_bids->get_result();
 
                 <div class="bid-box">
                     <?php if ($isActive): ?>
+                        <!-- ================== MODE: LELANG MASIH BERJALAN ================== -->
                         <h5 class="text-success">Tawaran Tertinggi Saat Ini:</h5>
                         <h3 class="fw-bold">Rp <?= number_format($auction['current_bid'], 0, ',', '.'); ?></h3>
                         <?php if ($auction['winner_name']): ?>
@@ -154,28 +129,15 @@ $result_bids = $stmt_bids->get_result();
                         </form>
 
                     <?php else: ?>
+                        <!-- ================== MODE: LELANG SUDAH BERAKHIR ================== -->
                         <?php
-                        // Logic variabel $pendingOrder, $canContinuePay, dll
-                        // sudah aman karena $pendingOrder['status'] sekarang ada isinya (dari alias query di atas)
-                        
                         $customer_id = (int)($_SESSION['kd_cs'] ?? 0);
-                        // FIX: Pastikan current_winner_id tidak null sebelum dicocokkan
-                        $isWinner = ($customer_id > 0 && (int)($auction['current_winner_id'] ?? 0) === $customer_id);
-
-                        $orderStatus = $pendingOrder ? strtolower((string)$pendingOrder['status']) : null;
-                        $hasPendingOrder = ($pendingOrder && $orderStatus === 'pending');
+                        $isWinner    = ($customer_id > 0 && (int)$auction['current_winner_id'] === $customer_id);
 
                         $endedTime  = strtotime($auction['end_time']);
                         $within1Day = ($endedTime !== false && $endedTime >= strtotime('-1 day'));
-
-                        // Kalau belum pernah bikin order lelang sama sekali
-                        $canCreateOrder   = $isWinner && !$hasPendingOrder && $within1Day;
-                        // Kalau SUDAH ada order lelang status pending (lanjutin bayar)
-                        $canContinuePay   = $isWinner && $hasPendingOrder && $within1Day;
-                        // Kalau sudah lewat 1 hari
-                        $paymentExpired   = $isWinner && !$within1Day;
                         ?>
-                        
+
                         <h5 class="text-danger">Lelang Telah Berakhir</h5>
                         <h3 class="fw-bold">Dimenangkan oleh:</h3>
                         <h4 class="text-success">
@@ -187,20 +149,7 @@ $result_bids = $stmt_bids->get_result();
                         <?php if ($isWinner): ?>
                             <hr>
 
-                            <?php if ($canContinuePay): ?>
-                                <p class="mb-2">
-                                    Kamu sudah membuat order lelang dengan status <strong>pending</strong>.
-                                    Silakan lanjutkan pembayaran di bawah ini (batas 1×24 jam sejak lelang berakhir).
-                                </p>
-                                <form action="payment.php" method="get" class="mt-2">
-                                    <input type="hidden" name="order_id" value="<?= htmlspecialchars($pendingOrder['order_id']); ?>">
-                                    <button type="submit" class="btn btn-lg w-100"
-                                        style="background-color: var(--gold); color: var(--dark-gray);">
-                                        Lanjutkan Pembayaran
-                                    </button>
-                                </form>
-
-                            <?php elseif ($canCreateOrder): ?>
+                            <?php if ($within1Day): ?>
                                 <p class="mb-2">
                                     Kamu adalah pemenang lelang ini. Segera selesaikan pembayaran dalam waktu
                                     <strong>1×24 jam</strong> sejak lelang berakhir.
@@ -212,19 +161,13 @@ $result_bids = $stmt_bids->get_result();
                                         Process to Payment
                                     </button>
                                 </form>
-
-                            <?php elseif ($paymentExpired): ?>
+                            <?php else: ?>
                                 <p class="mt-3 text-danger">
                                     Batas waktu pembayaran (1×24 jam) sudah lewat. Order lelang ini tidak dapat diproses lagi.
                                 </p>
-
-                            <?php elseif ($pendingOrder && $orderStatus !== 'pending'): ?>
-                                <p class="mt-3 text-success">
-                                    Kamu sudah menyelesaikan pembayaran. Silakan cek di <a href="riwayat_belanja.php">Riwayat Belanja</a>.
-                                </p>
                             <?php endif; ?>
-
                         <?php endif; ?>
+
                     <?php endif; ?>
 
                 </div>
@@ -278,7 +221,6 @@ $result_bids = $stmt_bids->get_result();
             }, 1000);
         });
     </script>
-    <?php include 'footer.php'; ?>
 </body>
 
 </html>
