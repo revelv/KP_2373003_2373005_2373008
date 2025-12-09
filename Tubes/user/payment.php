@@ -650,8 +650,6 @@ if ($is_repay) {
         }
 
         function ensureHiddenInputs(formEl) {
-            if (!formEl) return;
-
             const put = (name, val) => {
                 let el = formEl.querySelector(`input[name="${name}"]`);
                 if (!el) {
@@ -660,42 +658,61 @@ if ($is_repay) {
                     el.name = name;
                     formEl.appendChild(el);
                 }
-                el.value = val ?? '';
+                el.value = val;
             };
 
-            put('alamat_mode', shippingAddress.mode || '');
-            put('provinsi', shippingAddress.provinsi || '');
-            put('kota', shippingAddress.kota || '');
-            put('kecamatan', shippingAddress.kecamatan || '');
-            put('kelurahan', shippingAddress.kelurahan || '');
-            put('alamat', shippingAddress.alamat || '');
-            put('kodepos', shippingAddress.kodepos || '');
+            // 1. Masukin Alamat
+            put('alamat_mode', shippingAddress.mode);
+            put('provinsi', shippingAddress.provinsi);
+            put('kota', shippingAddress.kota);
+            put('kecamatan', shippingAddress.kecamatan);
+            put('kelurahan', shippingAddress.kelurahan);
+            put('alamat', shippingAddress.alamat);
+            put('kodepos', shippingAddress.kodepos);
 
-            // clear dulu biar gak dobel
-            formEl.querySelectorAll('input[name="selected_items[]"]').forEach(i => i.remove());
-            getSelectedItemsSafe().forEach(id => {
-                const i = document.createElement('input');
-                i.type = 'hidden';
-                i.name = 'selected_items[]';
-                i.value = id;
-                formEl.appendChild(i);
+            // 2. Masukin Ongkir & Kurir (PENTING)
+            put('shipping_cost', currentShipping.cost);
+            put('code_courier', courierSelect.value); // Ambil langsung dari dropdown kurir
+            put('service_courier', currentShipping.service);
+
+            // 3. Masukin ID Barang (Looping)
+            // Hapus input lama biar ga duplikat
+            formEl.querySelectorAll('input[name="selected_items[]"]').forEach(el => el.remove());
+
+            selectedItems.forEach(id => {
+                let input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_items[]';
+                input.value = id;
+                formEl.appendChild(input);
             });
 
+            // 4. Masukin ID Order/Lelang
             if (isRepay && orderIdPHP) put('order_id', orderIdPHP);
             if (isAuction && auctionIdPHP) put('auction_id', auctionIdPHP);
-
-            put('shipping_cost', String(currentShipping.cost || 0));
-            put('code_courier', currentShipping.courier || '');
-            // PENTING: ini nanti dipakai sebagai courier_type Biteship → harus service_code
-            put('service_courier', currentShipping.service || '');
         }
 
-        document.addEventListener('submit', (e) => {
+        // INI YANG BIKIN TOMBOL "CEK PEMBAYARAN" JALAN
+        document.addEventListener('submit', function(e) {
             const f = e.target;
+
+            // Cek kalau form yang disubmit itu form Transfer atau QRIS
             if (f && (f.id === 'formQRIS' || f.id === 'formTransfer')) {
+
+                // Cek Ongkir dulu (kecuali bayar utang/repay)
+                if (!isRepay && (currentShipping.cost == 0 || currentShipping.service == '')) {
+                    e.preventDefault(); // STOP SUBMIT
+                    alert("Pilih layanan kurir pengiriman dulu bro!");
+                    return;
+                }
+
+                // Kalau aman, suntik data
                 ensureHiddenInputs(f);
+
+                // Form bakal lanjut submit ke checkout.php
+                return true;
             }
-        }, true);
+        });
 
         function resetOngkir(reload = false) {
             currentShipping.service = '';
@@ -1158,11 +1175,13 @@ if ($is_repay) {
                 const svc = document.getElementById('serviceSelect');
                 const applyCost = () => {
                     const opt = svc.selectedOptions[0];
-                    const cost = parseInt(opt?.dataset.cost || '0', 10);
-                    const code = opt?.dataset.code || svc.value || '';
-                    // INI yang nanti dikirim ke checkout.php → courier_type
-                    currentShipping.service = code;
-                    updateTotals(cost);
+                    if (opt) {
+                        // Update variabel global biar kebaca pas submit
+                        currentShipping.service = opt.value; // atau opt.dataset.code
+                        currentShipping.cost = parseInt(opt.getAttribute('data-cost'));
+
+                        updateTotals(currentShipping.cost);
+                    }
                 };
                 applyCost();
                 svc.addEventListener('change', applyCost);
