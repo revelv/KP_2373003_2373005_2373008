@@ -1,91 +1,90 @@
 <?php
-include 'header.php'; // Pastikan header.php sudah punya koneksi $conn
+session_start();
+include 'koneksi.php';
 
-// Pastikan user sudah login untuk bisa buat topik
+// Cek Login
 if (!isset($_SESSION['kd_cs'])) {
-    echo "<script>alert('Anda harus login untuk membuat topik baru.'); window.location.href='community.php';</script>";
+    echo "<script>alert('Harap login terlebih dahulu!'); window.location='login.php';</script>";
     exit();
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buat Topik Baru - Forum Komunitas</title>
+    <title>Buat Postingan Baru</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-
+        body { background-color: #f8f9fa; }
         .form-container {
-            max-width: 800px;
-            margin: 30px auto;
-            background: #fff;
-            padding: 30px;
+            max-width: 900px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Tombol submit cerah */
-        .btn-submit-thread {
-            border: none;
-            background-color: #ffdc73;
-            color: #1f1f1f;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .btn-submit-thread:hover {
-            background-color: #ffe58a;
-            transform: translateY(-1px);
-        }
-
-        /* Tombol batal */
-        .btn-secondary {
-            background-color: #e9ecef;
-            border: none;
-            color: #333;
-            font-weight: 500;
-            border-radius: 8px;
-        }
-
-        .btn-secondary:hover {
-            background-color: #dee2e6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
     </style>
 </head>
-
 <body>
 
-    <div class="form-container">
-        <h2 class="mb-4"><i class="bi bi-pencil-square me-2"></i> Buat Topik Diskusi Baru</h2>
+    <?php include 'header.php'; // Navbar ?>
 
-        <form action="proses_create_thread.php" method="POST">
-            <div class="mb-3">
-                <label for="threadTitle" class="form-label">Judul Topik</label>
-                <input type="text" class="form-control" id="threadTitle" name="title" required placeholder="Masukkan judul yang jelas dan menarik">
-            </div>
-            <div class="mb-3">
-                <label for="threadContent" class="form-label">Pesan Pertama</label>
-                <textarea class="form-control" id="threadContent" name="content" rows="8" placeholder="Tuliskan pertanyaan atau topik diskusi Anda di sini..."></textarea>
-            </div>
-            <div class="d-flex justify-content-between">
-                <a href="community.php" class="btn btn-secondary">Batal</a>
-                <button type="submit" class="btn btn-submit-thread">
-                    <i class="bi bi-send-fill me-1"></i> Publikasikan Topik
-                </button>
-            </div>
-        </form>
+    <div class="container">
+        <div class="form-container">
+            <h2 class="mb-4 fw-bold"><i class="fas fa-edit me-2"></i>Buat Thread Baru</h2>
+            
+            <form action="proses_create_thread.php" method="POST">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Judul</label>
+                    <input type="text" name="title" class="form-control form-control-lg" placeholder="Judul menarik..." required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Konten</label>
+
+                    <textarea name="content" id="summernote" required></textarea>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold" onclick="this.innerHTML='Loading...'">
+                        <i class="fas fa-paper-plane me-2"></i> Posting Sekarang
+                    </button>
+                </div>
+
+            </form>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <?php include 'footer.php'; ?>
 
+    <script>
+        $(document).ready(function() {
+            $('#summernote').summernote({
+                placeholder: 'Tulis isi thread kamu di sini...',
+                tabsize: 2,
+                height: 400,
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'underline', 'clear']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['table', ['table']],
+                    ['insert', ['link', 'picture']],
+                    ['view', ['fullscreen', 'codeview']]
+                ]
+            });
+        });
+    </script>
+
+</body>
 </html>

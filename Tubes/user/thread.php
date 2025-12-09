@@ -66,12 +66,11 @@ $result_posts = $stmt_posts->get_result();
     <style>
         :root {
             --gold: #ffdc73;
-            /* sebelumnya #d4af37 */
             --dark-gray: #1f1f1f;
         }
 
         body {
-            background-color: var(--bg-page);
+            background-color: #f8f9fa; /* Adjusted var(--bg-page) to a standard color for standalone testing */
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -85,13 +84,13 @@ $result_posts = $stmt_posts->get_result();
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border-soft);
+            border: 1px solid #e5e7eb; /* Adjusted var(--border-soft) */
             overflow: hidden;
         }
 
         .thread-header {
             padding: 20px 24px;
-            border-bottom: 1px solid var(--border-soft);
+            border-bottom: 1px solid #e5e7eb;
             background-color: #fff;
         }
 
@@ -134,7 +133,6 @@ $result_posts = $stmt_posts->get_result();
 
         .post-item {
             padding: 12px 20px;
-            /* lebih kecil biar nggak renggang */
             border-bottom: 1px solid #e5e7eb;
             background-color: #fff;
         }
@@ -147,7 +145,6 @@ $result_posts = $stmt_posts->get_result();
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            /* kecilin juga biar rapat */
         }
 
         /* avatar bulat */
@@ -201,8 +198,16 @@ $result_posts = $stmt_posts->get_result();
 
         .post-content {
             margin-top: 4px;
-            /* kecilin jarak dari nama ke isi */
             line-height: 1.5;
+        }
+        
+        /* FIX GAMBAR BIAR GAK OVERFLOW */
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         /* === CARD REPLY FORM === */
@@ -210,7 +215,7 @@ $result_posts = $stmt_posts->get_result();
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border-soft);
+            border: 1px solid #e5e7eb;
             margin-top: 24px;
             padding: 24px;
         }
@@ -250,10 +255,8 @@ $result_posts = $stmt_posts->get_result();
 
     <div class="thread-container">
 
-        <!-- CARD THREAD + POSTS -->
         <div class="thread-card">
 
-            <!-- HEADER THREAD -->
             <div class="thread-header">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start align-items-stretch">
                     <div class="me-md-3">
@@ -274,7 +277,6 @@ $result_posts = $stmt_posts->get_result();
                 </div>
             </div>
 
-            <!-- LIST BALASAN -->
             <div class="post-list">
                 <?php if ($result_posts && mysqli_num_rows($result_posts) > 0): ?>
                     <?php while ($post = $result_posts->fetch_assoc()): ?>
@@ -300,7 +302,11 @@ $result_posts = $stmt_posts->get_result();
                                     </div>
 
                                     <div class="post-content">
-                                        <?= nl2br(htmlspecialchars($post['content'])); ?>
+                                        <?php 
+                                            // Jangan gunakan htmlspecialchars() di sini karena konten berisi HTML (img tag, p tag, dll) dari Summernote
+                                            // Gunakan strip_tags() jika ingin membatasi tag tertentu, tapi untuk menampilkan gambar, biarkan raw.
+                                            echo $post['content']; 
+                                        ?>
                                     </div>
                                 </div>
                             </div>
@@ -316,7 +322,6 @@ $result_posts = $stmt_posts->get_result();
 
         </div>
 
-        <!-- CARD REPLY -->
         <div class="reply-card">
             <div class="reply-title">Tambahkan Balasan</div>
 
@@ -334,9 +339,6 @@ $result_posts = $stmt_posts->get_result();
             </form>
         </div>
 
-    </div><!-- /thread-container -->
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
