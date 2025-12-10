@@ -7,12 +7,12 @@ $search = $_GET['search'] ?? '';
 
 // Query utama dengan filter status
 $query = "
-  SELECT p.*, o.tgl_order, o.total_harga, o.status,
+  SELECT p.*, o.tgl_order, o.total_harga, o.shipping_status AS status, 
          c.nama AS customer, c.alamat
   FROM payments p
   JOIN orders o ON p.order_id = o.order_id
   JOIN customer c ON o.customer_id = c.customer_id
-  WHERE o.status IN ('proses', 'selesai')
+  WHERE o.shipping_status IN ('proses', 'selesai')
 ";
 
 if (!empty($search)) {
@@ -29,29 +29,29 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
 
 <head>
   <style>
-  @media print {
-    .watermark-print {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      align-content: space-around;
-      z-index: -1;
-      opacity: 0.1;
-      pointer-events: none;
-    }
+    @media print {
+      .watermark-print {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        align-content: space-around;
+        z-index: -1;
+        opacity: 0.1;
+        pointer-events: none;
+      }
 
-    .wm {
-      font-size: 24px;
-      transform: rotate(-30deg);
-      width: 200px;
-      text-align: center;
+      .wm {
+        font-size: 24px;
+        transform: rotate(-30deg);
+        width: 200px;
+        text-align: center;
+      }
     }
-  }
   </style>
 
   <meta charset="UTF-8" />
@@ -61,22 +61,23 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
   <style>
     /* Gaya untuk menyembunyikan tombol saat cetak */
     @media print {
+
       .no-print,
       .no-print * {
         display: none !important;
       }
-      
+
       .hide-on-print {
         display: none !important;
       }
-      
+
       body {
         background-color: white !important;
         color: black !important;
         padding: 0 !important;
         margin: 0 !important;
       }
-      
+
       .struk-card {
         page-break-after: always;
         border: 1px solid #d1d5db;
@@ -86,17 +87,17 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
         max-width: 80mm;
         margin: 0 auto;
       }
-      
+
       .bg-gray-800 {
         background-color: white !important;
         color: black !important;
       }
-      
+
       .bg-yellow-500 {
         background-color: #000 !important;
         color: white !important;
       }
-      
+
       .text-gray-400 {
         color: #666 !important;
       }
@@ -118,20 +119,20 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
     .status-selesai {
       @apply bg-green-500 text-white;
     }
-    
+
     /* Gaya khusus untuk struk */
     .struk-card {
       width: 100%;
       max-width: 80mm;
       margin: 0;
     }
-    
+
     .struk-header {
       border-bottom: 2px dashed #000;
       padding-bottom: 10px;
       margin-bottom: 10px;
     }
-    
+
     .struk-footer {
       border-top: 2px dashed #000;
       padding-top: 10px;
@@ -139,32 +140,32 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
       text-align: center;
       font-size: 0.8rem;
     }
-    
+
     .struk-title {
       text-align: center;
       font-weight: bold;
       font-size: 1.2rem;
       margin-bottom: 5px;
     }
-    
+
     .struk-detail {
       margin-bottom: 3px;
       font-size: 0.9rem;
     }
-    
+
     .struk-detail-label {
       font-weight: bold;
       display: inline-block;
       width: 100px;
     }
-    
+
     .total-amount {
       font-weight: bold;
       font-size: 1.1rem;
       text-align: right;
       margin-top: 10px;
     }
-    
+
     /* Gaya untuk layout responsif */
     .struk-container {
       display: flex;
@@ -172,7 +173,7 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
       gap: 1rem;
       justify-content: flex-start;
     }
-    
+
     @media (max-width: 768px) {
       .struk-container {
         flex-direction: column;
@@ -219,7 +220,7 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
             <div class="struk-title">STRUK PEMBAYARAN Stryk Admin</div>
             <div class="text-center text-sm mb-2"><?= date('d/m/Y H:i', strtotime($row['tanggal_bayar'])) ?></div>
           </div>
-          
+
           <div class="mb-4">
             <div class="struk-detail">
               <span class="struk-detail-label">No. Transaksi:</span> <?= $row['payment_id'] ?>
@@ -244,7 +245,7 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
               </span>
             </div>
           </div>
-          
+
           <div class="mb-4">
             <div class="struk-detail">
               <span class="struk-detail-label">Tgl. Order:</span> <?= date('d/m/Y H:i', strtotime($row['tgl_order'])) ?>
@@ -256,7 +257,7 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
               <span class="struk-detail-label">Total Harga:</span> $ <?= number_format($row['total_harga'], 0, ',', '.') ?>
             </div>
           </div>
-          
+
           <div class="struk-footer">
             Terima kasih atas pembayarannya<br>
             Stryk Industries &copy; <?= date('Y') ?>
@@ -281,14 +282,14 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
       const columns = 4; // Jumlah kolom
       const rows = 8; // Jumlah baris
       const offset = 120; // Jarak offset untuk efek staggered
-      
+
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < columns; j++) {
           // Hitung posisi x dengan offset bergantian
           const xPos = j * 200 + (i % 2 === 0 ? 0 : offset);
           // Hitung posisi y
           const yPos = i * 120;
-          
+
           watermarkHTML += `
             <div class="wm" style="left:${xPos}px; top:${yPos}px">
               Stryk Industries
@@ -382,4 +383,5 @@ $orders = mysqli_query($conn, "SELECT orders.order_id, customer.nama FROM orders
     }
   </script>
 </body>
+
 </html>

@@ -111,15 +111,15 @@ $result_bids = $stmt_bids->get_result();
                             <input type="hidden" name="auction_id" value="<?= $auction_id; ?>">
                             <div class="mb-3">
                                 <label for="bid_amount" class="form-label">
-                                    Tawaran Anda (Minimal Rp <?= number_format($auction['current_bid'] + 1, 0, ',', '.'); ?>)
+                                    Tawaran Anda (Minimal Rp <?= number_format($auction['current_bid'] + 10000, 0, ',', '.'); ?>)
                                 </label>
                                 <input
                                     type="number"
                                     class="form-control"
                                     id="bid_amount"
                                     name="bid_amount"
-                                    min="<?= $auction['current_bid'] + 1; ?>"
-                                    placeholder="<?= number_format($auction['current_bid'] + 1, 0, ',', ''); ?>"
+                                    min="<?= $auction['current_bid'] + 10000; ?>"
+                                    placeholder="<?= number_format($auction['current_bid'] + 10000, 0, ',', ''); ?>"
                                     required>
                             </div>
                             <button type="submit" class="btn btn-lg w-100"
